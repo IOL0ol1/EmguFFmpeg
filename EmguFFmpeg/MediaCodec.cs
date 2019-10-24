@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     public unsafe abstract class MediaCodec : IDisposable
     {

@@ -6,7 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     public static class FFmpegHelper
     {

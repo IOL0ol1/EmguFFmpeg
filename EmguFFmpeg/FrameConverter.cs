@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     public abstract class FrameConverter : IDisposable
     {

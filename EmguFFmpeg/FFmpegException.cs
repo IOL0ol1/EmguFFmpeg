@@ -2,7 +2,7 @@
 
 using System;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     [Serializable]
     public class FFmpegException : Exception

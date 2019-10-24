@@ -4,7 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     public unsafe abstract class MediaMux : IDisposable, IReadOnlyList<MediaStream>
     {

@@ -3,7 +3,7 @@
 using System;
 using System.Linq;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     public unsafe class MediaWriter : MediaMux
     {

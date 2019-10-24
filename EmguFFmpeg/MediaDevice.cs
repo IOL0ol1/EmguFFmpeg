@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     public class MediaDevice
     {

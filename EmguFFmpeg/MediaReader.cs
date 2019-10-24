@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     public unsafe partial class MediaReader : MediaMux
     {

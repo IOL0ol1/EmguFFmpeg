@@ -2,7 +2,7 @@
 
 using System;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     public unsafe class MediaPacket : IDisposable
     {

@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace FFmpegManaged
+namespace EmguFFmpeg
 {
     public unsafe class MediaDictionary : IReadOnlyDictionary<string, string>, ICloneable, IDisposable
     {
