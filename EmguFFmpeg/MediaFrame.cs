@@ -17,10 +17,125 @@ namespace FFmpegManaged
 
         public AVFrame Frame => *pFrame;
 
-        public long PTS
+        public byte*[] Data
+        {
+            get => pFrame->data;
+        }
+
+        public int[] Linesize
+        {
+            get => pFrame->linesize;
+        }
+
+        public byte** ExtendedData
+        {
+            get => pFrame->extended_data;
+        }
+
+        public int Width
+        {
+            get => pFrame->width;
+            set => pFrame->width = value;
+        }
+
+        public int Height
+        {
+            get => pFrame->height;
+            set => pFrame->height = value;
+        }
+
+        public int NbSamples
+        {
+            get => pFrame->nb_samples;
+            set => pFrame->nb_samples = value;
+        }
+
+        public int Format
+        {
+            get => pFrame->format;
+            set => pFrame->format = value;
+        }
+
+        public int KeyFrame
+        {
+            get => pFrame->key_frame;
+            set => pFrame->key_frame = value;
+        }
+
+        public AVPictureType PictType
+        {
+            get => pFrame->pict_type;
+            set => pFrame->pict_type = value;
+        }
+
+        public AVRational SampleAspectRatio
+        {
+            get => pFrame->sample_aspect_ratio;
+            set => pFrame->sample_aspect_ratio = value;
+        }
+
+        public long Pts
         {
             get => pFrame->pts;
             set => pFrame->pts = value;
+        }
+
+        public long PktPts
+        {
+            get => pFrame->pkt_pts;
+        }
+
+        public long PktDts
+        {
+            get => pFrame->pkt_dts;
+        }
+
+        public int SampleRate
+        {
+            get => pFrame->sample_rate;
+            set => pFrame->sample_rate = value;
+        }
+
+        public ulong ChannelLayout
+        {
+            get => pFrame->channel_layout;
+            set => pFrame->channel_layout = value;
+        }
+
+        public int Flags
+        {
+            get => pFrame->flags;
+            set => pFrame->flags = value;
+        }
+
+        public long BestEffortTimestamp
+        {
+            get => pFrame->best_effort_timestamp;
+        }
+
+        public long PktPos
+        {
+            get => pFrame->pkt_pos;
+        }
+
+        public long PktDuration
+        {
+            get => pFrame->pkt_duration;
+        }
+
+        public int DecodeErrorFlags
+        {
+            get => pFrame->decode_error_flags;
+        }
+
+        public int Channels
+        {
+            get => pFrame->channels;
+        }
+
+        public int PktSize
+        {
+            get => pFrame->pkt_size;
         }
 
         public static implicit operator AVFrame*(MediaFrame value)
@@ -117,12 +232,6 @@ namespace FFmpegManaged
             pFrame->nb_samples = nbSamples;
             pFrame->sample_rate = sampleRate;
             ffmpeg.av_frame_get_buffer(pFrame, align);
-        }
-
-        public int SampleRate
-        {
-            get => pFrame->sample_rate;
-            set => pFrame->sample_rate = value;
         }
 
         public byte[][] ToSamples()

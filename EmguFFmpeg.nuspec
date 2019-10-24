@@ -8,11 +8,20 @@
     <projectUrl>https://github.com/IOL0ol1/EmguFFmpeg</projectUrl>
     <description>A FFmpeg.AutoGen Warpper Library. Please download the native ffmpeg binarys yourself</description>
     <license type="expression">MIT</license>
-    <iconUrl>https://ffmpeg.org/favicon.ico</iconUrl>
+    <icon>icon.ico</icon>
     <RepositoryUrl>https://github.com/IOL0ol1/EmguFFmpeg</RepositoryUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>A FFmpeg.AutoGen Warpper Library.</summary>
     <releaseNotes>FFmpeg.AutoGen Warpper Library.</releaseNotes>
     <tags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegchasrp ffmpegnet emgu</tags>
   </metadata>
+  <files>
+    <file src="../icon.ico" target="" />
+    <file src="bin/Release/net45/*.dll" target="lib/net45" />
+    <file src="bin/Release/net45/*.pdb" target="lib/net45" />
+    <file src="bin/Release/net45/*.xml" target="lib/net45" />
+    <file src="bin/Release/netstandard2.0/*.dll" target="lib/netstandard2.0" />
+    <file src="bin/Release/netstandard2.0/*.pdb" target="lib/netstandard2.0" />
+    <file src="bin/Release/netstandard2.0/*.xml" target="lib/netstandard2.0" />
+  </files>
 </package>
