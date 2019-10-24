@@ -4,6 +4,7 @@ using System;
 
 namespace FFmpegManaged
 {
+    [Serializable]
     public class FFmpegException : Exception
     {
         public int ErrorCode { get; }
@@ -28,5 +29,9 @@ namespace FFmpegManaged
             ffmpeg.av_strerror(errorCode, buffer, ffmpeg.AV_ERROR_MAX_STRING_SIZE);
             return ((IntPtr)buffer).PtrToStringUTF8();
         }
+
+        protected FFmpegException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext)
+            : base(serializationInfo, streamingContext)
+        { }
     }
 }
