@@ -9,7 +9,6 @@
     <description>A FFmpeg.AutoGen Warpper Library. Please download the native ffmpeg binarys yourself</description>
     <license type="expression">MIT</license>
     <icon>icon.ico</icon>
-    <repository>https://github.com/IOL0ol1/EmguFFmpeg</repository>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>A FFmpeg.AutoGen Warpper Library.</summary>
     <releaseNotes>FFmpeg.AutoGen Warpper Library.</releaseNotes>
