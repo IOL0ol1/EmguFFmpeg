@@ -2,13 +2,14 @@
 <package >
   <metadata>
     <id>EmguFFmpeg</id>
-    <version>$version$</version>
+    <version>1.0.1</version>
     <authors>FFmpeg</authors>
     <owners>kiolp</owners>
     <projectUrl>https://github.com/IOL0ol1/EmguFFmpeg</projectUrl>
     <description>A FFmpeg.AutoGen Warpper Library. Please download the native ffmpeg binarys yourself</description>
     <license type="expression">MIT</license>
     <icon>icon.ico</icon>
+    <repository type="git" url="https://github.com/IOL0ol1/EmguFFmpeg.git"/>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>A FFmpeg.AutoGen Warpper Library.</summary>
     <releaseNotes>FFmpeg.AutoGen Warpper Library.</releaseNotes>
