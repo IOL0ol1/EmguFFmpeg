@@ -2,11 +2,14 @@
 
 namespace EmguFFmpeg.Example
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            FFmpegHelper.RegisterBinaries();
+            FFmpegHelper.SetupLogging();
+            Console.WriteLine("Hello FFmpeg!");
+            Console.ReadKey();
         }
     }
 }
