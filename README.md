@@ -3,7 +3,9 @@ EmguFFmpeg
 
 A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.
 
-[![NuGet version (EmguFFmpeg)](https://img.shields.io/nuget/v/EmguFFmpeg.svg?style=flat-square)](https://www.nuget.org/packages/EmguFFmpeg/)
+[![NuGet version (EmguFFmpeg)](https://img.shields.io/nuget/v/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)
+[![NuGet downloads (EmguFFmpeg)](https://img.shields.io/nuget/dt/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)    
+[![Build status](https://ci.appveyor.com/api/projects/status/184vgaesdp86jo5p?svg=true)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg)
 
 ## Example
 
@@ -59,6 +61,8 @@ for(stopwatch.Elapsed <= TimeSpan.FromSeconds(60))
 writer.FlushMuxer();
 writer.Dispose();
 ```
+**encode audio need to redesign the AudioFrameConverter, maybe also use IEnumable<>**    
+**WriteFrame function will add pts optional parameter**
 
 ## TODO
 
