@@ -7,6 +7,19 @@ A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.
 [![NuGet downloads (EmguFFmpeg)](https://img.shields.io/nuget/dt/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)    
 [![Build status](https://ci.appveyor.com/api/projects/status/184vgaesdp86jo5p?svg=true)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg)
 
+## HowTo
+
+- Download ffmpeg binarys file.     
+	- Download from [Zeranoe](https://ffmpeg.zeranoe.com/builds/).    
+	- **Copy** from nuget [FFmpeg.Nightly](https://www.nuget.org/packages/FFmpeg.Nightly/) / [FFmpeg.Nightly.LGPL](https://www.nuget.org/packages/FFmpeg.Nightly.LGPL/). 
+        - **DO NOT INSTALL** them in c# project. valid only for C++ projects.
+- Install [EmguFFmpeg](https://www.nuget.org/packages/EmguFFmpeg/) nuget packet.    
+- Import namespace:
+	```csharp
+	using EmguFFmpeg;
+	```
+- Media codec with c#
+
 ## Example
 
 **Decode** 
@@ -61,13 +74,12 @@ for(stopwatch.Elapsed <= TimeSpan.FromSeconds(60))
 writer.FlushMuxer();
 writer.Dispose();
 ```
-**encode audio need to redesign the AudioFrameConverter, maybe also use IEnumable<>**    
-**WriteFrame function will add pts optional parameter**
 
 ## TODO
 
-- [ ] More easy way to encode audio data.
+- [ ] **Encode audio need to redesign the AudioFrameConverter, maybe also use IEnumable<>.**    
+- [ ] **WriteFrame function will add pts optional parameter.**
 - [ ] Convert MediaFrame data easy with EmguCV Mat/Image etc.
-- [ ] MediaEncode/MediaDecode.Create... function remove flags param
-- [ ] Add MedaiFilter support
-- [ ] Add test code
+- [ ] MediaEncode/MediaDecode.Create... function remove flags param.
+- [ ] Add MedaiFilter support.
+- [ ] Add test code.
