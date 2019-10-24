@@ -16,13 +16,13 @@
     <tags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegchasrp ffmpegnet emgu</tags>
   </metadata>
   <files>
-    <file src="../icon.ico" target="" />
-    <file src="bin/Release/net45/EmguFFmpeg.dll" target="lib/net45" />
-    <file src="bin/Release/net45/*.pdb" target="lib/net45" />
-    <file src="bin/Release/net45/*.xml" target="lib/net45" />
-    <file src="bin/Release/netstandard2.0/EmguFFmpeg.dll" target="lib/netstandard2.0" />
-    <file src="bin/Release/netstandard2.0/*.pdb" target="lib/netstandard2.0" />
-    <file src="bin/Release/netstandard2.0/*.xml" target="lib/netstandard2.0" />
-    <file src="bin/Release/netstandard2.0/*.json" target="lib/netstandard2.0" />
+    <file src="icon.ico" target="" />
+    <file src="EmguFFmpeg/bin/Release/net45/EmguFFmpeg.dll" target="lib/net45" />
+    <file src="EmguFFmpeg/bin/Release/net45/*.pdb" target="lib/net45" />
+    <file src="EmguFFmpeg/bin/Release/net45/*.xml" target="lib/net45" />
+    <file src="EmguFFmpeg/bin/Release/netstandard2.0/EmguFFmpeg.dll" target="lib/netstandard2.0" />
+    <file src="EmguFFmpeg/bin/Release/netstandard2.0/*.pdb" target="lib/netstandard2.0" />
+    <file src="EmguFFmpeg/bin/Release/netstandard2.0/*.xml" target="lib/netstandard2.0" />
+    <file src="EmguFFmpeg/bin/Release/netstandard2.0/*.json" target="lib/netstandard2.0" />
   </files>
 </package>
