@@ -13,6 +13,7 @@ namespace FFmpegManaged
         //protected AVFilterInOut* pFilterOutputs;
         //protected AVFilterInOut* pFilterInputs;
         //protected AVFilterGraph* pFilterGraph;
+        //protected AVFilterGraph* pFilterGraph;
 
         public MediaFilter(AVFilter* filter)
         {
