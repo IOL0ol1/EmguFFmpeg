@@ -80,6 +80,7 @@
 
   <ItemGroup>
     <None Remove="EmguFFmpeg.nuspec" />
+    <None Remove="EmguFFmpeg.xml" />
     <None Include="../icon.ico" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
 
