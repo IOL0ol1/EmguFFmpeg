@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>EmguFFmpeg</id>
+    <version>$version$</version>
+    <authors>FFmpeg</authors>
+    <owners>kiolp</owners>
+    <projectUrl>https://github.com/IOL0ol1/EmguFFmpeg</projectUrl>
+    <description>A FFmpeg.AutoGen Warpper Library. Please download the native ffmpeg binarys yourself</description>
+    <license type="expression">MIT</license>
+    <iconUrl>https://ffmpeg.org/favicon.ico</iconUrl>
+    <RepositoryUrl>https://github.com/IOL0ol1/EmguFFmpeg</RepositoryUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>A FFmpeg.AutoGen Warpper Library.</summary>
+    <releaseNotes>FFmpeg.AutoGen Warpper Library.</releaseNotes>
+    <tags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegchasrp ffmpegnet emgu</tags>
+  </metadata>
+</package>

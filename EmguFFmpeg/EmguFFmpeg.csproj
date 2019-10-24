@@ -6,8 +6,17 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Description>A FFmpeg.AutoGen Warpper Library.</Description>
+    <Description>A FFmpeg.AutoGen Warpper Library. Please download the native ffmpeg binarys yourself</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>FFmpeg</Authors>
+    <Owners>kiolp</Owners>
+    <PackageProjectUrl>https://github.com/IOL0ol1/EmguFFmpeg</PackageProjectUrl>
+    <PackageIconUrl>https://ffmpeg.org/favicon.ico</PackageIconUrl>
+    <RepositoryUrl>https://github.com/IOL0ol1/EmguFFmpeg</RepositoryUrl>
+    <Company>EmguFFmpeg</Company>
+    <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegchasrp ffmpegnet emgu</PackageTags>
+    <PackageReleaseNotes>A FFmpeg.AutoGen Warpper Library.</PackageReleaseNotes>
+    <RepositoryType></RepositoryType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|x64'">
@@ -17,46 +26,57 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|x86'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|x64'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|x86'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|x86'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|x64'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|x86'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|x64'">
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg\EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
