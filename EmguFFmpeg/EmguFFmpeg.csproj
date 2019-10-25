@@ -20,67 +20,66 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|x64'">
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
     <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|x86'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|x64'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|x86'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|x86'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|x64'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|x86'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|x64'">
     <NoWarn>1701;1702;1591</NoWarn>
-    <DocumentationFile>EmguFFmpeg.xml</DocumentationFile>
+    <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="EmguFFmpeg.xml" />
     <None Include="../icon.png" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
 
