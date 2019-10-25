@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29411.108
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmguFFmpeg", "EmguFFmpeg\EmguFFmpeg.csproj", "{C1EDAA9A-696F-4EDD-9E7A-7BBDC7D50530}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmguFFmpeg.Example", "EmguFFmpeg.Example\EmguFFmpeg.Example.csproj", "{D8DF27BB-2CCA-45D2-9F34-4B1981EF3D2C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmguFFmpeg.Example", "EmguFFmpeg.Example\EmguFFmpeg.Example.csproj", "{D8DF27BB-2CCA-45D2-9F34-4B1981EF3D2C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
