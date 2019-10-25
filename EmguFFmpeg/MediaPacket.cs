@@ -79,12 +79,30 @@ namespace EmguFFmpeg
 
         #region IDisposable Support
 
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                fixed (AVPacket** ppPacket = &pPacket)
+                {
+                    ffmpeg.av_packet_free(ppPacket);
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        ~MediaPacket()
+        {
+            Dispose(false);
+        }
+
         public void Dispose()
         {
-            fixed (AVPacket** ppPacket = &pPacket)
-            {
-                ffmpeg.av_packet_free(ppPacket);
-            }
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion
