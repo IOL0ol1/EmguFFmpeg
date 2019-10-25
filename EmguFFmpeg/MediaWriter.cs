@@ -13,11 +13,11 @@ namespace EmguFFmpeg
         {
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
-                ffmpeg.avformat_alloc_output_context2(ppFormatContext, oformat, null, file);
+                ffmpeg.avformat_alloc_output_context2(ppFormatContext, oformat, null, file).ThrowExceptionIfError();
             }
             base.Format = oformat ?? new OutFormat(pFormatContext->oformat);
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, null);
+                ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, null).ThrowExceptionIfError();
         }
 
         public override void DumpInfo()
