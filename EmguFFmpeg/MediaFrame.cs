@@ -1,12 +1,13 @@
 ﻿using FFmpeg.AutoGen;
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaFrame : IDisposable
+    public unsafe class MediaFrame : IDisposable, ICloneable
     {
         protected AVFrame* pFrame;
 
@@ -16,6 +17,46 @@ namespace EmguFFmpeg
         }
 
         public AVFrame Frame => *pFrame;
+
+        /// <summary>
+        /// Deep clone frame(include data)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public T Clone<T>() where T : MediaFrame, new()
+        {
+            T dstFrame = new T();
+            AVFrame* dst = dstFrame;
+            dst->format = pFrame->format;
+            dst->width = pFrame->width;
+            dst->height = pFrame->height;
+            dst->channel_layout = pFrame->channel_layout;
+            dst->channels = pFrame->channels;
+            dst->nb_samples = pFrame->nb_samples;
+            dst->sample_rate = pFrame->sample_rate;
+            ffmpeg.av_frame_get_buffer(dst, 0);
+            ffmpeg.av_frame_copy_props(dst, pFrame);
+            ffmpeg.av_frame_copy(dst, pFrame).ThrowExceptionIfError();
+            return dstFrame;
+        }
+
+        object ICloneable.Clone()
+        {
+            return Clone<MediaFrame>();
+        }
+
+        public byte[][] GetManagedData()
+        {
+            List<byte[]> result = new List<byte[]>();
+            IntPtr intPtr;
+            for (uint i = 0; (intPtr = (IntPtr)pFrame->data[i]) != IntPtr.Zero; i++)
+            {
+                byte[] line = new byte[pFrame->linesize[i]];
+                Marshal.Copy(intPtr, line, 0, line.Length);
+                result.Add(line);
+            }
+            return result.ToArray();
+        }
 
         public byte*[] Data
         {
