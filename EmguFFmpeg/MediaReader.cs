@@ -9,11 +9,11 @@ namespace EmguFFmpeg
     {
         public new InFormat Format => base.Format as InFormat;
 
-        public MediaReader(string file, InFormat iformat = null)
+        public MediaReader(string file, InFormat iformat = null, MediaDictionary options = null)
         {
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
-                ffmpeg.avformat_open_input(ppFormatContext, file, iformat, null).ThrowExceptionIfError();
+                ffmpeg.avformat_open_input(ppFormatContext, file, iformat, options).ThrowExceptionIfError();
             }
             ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowExceptionIfError();
             base.Format = iformat ?? new InFormat(pFormatContext->iformat);
