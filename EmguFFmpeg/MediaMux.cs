@@ -12,6 +12,7 @@ namespace EmguFFmpeg
 
         public AVFormatContext AVFormatContext => *pFormatContext;
 
+        public MediaDictionary Options { get; protected set; }
         public MediaFormat Format { get; protected set; }
 
         public static implicit operator AVFormatContext*(MediaMux value)

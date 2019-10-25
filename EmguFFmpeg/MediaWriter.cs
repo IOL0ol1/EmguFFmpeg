@@ -9,7 +9,7 @@ namespace EmguFFmpeg
     {
         public new OutFormat Format => base.Format as OutFormat;
 
-        public MediaWriter(string file, OutFormat oformat = null)
+        public MediaWriter(string file, OutFormat oformat = null, MediaDictionary options = null)
         {
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
@@ -17,7 +17,8 @@ namespace EmguFFmpeg
             }
             base.Format = oformat ?? new OutFormat(pFormatContext->oformat);
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, null).ThrowExceptionIfError();
+                ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, options).ThrowExceptionIfError();
+            Options = options;
         }
 
         public override void DumpInfo()

@@ -143,7 +143,8 @@ namespace EmguFFmpeg
 
                 // TODO: 释放未托管的资源(未托管的对象)并在以下内容中替代终结器。
                 // TODO: 将大型字段设置为 null。
-                Clear();
+                fixed (AVDictionary** ppDictionary = &pDictionary)
+                    ffmpeg.av_dict_free(ppDictionary);
 
                 disposedValue = true;
             }

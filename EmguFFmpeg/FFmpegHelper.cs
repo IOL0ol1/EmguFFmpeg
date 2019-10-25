@@ -92,7 +92,7 @@ namespace EmguFFmpeg
         ///</list>
         /// </param>
         /// <param name="logFlags">
-        /// log flags support AND operator
+        /// log flags, support AND operator
         /// <list type="bullet">
         ///    <item>
         ///        <term>1</term>
