@@ -26,7 +26,7 @@ namespace EmguFFmpeg
         /// <summary>
         /// NOTE: ffmpeg maybe change the value of *<see cref="ppDictionary"/>
         /// </summary>
-        protected AVDictionary** ppDictionary = null;
+        private AVDictionary** ppDictionary = null;
 
         public MediaDictionary()
         {
