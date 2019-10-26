@@ -15,7 +15,6 @@ namespace EmguFFmpeg
             {
                 ffmpeg.avformat_open_input(ppFormatContext, file, iformat, options).ThrowExceptionIfError();
             }
-            options.Dispose();
             ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowExceptionIfError();
             base.Format = iformat ?? new InFormat(pFormatContext->iformat);
 
