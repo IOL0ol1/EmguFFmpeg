@@ -14,8 +14,8 @@ namespace EmguFFmpeg
             pStream = stream;
         }
 
-        public bool CanRead => Codec is null ? false : Codec.IsDecoder;
-        public bool CanWrite => Codec is null ? false : Codec.IsEncoder;
+        public bool CanRead => Codec == null ? false : Codec.IsDecoder;
+        public bool CanWrite => Codec == null ? false : Codec.IsEncoder;
 
         public AVRational TimeBase
         {

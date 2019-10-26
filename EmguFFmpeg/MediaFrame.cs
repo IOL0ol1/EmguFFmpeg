@@ -277,7 +277,7 @@ namespace EmguFFmpeg
 
         public byte[][] ToSamples()
         {
-            if (pFrame->data[0] is null)
+            if (pFrame->data[0] == null)
                 return null;
             int samplesize = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format);
             int planarsize = samplesize * pFrame->nb_samples;

@@ -12,19 +12,30 @@ namespace EmguFFmpeg
         public const DictFlags DefaultFlags = DictFlags.AV_DICT_MATCH_CASE | DictFlags.AV_DICT_DONT_OVERWRITE;
         public const DictFlags FFmpegFlags = DictFlags.AV_DICT_NONE;
 
-        protected AVDictionary* pDictionary = null;
+        private AVDictionary* internalPointer = null;
+        protected AVDictionary** ppDictionary = null;
+        //protected AVDictionary*** ppp = null;
+
+        public MediaDictionary()
+        {
+            fixed (AVDictionary** pPointer = &internalPointer)
+                ppDictionary = pPointer;
+            //fixed (AVDictionary*** pd = &pDictionary)
+            //    ppp = pd;
+        }
 
         public static implicit operator AVDictionary*(MediaDictionary value)
         {
-            if (value == null) return null;
-            return value.pDictionary;
+            if (value == null)
+                return null;
+            return value.internalPointer;
         }
 
         public static implicit operator AVDictionary**(MediaDictionary value)
         {
             if (value == null) return null;
-            fixed (AVDictionary** ppDictionary = &value.pDictionary)
-                return ppDictionary;
+            fixed (AVDictionary** pPointer = &value.internalPointer)
+                return pPointer;
         }
 
         private List<KeyValuePair<string, string>> keyValues
@@ -33,7 +44,7 @@ namespace EmguFFmpeg
             {
                 List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
                 AVDictionaryEntry* t = null;
-                while ((t = ffmpeg.av_dict_get(pDictionary, "", t, (int)(DictFlags.AV_DICT_IGNORE_SUFFIX))) != null)
+                while ((t = ffmpeg.av_dict_get(internalPointer, "", t, (int)(DictFlags.AV_DICT_IGNORE_SUFFIX))) != null)
                 {
                     keyValuePairs.Add((*t).ToKeyValuePair());
                 }
@@ -43,12 +54,15 @@ namespace EmguFFmpeg
 
         public IReadOnlyList<KeyValuePair<string, string>> KeyValues => keyValues;
 
-        public int Count => ffmpeg.av_dict_count(pDictionary);
+        public int Count => ffmpeg.av_dict_count(internalPointer);
 
         public void Clear()
         {
-            fixed (AVDictionary** ppDictionary = &pDictionary)
-                ffmpeg.av_dict_free(ppDictionary);
+            fixed (AVDictionary** tt = &internalPointer)
+            {
+                ffmpeg.av_dict_free(tt);
+                ppDictionary = tt;
+            }
         }
 
         public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex)
@@ -68,21 +82,21 @@ namespace EmguFFmpeg
 
         public void Add(string key, string value, DictFlags flags = DefaultFlags)
         {
-            fixed (AVDictionary** ppDictionary = &pDictionary)
-                ffmpeg.av_dict_set(ppDictionary, key, value, (int)flags).ThrowExceptionIfError();
+            fixed (AVDictionary** tt = &internalPointer)
+                ffmpeg.av_dict_set(tt, key, value, (int)flags).ThrowExceptionIfError();
         }
 
         public void Add(string key, long value, DictFlags flags = DefaultFlags)
         {
-            fixed (AVDictionary** ppDictionary = &pDictionary)
-                ffmpeg.av_dict_set_int(ppDictionary, key, value, (int)flags).ThrowExceptionIfError();
+            fixed (AVDictionary** tt = &internalPointer)
+                ffmpeg.av_dict_set_int(tt, key, value, (int)flags).ThrowExceptionIfError();
         }
 
         public string[] GetValue(string key, DictFlags flags)
         {
             List<string> output = new List<string>();
             AVDictionaryEntry* t = null;
-            while ((t = ffmpeg.av_dict_get(pDictionary, key, t, (int)flags)) != null)
+            while ((t = ffmpeg.av_dict_get(internalPointer, key, t, (int)flags)) != null)
             {
                 output.Add((*t).ToKeyValuePair().Value);
             }
@@ -93,7 +107,7 @@ namespace EmguFFmpeg
         {
             int count = 0;
             AVDictionaryEntry* t = null;
-            while ((t = ffmpeg.av_dict_get(pDictionary, key, t, (int)flags)) != null)
+            while ((t = ffmpeg.av_dict_get(internalPointer, key, t, (int)flags)) != null)
             {
                 Add(key, null, 0);
                 count++;
@@ -143,8 +157,11 @@ namespace EmguFFmpeg
 
                 // TODO: 释放未托管的资源(未托管的对象)并在以下内容中替代终结器。
                 // TODO: 将大型字段设置为 null。
-                fixed (AVDictionary** ppDictionary = &pDictionary)
+                //fixed (AVDictionary** tt = &internalPointer)
+                {
                     ffmpeg.av_dict_free(ppDictionary);
+                    //ppDictionary = tt;
+                }
 
                 disposedValue = true;
             }
@@ -173,8 +190,7 @@ namespace EmguFFmpeg
         public MediaDictionary Clone()
         {
             MediaDictionary keyValuePairs = new MediaDictionary();
-            fixed (AVDictionary** p = &keyValuePairs.pDictionary)
-                ffmpeg.av_dict_copy(p, pDictionary, (int)DictFlags.AV_DICT_MULTIKEY);
+            ffmpeg.av_dict_copy(keyValuePairs, internalPointer, (int)DictFlags.AV_DICT_MULTIKEY);
             return keyValuePairs;
         }
 

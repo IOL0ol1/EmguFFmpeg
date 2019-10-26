@@ -18,7 +18,6 @@ namespace EmguFFmpeg
             base.Format = oformat ?? new OutFormat(pFormatContext->oformat);
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                 ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, options).ThrowExceptionIfError();
-            Options = options;
         }
 
         public override void DumpInfo()

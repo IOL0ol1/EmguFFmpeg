@@ -22,12 +22,12 @@ namespace EmguFFmpeg
 
         public AVCodec AVCodec => *pCodec;
         public AVCodecContext AVCodecContext => *pCodecContext;
-        public AVMediaType Type => pCodec is null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type;
-        public AVCodecID Id => pCodec is null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id;
-        public string Name => pCodec is null ? null : ((IntPtr)pCodec->name).PtrToStringUTF8();
-        public string LongName => pCodec is null ? null : ((IntPtr)pCodec->long_name).PtrToStringUTF8();
-        public bool IsDecoder => pCodec is null ? false : ffmpeg.av_codec_is_decoder(pCodec) > 0;
-        public bool IsEncoder => pCodec is null ? false : ffmpeg.av_codec_is_encoder(pCodec) > 0;
+        public AVMediaType Type => pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type;
+        public AVCodecID Id => pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id;
+        public string Name => pCodec == null ? null : ((IntPtr)pCodec->name).PtrToStringUTF8();
+        public string LongName => pCodec == null ? null : ((IntPtr)pCodec->long_name).PtrToStringUTF8();
+        public bool IsDecoder => pCodec == null ? false : ffmpeg.av_codec_is_decoder(pCodec) > 0;
+        public bool IsEncoder => pCodec == null ? false : ffmpeg.av_codec_is_encoder(pCodec) > 0;
 
         #region Supported
 
