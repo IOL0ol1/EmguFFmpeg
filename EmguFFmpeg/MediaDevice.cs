@@ -32,7 +32,6 @@ namespace EmguFFmpeg
         public unsafe static IReadOnlyList<IReadOnlyList<MediaDevice>> GetDeviceInfos(MediaFormat device, MediaDictionary options = null)
         {
             string parame = "list";
-            ffmpeg.avdevice_register_all();
             AVFormatContext* pFmtCtx = ffmpeg.avformat_alloc_context();
             Trace.TraceInformation("--------------------------");
             if (device is InFormat iformat)
