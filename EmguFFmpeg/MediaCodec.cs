@@ -20,8 +20,8 @@ namespace EmguFFmpeg
 
         public abstract void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null);
 
-        public AVCodec AVCodec => *pCodec;
-        public AVCodecContext AVCodecContext => *pCodecContext;
+        public AVCodec AVCodec => pCodec == null ? throw new NullReferenceException() : *pCodec;
+        public AVCodecContext AVCodecContext => pCodecContext == null ? throw new NullReferenceException() : *pCodecContext;
         public AVMediaType Type => pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type;
         public AVCodecID Id => pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id;
         public string Name => pCodec == null ? null : ((IntPtr)pCodec->name).PtrToStringUTF8();
@@ -35,6 +35,7 @@ namespace EmguFFmpeg
         {
             get
             {
+                if (pCodec == null) return null;
                 List<AVCodecHWConfig> result = new List<AVCodecHWConfig>();
                 if (ffmpeg.avcodec_get_hw_config(pCodec, 0) != null)
                 {
@@ -54,6 +55,7 @@ namespace EmguFFmpeg
         {
             get
             {
+                if (pCodec == null) return null;
                 AVPixelFormat* p = pCodec->pix_fmts;
                 List<AVPixelFormat> result = new List<AVPixelFormat>();
                 if (p != null)
@@ -72,6 +74,7 @@ namespace EmguFFmpeg
         {
             get
             {
+                if (pCodec == null) return null;
                 AVRational* p = pCodec->supported_framerates;
                 List<AVRational> result = new List<AVRational>();
                 if (p != null)
@@ -90,6 +93,7 @@ namespace EmguFFmpeg
         {
             get
             {
+                if (pCodec == null) return null;
                 AVSampleFormat* p = pCodec->sample_fmts;
                 List<AVSampleFormat> result = new List<AVSampleFormat>();
                 if (p != null)
@@ -108,6 +112,7 @@ namespace EmguFFmpeg
         {
             get
             {
+                if (pCodec == null) return null;
                 int* p = pCodec->supported_samplerates;
                 List<int> result = new List<int>();
                 if (p != null)
@@ -126,6 +131,7 @@ namespace EmguFFmpeg
         {
             get
             {
+                if (pCodec == null) return null;
                 ulong* p = pCodec->channel_layouts;
                 List<ulong> result = new List<ulong>();
                 if (p != null)
@@ -235,9 +241,12 @@ namespace EmguFFmpeg
         /// <param name="opts">options for "avcodec_open2"</param>
         public override void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null)
         {
-            pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
-            setBeforeOpen?.Invoke(this);
-            ffmpeg.avcodec_open2(pCodecContext, pCodec, opts);
+            if (pCodec != null)
+            {
+                pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
+                setBeforeOpen?.Invoke(this);
+                ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
+            }
         }
 
         public virtual IEnumerable<MediaFrame> DecodePacket(MediaPacket packet)
@@ -418,13 +427,16 @@ namespace EmguFFmpeg
         /// <param name="opts">options for "avcodec_open2"</param>
         public override void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null)
         {
-            pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
-            setBeforeOpen?.Invoke(this);
-            if ((flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+            if (pCodec != null)
             {
-                pCodecContext->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+                pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
+                setBeforeOpen?.Invoke(this);
+                if ((flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+                {
+                    pCodecContext->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+                }
+                ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
             }
-            ffmpeg.avcodec_open2(pCodecContext, pCodec, opts);
         }
 
         /// <summary>
