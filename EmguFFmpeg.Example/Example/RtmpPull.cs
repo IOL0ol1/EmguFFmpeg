@@ -27,13 +27,10 @@ namespace EmguFFmpeg.Example
                 VideoFrameConverter videoFrameConverter = new VideoFrameConverter(AVPixelFormat.AV_PIX_FMT_BGR24, codecContext.width, codecContext.height);
                 foreach (var packet in reader.Packets)
                 {
-                    if (reader[packet.StreamIndex].CanRead)
+                    foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
                     {
-                        foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
-                        {
-                            // TODO: converter to bgr24 data
-                            var avframeData = frame.ToArray();
-                        }
+                        // TODO: converter to bgr24 data
+                        var avframeData = frame.ToArray();
                     }
                 }
             }
