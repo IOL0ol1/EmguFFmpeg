@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace EmguFFmpeg
 {
@@ -14,8 +15,8 @@ namespace EmguFFmpeg
             pStream = stream;
         }
 
-        public bool CanRead => Codec == null ? false : Codec.IsDecoder;
-        public bool CanWrite => Codec == null ? false : Codec.IsEncoder;
+        public bool HasDecoder => Codec == null ? false : Codec.IsDecoder;
+        public bool HasEncoder => Codec == null ? false : Codec.IsEncoder;
 
         public AVRational TimeBase
         {
@@ -47,22 +48,39 @@ namespace EmguFFmpeg
             set => pStream->cur_dts = value;
         }
 
-        public AVStream Stream => *pStream;
+        public AVStream Stream => pStream == null ? throw new NullReferenceException() : *pStream;
+
         public int Index => pStream->index;
 
+        /// <summary>
+        /// Read a fram from <see cref="MediaPacket"/>
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <returns></returns>
         public IEnumerable<MediaFrame> ReadFrame(MediaPacket packet)
         {
-            if (!CanRead)
-                throw new NotSupportedException();
+            if (!HasDecoder)
+                yield break;
             if (packet.StreamIndex != Index)
-                throw new ArgumentException();
-            return (Codec as MediaDecode).DecodePacket(packet);
+                yield break;
+            foreach (var item in (Codec as MediaDecode).DecodePacket(packet))
+            {
+                yield return item;
+            }
         }
 
+        /// <summary>
+        /// Write a fram by <see cref="Codec"/>.
+        /// <para><see cref="MediaEncode.EncodeFrame(MediaFrame)"/></para>
+        /// <para><see cref="FixPacket(MediaPacket)"/></para>
+        /// </summary>
+        /// <param name="frame"></param>
+        /// <exception cref="FFmpegException"/>
+        /// <returns></returns>
         public IEnumerable<MediaPacket> WriteFrame(MediaFrame frame)
         {
-            if (!CanWrite)
-                throw new NotSupportedException();
+            if (!HasEncoder)
+                throw new FFmpegException(-21);
             foreach (var packet in (Codec as MediaEncode).EncodeFrame(frame))
             {
                 FixPacket(packet);
