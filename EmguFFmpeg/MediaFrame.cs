@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
@@ -52,7 +51,7 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <returns></returns>
-        public byte[][] ToArray()
+        public byte[][] GetData()
         {
             List<byte[]> result = new List<byte[]>();
             IntPtr intPtr;
@@ -272,7 +271,7 @@ namespace EmguFFmpeg
 
 #if NETFRAMEWORK
 
-        public Bitmap ToBitmap()
+        public System.Drawing.Bitmap ToBitmap()
         {
             var width = pFrame->width;
             var height = pFrame->height;
@@ -282,19 +281,19 @@ namespace EmguFFmpeg
             switch (format)
             {
                 case AVPixelFormat.AV_PIX_FMT_BGRA:
-                    return new Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format32bppArgb, (IntPtr)data[0]);
+                    return new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format32bppArgb, (IntPtr)data[0]);
 
                 case AVPixelFormat.AV_PIX_FMT_BGR24:
-                    return new Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format24bppRgb, (IntPtr)data[0]);
+                    return new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format24bppRgb, (IntPtr)data[0]);
 
                 case AVPixelFormat.AV_PIX_FMT_GRAY8:
-                    return new Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format8bppIndexed, (IntPtr)data[0]);
+                    return new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format8bppIndexed, (IntPtr)data[0]);
 
                 case AVPixelFormat.AV_PIX_FMT_BGR0:
-                    return new Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format32bppRgb, (IntPtr)data[0]);
+                    return new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format32bppRgb, (IntPtr)data[0]);
 
                 default:
-                    throw new NotSupportedException(format.ToString());
+                    throw new FFmpegException(ffmpeg.AVERROR(ffmpeg.EINVAL));
             }
         }
 
@@ -316,9 +315,9 @@ namespace EmguFFmpeg
         /// Required buffer size alignment. If equal to 0, alignment will be chosen automatically for
         /// the current CPU. It is highly recommended to pass 0 here unless you know what you are doing.
         /// </param>
-        public AudioFrame(AVSampleFormat format, ulong channelLayout, int nbSamples, int sampleRate = 0, int align = 0) : base()
+        public AudioFrame(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0) : base()
         {
-            AllocBuffer(format, channelLayout, nbSamples, sampleRate, align);
+            AllocBuffer(format, (ulong)channelLayout, nbSamples, sampleRate, align);
         }
 
         public AudioFrame(AVSampleFormat format, int channels, int nbSamples, int sampleRate = 0, int align = 0) : base()
@@ -341,10 +340,10 @@ namespace EmguFFmpeg
             AllocBuffer(format, (ulong)ffmpeg.av_get_default_channel_layout(channels), nbSamples, sampleRate, align);
         }
 
-        public void Init(AVSampleFormat format, ulong channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
+        public void Init(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
         {
             Clear();
-            AllocBuffer(format, channelLayout, nbSamples, sampleRate, align);
+            AllocBuffer(format, (ulong)channelLayout, nbSamples, sampleRate, align);
         }
 
         public byte[][] ToSamples()

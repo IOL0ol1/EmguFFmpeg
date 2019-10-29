@@ -30,7 +30,7 @@ namespace EmguFFmpeg.Example
                     foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
                     {
                         // TODO: converter to bgr24 data
-                        var avframeData = frame.ToArray();
+                        var avframeData = frame.GetData();
                     }
                 }
             }

@@ -48,7 +48,7 @@ namespace EmguFFmpeg
             set => pStream->cur_dts = value;
         }
 
-        public AVStream Stream => pStream == null ? throw new NullReferenceException() : *pStream;
+        public AVStream Stream => *pStream;
 
         public int Index => pStream->index;
 
@@ -80,7 +80,7 @@ namespace EmguFFmpeg
         public IEnumerable<MediaPacket> WriteFrame(MediaFrame frame)
         {
             if (!HasEncoder)
-                throw new FFmpegException(-21);
+                throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
             foreach (var packet in (Codec as MediaEncode).EncodeFrame(frame))
             {
                 FixPacket(packet);

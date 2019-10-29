@@ -84,7 +84,7 @@ namespace EmguFFmpeg
         public int WritePacket(MediaPacket packet)
         {
             int ret = ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
-            packet.Wipe();
+            packet.Clear();
             return ret;
         }
 

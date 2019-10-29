@@ -14,9 +14,6 @@ namespace EmguFFmpeg.Example
             FFmpegHelper.SetupLogging();
             Console.WriteLine("Hello FFmpeg!");
 
-            int a = ffmpeg.AVERROR(ffmpeg.AVERROR_DECODER_NOT_FOUND);
-            FFmpegException.GetErrorString(a);
-
             // No media files provided
             new List<IExample>()
             {

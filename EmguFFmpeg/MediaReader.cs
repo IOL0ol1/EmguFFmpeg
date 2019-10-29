@@ -57,8 +57,10 @@ namespace EmguFFmpeg
                     do
                     {
                         ret = ReadPacket(packet);
+                        if (ret < 0 && ret != ffmpeg.AVERROR_EOF)
+                            ret.ThrowExceptionIfError();
                         yield return packet;
-                        packet.Wipe();
+                        packet.Clear();
                     } while (ret >= 0);
                 }
             }

@@ -22,10 +22,10 @@ namespace EmguFFmpeg.Example
                     // audio maybe have one more stream, e.g.: 0 is mp3 audio, 1 is mpeg cover
                     foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
                     {
-                        // this is origin copy from AVFrame.data
+                        // This is a copy to managed memory from AVFrame.data
                         // NOTE: memory alignment causes it maybe longer than valid data.
                         // TODO: add converter to convert other format.
-                        var avframeData = frame.ToArray();
+                        var avframeData = frame.GetData();
                     }
                 }
             }

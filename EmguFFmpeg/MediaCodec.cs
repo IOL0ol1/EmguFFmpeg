@@ -280,7 +280,7 @@ namespace EmguFFmpeg
                 AVCodec* p;
                 while ((p = ffmpeg.av_codec_iterate(&i)) != null)
                 {
-                    if (ffmpeg.av_codec_is_decoder(p) > 0)
+                    if (ffmpeg.av_codec_is_decoder(p) != 0)
                         result.Add(new MediaDecode(p));
                 }
 
@@ -303,6 +303,11 @@ namespace EmguFFmpeg
             MediaEncode encode = new MediaEncode(codecName);
             encode.Initialize(setBeforeOpen, flags, opts);
             return encode;
+        }
+
+        public static MediaEncode CreateVideoEncode(OutFormat oformat, int width, int height, int fps, long bitRate = 0, AVPixelFormat format = AVPixelFormat.AV_PIX_FMT_NONE)
+        {
+            return CreateVideoEncode(oformat.VideoCodec, oformat.Flags, width, height, fps, bitRate, format);
         }
 
         /// <summary>
@@ -336,6 +341,21 @@ namespace EmguFFmpeg
                 if (bitRate >= 0)
                     pCodecContext->bit_rate = bitRate;
             });
+        }
+
+        public static MediaEncode CreateAudioEncode(OutFormat Oformat, AVChannelLayout channelLayout, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        {
+            return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, channelLayout, sampleRate, bitRate, format);
+        }
+
+        public static MediaEncode CreateAudioEncode(OutFormat Oformat, int channels, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        {
+            return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, (AVChannelLayout)ffmpeg.av_get_default_channel_layout(channels), sampleRate, bitRate, format);
+        }
+
+        public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, int channels, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        {
+            return CreateAudioEncode(audioCodec, flags, (AVChannelLayout)ffmpeg.av_get_default_channel_layout(channels), sampleRate, bitRate, format);
         }
 
         /// <summary>
@@ -382,11 +402,6 @@ namespace EmguFFmpeg
                 if (bitRate >= 0)
                     pCodecContext->bit_rate = bitRate;
             });
-        }
-
-        public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, int channels, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
-        {
-            return CreateAudioEncode(audioCodec, flags, (AVChannelLayout)ffmpeg.av_get_default_channel_layout(channels), sampleRate, bitRate, format);
         }
 
         /// <summary>
@@ -490,7 +505,7 @@ namespace EmguFFmpeg
                 AVCodec* p;
                 while ((p = ffmpeg.av_codec_iterate(&i)) != null)
                 {
-                    if (ffmpeg.av_codec_is_encoder(p) > 0)
+                    if (ffmpeg.av_codec_is_encoder(p) != 0)
                         result.Add(new MediaEncode(p));
                 }
 
