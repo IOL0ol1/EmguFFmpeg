@@ -1,6 +1,7 @@
 ﻿using FFmpeg.AutoGen;
 
 using System;
+using System.Runtime.Serialization;
 
 namespace EmguFFmpeg
 {
@@ -30,7 +31,7 @@ namespace EmguFFmpeg
             return ((IntPtr)buffer).PtrToStringUTF8();
         }
 
-        protected FFmpegException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext)
+        protected FFmpegException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         { }
     }
