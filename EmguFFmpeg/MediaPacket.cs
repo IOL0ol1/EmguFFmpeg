@@ -4,7 +4,7 @@ using System;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaPacket : IDisposable
+    public unsafe class MediaPacket : IDisposable, ICloneable
     {
         protected AVPacket* pPacket;
 
@@ -72,9 +72,35 @@ namespace EmguFFmpeg
         /// <summary>
         /// <see cref="ffmpeg.av_packet_unref(AVPacket*)"/>
         /// </summary>
-        public void Wipe()
+        public void Clear()
         {
             ffmpeg.av_packet_unref(pPacket);
+        }
+
+        /// <summary>
+        /// Deep copy
+        /// <para><see cref="ffmpeg.av_packet_ref(AVPacket*, AVPacket*)"/></para>
+        /// <para><see cref="ffmpeg.av_packet_copy_props(AVPacket*, AVPacket*)"/></para>
+        /// </summary>
+        /// <exception cref="FFmpegException"/>
+        /// <returns></returns>
+        public MediaPacket Clone()
+        {
+            MediaPacket packet = new MediaPacket();
+            AVPacket* dstpkt = packet;
+            int ret;
+            if ((ret = ffmpeg.av_packet_ref(dstpkt, pPacket)) < 0)
+            {
+                ffmpeg.av_packet_free(&dstpkt);
+                throw new FFmpegException(ret);
+            }
+            ffmpeg.av_packet_copy_props(dstpkt, pPacket).ThrowExceptionIfError();
+            return packet;
+        }
+
+        object ICloneable.Clone()
+        {
+            return Clone();
         }
 
         #region IDisposable Support

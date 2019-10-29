@@ -526,7 +526,7 @@
             <typeparam name="T"></typeparam>
             <returns></returns>
         </member>
-        <member name="M:EmguFFmpeg.MediaFrame.ToArray">
+        <member name="M:EmguFFmpeg.MediaFrame.GetData">
             <summary>
             Get managed copy of <see cref="F:FFmpeg.AutoGen.AVFrame.data"/> by <see cref="F:FFmpeg.AutoGen.AVFrame.linesize"/>
             <para>
@@ -535,7 +535,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:EmguFFmpeg.AudioFrame.#ctor(FFmpeg.AutoGen.AVSampleFormat,System.UInt64,System.Int32,System.Int32,System.Int32)">
+        <member name="M:EmguFFmpeg.AudioFrame.#ctor(FFmpeg.AutoGen.AVSampleFormat,EmguFFmpeg.AVChannelLayout,System.Int32,System.Int32,System.Int32)">
             <summary>
             </summary>
             <param name="format"><see cref="F:FFmpeg.AutoGen.AVCodecContext.sample_fmt"/></param>
@@ -547,10 +547,19 @@
             the current CPU. It is highly recommended to pass 0 here unless you know what you are doing.
             </param>
         </member>
-        <member name="M:EmguFFmpeg.MediaPacket.Wipe">
+        <member name="M:EmguFFmpeg.MediaPacket.Clear">
             <summary>
             <see cref="M:FFmpeg.AutoGen.ffmpeg.av_packet_unref(FFmpeg.AutoGen.AVPacket*)"/>
             </summary>
+        </member>
+        <member name="M:EmguFFmpeg.MediaPacket.Clone">
+            <summary>
+            Deep copy
+            <para><see cref="M:FFmpeg.AutoGen.ffmpeg.av_packet_ref(FFmpeg.AutoGen.AVPacket*,FFmpeg.AutoGen.AVPacket*)"/></para>
+            <para><see cref="M:FFmpeg.AutoGen.ffmpeg.av_packet_copy_props(FFmpeg.AutoGen.AVPacket*,FFmpeg.AutoGen.AVPacket*)"/></para>
+            </summary>
+            <exception cref="T:EmguFFmpeg.FFmpegException"/>
+            <returns></returns>
         </member>
         <member name="M:EmguFFmpeg.MediaStream.ReadFrame(EmguFFmpeg.MediaPacket)">
             <summary>
