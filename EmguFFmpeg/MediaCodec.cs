@@ -37,17 +37,13 @@ namespace EmguFFmpeg
             {
                 if (pCodec == null) return null;
                 List<AVCodecHWConfig> result = new List<AVCodecHWConfig>();
-                if (ffmpeg.avcodec_get_hw_config(pCodec, 0) != null)
+                for (int i = 0; ; i++)
                 {
-                    for (int i = 0; ; i++)
-                    {
-                        AVCodecHWConfig* config = ffmpeg.avcodec_get_hw_config(pCodec, i);
-                        if (config == null)
-                            break;
-                        result.Add(*config);
-                    }
+                    AVCodecHWConfig* config = ffmpeg.avcodec_get_hw_config(pCodec, i);
+                    if (config == null)
+                        return result;
+                    result.Add(*config);
                 }
-                return result;
             }
         }
 
