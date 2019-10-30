@@ -32,10 +32,14 @@ namespace EmguFFmpeg
             while ((oformat = ffmpeg.av_muxer_iterate(&ofmtOpaque)) != null)
             {
                 OutFormat format = new OutFormat(oformat);
-                if (format.Name == name.ToLower())
+                string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var item in names)
                 {
-                    pOutputFormat = oformat;
-                    return;
+                    if (item == name.ToLower())
+                    {
+                        pOutputFormat = oformat;
+                        return;
+                    }
                 }
             }
             throw new ArgumentException();
@@ -113,10 +117,15 @@ namespace EmguFFmpeg
             while ((iformat = ffmpeg.av_demuxer_iterate(&ifmtOpaque)) != null)
             {
                 InFormat format = new InFormat(iformat);
-                if (format.Name == name.ToLower())
+                // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
+                string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var item in names)
                 {
-                    pInputFormat = iformat;
-                    return;
+                    if (item == name.ToLower())
+                    {
+                        pInputFormat = iformat;
+                        return;
+                    }
                 }
             }
             throw new ArgumentException();
