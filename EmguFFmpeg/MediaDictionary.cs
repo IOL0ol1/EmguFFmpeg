@@ -47,21 +47,18 @@ namespace EmguFFmpeg
             return value.ppDictionary;
         }
 
-        private List<KeyValuePair<string, string>> keyValues
+        public static IReadOnlyList<KeyValuePair<string, string>> GetKeyValues(AVDictionary* dict)
         {
-            get
+            List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
+            AVDictionaryEntry* t = null;
+            while ((t = ffmpeg.av_dict_get(dict, "", t, (int)(DictFlags.AV_DICT_IGNORE_SUFFIX))) != null)
             {
-                List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
-                AVDictionaryEntry* t = null;
-                while ((t = ffmpeg.av_dict_get(*ppDictionary, "", t, (int)(DictFlags.AV_DICT_IGNORE_SUFFIX))) != null)
-                {
-                    keyValuePairs.Add((*t).ToKeyValuePair());
-                }
-                return keyValuePairs;
+                keyValuePairs.Add((*t).ToKeyValuePair());
             }
+            return keyValuePairs;
         }
 
-        public IReadOnlyList<KeyValuePair<string, string>> KeyValues => keyValues;
+        public IReadOnlyList<KeyValuePair<string, string>> KeyValues => GetKeyValues(*ppDictionary);
 
         public int Count => ffmpeg.av_dict_count(*ppDictionary);
 
@@ -70,19 +67,14 @@ namespace EmguFFmpeg
             ffmpeg.av_dict_free(ppDictionary);
         }
 
-        public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex)
-        {
-            ((IList<KeyValuePair<string, string>>)keyValues).CopyTo(array, arrayIndex);
-        }
-
         public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
         {
-            return ((IList<KeyValuePair<string, string>>)keyValues).GetEnumerator();
+            return KeyValues.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IList<KeyValuePair<string, string>>)keyValues).GetEnumerator();
+            return KeyValues.GetEnumerator();
         }
 
         public void Add(string key, string value, DictFlags flags = DefaultFlags)
@@ -124,9 +116,9 @@ namespace EmguFFmpeg
             set => Add(key, value, DictFlags.AV_DICT_MATCH_CASE);
         }
 
-        public IEnumerable<string> Keys => keyValues.Select(_ => _.Key);
+        public IEnumerable<string> Keys => KeyValues.Select(_ => _.Key);
 
-        public IEnumerable<string> Values => keyValues.Select(_ => _.Value);
+        public IEnumerable<string> Values => KeyValues.Select(_ => _.Value);
 
         public bool ContainsKey(string key)
         {
