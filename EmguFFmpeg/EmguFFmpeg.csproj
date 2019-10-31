@@ -16,7 +16,7 @@
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegchasrp ffmpegnet emgu</PackageTags>
     <PackageReleaseNotes>A FFmpeg.AutoGen Warpper Library.</PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|x64'">
