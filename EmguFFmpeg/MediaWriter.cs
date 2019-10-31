@@ -1,6 +1,7 @@
 ﻿using FFmpeg.AutoGen;
 
 using System;
+using System.IO;
 using System.Linq;
 
 namespace EmguFFmpeg
@@ -8,6 +9,21 @@ namespace EmguFFmpeg
     public unsafe class MediaWriter : MediaMux
     {
         public new OutFormat Format => base.Format as OutFormat;
+
+        public MediaWriter(Stream stream, OutFormat oformat, MediaDictionary options = null)
+        {
+            baseStream = stream;
+            avio_Alloc_Context_Read_Packet = ReadFunc;
+            avio_Alloc_Context_Write_Packet = WriteFunc;
+            avio_Alloc_Context_Seek = SeekFunc;
+            pFormatContext = ffmpeg.avformat_alloc_context();
+            pIOContext = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc(bufferLength), bufferLength, 1, null,
+                avio_Alloc_Context_Read_Packet, avio_Alloc_Context_Write_Packet, avio_Alloc_Context_Seek);
+            pFormatContext->oformat = oformat;
+            base.Format = oformat;
+            if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
+                pFormatContext->pb = pIOContext;
+        }
 
         /// <summary>
         /// <para><see cref="ffmpeg.avformat_alloc_output_context2(AVFormatContext**, AVOutputFormat*, string, string)"/></para>
@@ -92,6 +108,7 @@ namespace EmguFFmpeg
         /// send null frame and receive packet to flush encoder cache.
         /// <para><see cref="MediaStream.WriteFrame(MediaFrame)"/></para>
         /// <para><see cref="WritePacket(MediaPacket)"/></para>
+        /// <para><see cref="ffmpeg.av_write_trailer(AVFormatContext*)"/></para>
         /// </summary>
         public void FlushMuxer()
         {
@@ -107,12 +124,12 @@ namespace EmguFFmpeg
                 }
                 catch (FFmpegException) { }
             }
+            ffmpeg.av_write_trailer(pFormatContext);
         }
 
         #region IDisposable
 
         /// <summary>
-        /// <para><see cref="ffmpeg.av_write_trailer(AVFormatContext*)"/></para>
         /// <para><see cref="ffmpeg.avio_close(AVIOContext*)"/></para>
         /// <para><see cref="ffmpeg.avformat_free_context(AVFormatContext*)"/></para>
         /// </summary>
@@ -123,15 +140,28 @@ namespace EmguFFmpeg
             {
                 try
                 {
-                    ffmpeg.av_write_trailer(pFormatContext);
                     // Close the output file.
                     if ((pFormatContext->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                        ffmpeg.avio_closep(&pFormatContext->pb);
+                    {
+                        if (baseStream == null)
+                        {
+                            ffmpeg.avio_closep(&pFormatContext->pb);
+                        }
+                        else
+                        {
+                            ffmpeg.avio_context_free(&pFormatContext->pb);
+                            baseStream.Dispose();
+                        }
+                    }
                 }
                 finally
                 {
                     ffmpeg.avformat_free_context(pFormatContext);
+                    avio_Alloc_Context_Read_Packet = null;
+                    avio_Alloc_Context_Write_Packet = null;
+                    avio_Alloc_Context_Seek = null;
                     pFormatContext = null;
+                    pIOContext = null;
                 }
             }
         }

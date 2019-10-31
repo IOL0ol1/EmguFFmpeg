@@ -641,11 +641,11 @@
             send null frame and receive packet to flush encoder cache.
             <para><see cref="M:EmguFFmpeg.MediaStream.WriteFrame(EmguFFmpeg.MediaFrame)"/></para>
             <para><see cref="M:EmguFFmpeg.MediaWriter.WritePacket(EmguFFmpeg.MediaPacket)"/></para>
+            <para><see cref="M:FFmpeg.AutoGen.ffmpeg.av_write_trailer(FFmpeg.AutoGen.AVFormatContext*)"/></para>
             </summary>
         </member>
         <member name="M:EmguFFmpeg.MediaWriter.Dispose(System.Boolean)">
             <summary>
-            <para><see cref="M:FFmpeg.AutoGen.ffmpeg.av_write_trailer(FFmpeg.AutoGen.AVFormatContext*)"/></para>
             <para><see cref="M:FFmpeg.AutoGen.ffmpeg.avio_close(FFmpeg.AutoGen.AVIOContext*)"/></para>
             <para><see cref="M:FFmpeg.AutoGen.ffmpeg.avformat_free_context(FFmpeg.AutoGen.AVFormatContext*)"/></para>
             </summary>
