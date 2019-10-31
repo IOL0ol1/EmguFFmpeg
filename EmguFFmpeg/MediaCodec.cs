@@ -20,8 +20,8 @@ namespace EmguFFmpeg
 
         public abstract void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null);
 
-        public AVCodec AVCodec => pCodec == null ? throw new NullReferenceException() : *pCodec;
-        public AVCodecContext AVCodecContext => pCodecContext == null ? throw new NullReferenceException() : *pCodecContext;
+        public AVCodec AVCodec => pCodec == null ? throw new FFmpegException(new NullReferenceException()) : *pCodec;
+        public AVCodecContext AVCodecContext => pCodecContext == null ? throw new FFmpegException(new NullReferenceException()) : *pCodecContext;
         public AVMediaType Type => pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type;
         public AVCodecID Id => pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id;
         public string Name => pCodec == null ? null : ((IntPtr)pCodec->name).PtrToStringUTF8();
@@ -323,12 +323,12 @@ namespace EmguFFmpeg
             {
                 AVCodecContext* pCodecContext = _;
                 if (_.SupportedPixelFmts.Count() <= 0)
-                    throw new ArgumentException(videoCodec.ToString());
+                    throw new FFmpegException(new ArgumentException(videoCodec.ToString()));
                 // check or set format
                 if (format == AVPixelFormat.AV_PIX_FMT_NONE)
                     format = _.SupportedPixelFmts[0];
                 else if (_.SupportedPixelFmts.Where(__ => __ == format).Count() <= 0)
-                    throw new NotSupportedException(format.ToString());
+                    throw new FFmpegException(new NotSupportedException(format.ToString()));
                 pCodecContext->width = width;
                 pCodecContext->height = height;
                 pCodecContext->time_base = new AVRational { num = 1, den = fps };
@@ -373,23 +373,23 @@ namespace EmguFFmpeg
             {
                 AVCodecContext* pCodecContext = _;
                 if (_.SupportedSampelFmts.Count() <= 0)
-                    throw new ArgumentException(audioCodec.ToString());
+                    throw new FFmpegException(new ArgumentException(audioCodec.ToString()));
                 if (_.SupportedSampleRates.Count <= 0)
-                    throw new ArgumentException(audioCodec.ToString());
+                    throw new FFmpegException(new ArgumentException(audioCodec.ToString()));
                 // check or set sampleRate
                 if (sampleRate <= 0)
                     sampleRate = _.SupportedSampleRates[0];
                 else if (_.SupportedSampleRates.Where(__ => __ == sampleRate).Count() <= 0)
-                    throw new NotSupportedException(sampleRate.ToString());
+                    throw new FFmpegException(new NotSupportedException(sampleRate.ToString()));
                 // check or set format
                 if (format == AVSampleFormat.AV_SAMPLE_FMT_NONE)
                     format = _.SupportedSampelFmts[0];
                 else if (_.SupportedSampelFmts.Where(__ => __ == format).Count() <= 0)
-                    throw new NotSupportedException(format.ToString());
+                    throw new FFmpegException(new NotSupportedException(format.ToString()));
                 // check channelLayout when SupportedChannelLayout.Count() > 0
                 if (_.SupportedChannelLayout.Count() > 0
                      && _.SupportedChannelLayout.Where(__ => __ == (ulong)channelLayout).Count() <= 0)
-                    throw new NotSupportedException(channelLayout.ToString());
+                    throw new FFmpegException(new NotSupportedException(channelLayout.ToString()));
                 pCodecContext->sample_rate = sampleRate;
                 pCodecContext->channel_layout = (ulong)channelLayout;
                 pCodecContext->sample_fmt = format;

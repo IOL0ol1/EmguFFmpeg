@@ -24,6 +24,10 @@ namespace EmguFFmpeg
         {
         }
 
+        public FFmpegException(Exception exception) : base($"ffmpeg error {exception.GetType()} {exception.Message}")
+        {
+        }
+
         public static unsafe string GetErrorString(int errorCode)
         {
             byte* buffer = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE];

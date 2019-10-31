@@ -9,7 +9,7 @@ namespace EmguFFmpeg
     {
         public virtual MediaFrame Convert(MediaFrame frame)
         {
-            throw new NotImplementedException();
+            throw new FFmpegException(new NotImplementedException());
         }
 
         #region IDisposable Support
@@ -51,7 +51,7 @@ namespace EmguFFmpeg
         public static VideoFrameConverter CreateConverter(MediaCodec dstEncode, int flag = ffmpeg.SWS_BILINEAR)
         {
             if (dstEncode as MediaEncode == null || dstEncode.AVCodecContext.codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO)
-                throw new ArgumentException();
+                throw new FFmpegException(new ArgumentException());
             return new VideoFrameConverter(dstEncode.AVCodecContext.pix_fmt, dstEncode.AVCodecContext.width, dstEncode.AVCodecContext.height, flag);
         }
 
@@ -123,7 +123,7 @@ namespace EmguFFmpeg
         public static AudioFrameConverter CreateConverter(MediaCodec dstEncode)
         {
             if (dstEncode as MediaEncode == null || dstEncode.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
-                throw new ArgumentException();
+                throw new FFmpegException(new ArgumentException());
             return new AudioFrameConverter(dstEncode.AVCodecContext.sample_fmt, dstEncode.AVCodecContext.channel_layout, dstEncode.AVCodecContext.sample_rate);
         }
 
@@ -182,7 +182,7 @@ namespace EmguFFmpeg
 
         public IEnumerator<AudioFrame> Convert(MediaFrame srcFrame, int dstSample)
         {
-            throw new NotImplementedException();
+            throw new FFmpegException(new NotImplementedException());
         }
 
         #region IDisposable Support

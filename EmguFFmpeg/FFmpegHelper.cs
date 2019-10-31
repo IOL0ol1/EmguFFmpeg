@@ -41,9 +41,9 @@ namespace EmguFFmpeg
         {
             AVRational dst = new AVRational() { den = src.num, num = src.den };
             if (!srcZeroAllow && src.den == 0)
-                throw new ArgumentException($"{nameof(srcZeroAllow)} == {srcZeroAllow} && src.den == {src.den}");
+                throw new FFmpegException(new ArgumentException($"{nameof(srcZeroAllow)} == {srcZeroAllow} && src.den == {src.den}"));
             if (!dstZeroAllow && dst.den == 0)
-                throw new ArgumentException($"{nameof(dstZeroAllow)} == {dstZeroAllow} && dst.den == {dst.den}");
+                throw new FFmpegException(new ArgumentException($"{nameof(dstZeroAllow)} == {dstZeroAllow} && dst.den == {dst.den}"));
             return dst;
         }
 
@@ -104,7 +104,7 @@ namespace EmguFFmpeg
         ///    </item>
         /// </list>
         /// </param>
-        public static unsafe void SetupLogging(int logLevel = ffmpeg.AV_LOG_MAX_OFFSET, int logFlags = ffmpeg.AV_LOG_PRINT_LEVEL)
+        public static unsafe void SetupLogging(int logLevel = ffmpeg.AV_LOG_VERBOSE, int logFlags = ffmpeg.AV_LOG_PRINT_LEVEL)
         {
             ffmpeg.av_log_set_level(logLevel);
             ffmpeg.av_log_set_flags(logFlags);

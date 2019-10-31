@@ -20,13 +20,14 @@ namespace EmguFFmpeg
 
         internal OutFormat(AVOutputFormat* oformat)
         {
+            if (oformat == null) throw new FFmpegException(new NullReferenceException());
             pOutputFormat = oformat;
         }
 
         public OutFormat(string name)
         {
             if (string.IsNullOrEmpty(name))
-                throw new ArgumentNullException();
+                throw new FFmpegException(new ArgumentNullException());
             void* ofmtOpaque = null;
             AVOutputFormat* oformat;
             while ((oformat = ffmpeg.av_muxer_iterate(&ofmtOpaque)) != null)
@@ -42,7 +43,7 @@ namespace EmguFFmpeg
                     }
                 }
             }
-            throw new ArgumentException();
+            throw new FFmpegException(new NotSupportedException());
         }
 
         /// <summary>
@@ -105,13 +106,14 @@ namespace EmguFFmpeg
 
         internal InFormat(AVInputFormat* iformat)
         {
+            if (iformat == null) throw new FFmpegException(new NullReferenceException());
             pInputFormat = iformat;
         }
 
         public InFormat(string name)
         {
             if (string.IsNullOrEmpty(name))
-                throw new ArgumentNullException();
+                throw new FFmpegException(new ArgumentNullException());
             void* ifmtOpaque = null;
             AVInputFormat* iformat;
             while ((iformat = ffmpeg.av_demuxer_iterate(&ifmtOpaque)) != null)
@@ -128,7 +130,7 @@ namespace EmguFFmpeg
                     }
                 }
             }
-            throw new ArgumentException();
+            throw new FFmpegException(new NotSupportedException());
         }
 
         public static IReadOnlyList<InFormat> Formats
