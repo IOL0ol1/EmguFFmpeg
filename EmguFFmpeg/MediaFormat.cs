@@ -12,6 +12,11 @@ namespace EmguFFmpeg
         public abstract string LongName { get; }
         public abstract string Extensions { get; }
         public abstract string MimeType { get; }
+
+        public override string ToString()
+        {
+            return $"Name: {Name}, Extension: {Extensions}, MimeType: {MimeType}, LongName: {LongName}";
+        }
     }
 
     public unsafe class OutFormat : MediaFormat
@@ -43,7 +48,7 @@ namespace EmguFFmpeg
                     }
                 }
             }
-            throw new FFmpegException(new NotSupportedException());
+            throw new FFmpegException(new ArgumentException());
         }
 
         /// <summary>
@@ -130,7 +135,7 @@ namespace EmguFFmpeg
                     }
                 }
             }
-            throw new FFmpegException(new NotSupportedException());
+            throw new FFmpegException(new ArgumentException());
         }
 
         public static IReadOnlyList<InFormat> Formats
