@@ -1,6 +1,8 @@
 ﻿using FFmpeg.AutoGen;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 
 namespace EmguFFmpeg.Example
@@ -10,7 +12,7 @@ namespace EmguFFmpeg.Example
         private static void Main(string[] args)
         {
             // copy ffmpeg binarys to ./bin
-            FFmpegHelper.RegisterBinaries("bin");
+            FFmpegHelper.RegisterBinaries();
             FFmpegHelper.SetupLogging();
             Console.WriteLine("Hello FFmpeg!");
 
