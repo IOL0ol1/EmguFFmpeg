@@ -17,12 +17,11 @@ namespace EmguFFmpeg
             avio_Alloc_Context_Write_Packet = WriteFunc;
             avio_Alloc_Context_Seek = SeekFunc;
             pFormatContext = ffmpeg.avformat_alloc_context();
-            pIOContext = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc(bufferLength), bufferLength, 1, null,
-                avio_Alloc_Context_Read_Packet, avio_Alloc_Context_Write_Packet, avio_Alloc_Context_Seek);
             pFormatContext->oformat = oformat;
             base.Format = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = pIOContext;
+                pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc(bufferLength), bufferLength, 1, null,
+                    avio_Alloc_Context_Read_Packet, avio_Alloc_Context_Write_Packet, avio_Alloc_Context_Seek);
         }
 
         /// <summary>
@@ -149,8 +148,9 @@ namespace EmguFFmpeg
                         }
                         else
                         {
-                            ffmpeg.avio_context_free(&pFormatContext->pb);
                             baseStream.Dispose();
+                            ffmpeg.av_freep(&pFormatContext->pb->buffer);
+                            ffmpeg.avio_context_free(&pFormatContext->pb);
                         }
                     }
                 }
@@ -161,7 +161,6 @@ namespace EmguFFmpeg
                     avio_Alloc_Context_Write_Packet = null;
                     avio_Alloc_Context_Seek = null;
                     pFormatContext = null;
-                    pIOContext = null;
                 }
             }
         }

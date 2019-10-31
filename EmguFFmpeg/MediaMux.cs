@@ -25,7 +25,6 @@ namespace EmguFFmpeg
         #region Stream Support
 
         protected Stream baseStream;
-        protected AVIOContext* pIOContext = null;
         protected const int bufferLength = 4096;
         protected readonly byte[] buffer = new byte[bufferLength];
         protected avio_alloc_context_read_packet avio_Alloc_Context_Read_Packet;

@@ -16,9 +16,8 @@ namespace EmguFFmpeg
             avio_Alloc_Context_Read_Packet = ReadFunc;
             avio_Alloc_Context_Seek = SeekFunc;
             pFormatContext = ffmpeg.avformat_alloc_context();
-            pIOContext = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc(bufferLength), bufferLength, 0, null,
+            pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc(bufferLength), bufferLength, 0, null,
                 avio_Alloc_Context_Read_Packet, null, avio_Alloc_Context_Seek);
-            pFormatContext->pb = pIOContext;
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
                 ffmpeg.avformat_open_input(ppFormatContext, null, iformat, options).ThrowExceptionIfError();
@@ -109,17 +108,23 @@ namespace EmguFFmpeg
             {
                 fixed (AVFormatContext** ppFormatContext = &pFormatContext)
                 {
-                    if (baseStream != null)
+                    try
                     {
-                        ffmpeg.avio_context_free(&pFormatContext->pb);
-                        baseStream.Dispose();
+                        if (baseStream != null)
+                        {
+                            baseStream.Dispose();
+                            ffmpeg.av_freep(&pFormatContext->pb->buffer);
+                            ffmpeg.avio_context_free(&pFormatContext->pb);
+                        }
                     }
-                    ffmpeg.avformat_close_input(ppFormatContext);
-                    avio_Alloc_Context_Read_Packet = null;
-                    avio_Alloc_Context_Write_Packet = null;
-                    avio_Alloc_Context_Seek = null;
-                    pFormatContext = null;
-                    pIOContext = null;
+                    finally
+                    {
+                        ffmpeg.avformat_close_input(ppFormatContext);
+                        avio_Alloc_Context_Read_Packet = null;
+                        avio_Alloc_Context_Write_Packet = null;
+                        avio_Alloc_Context_Seek = null;
+                        pFormatContext = null;
+                    }
                 }
             }
         }
