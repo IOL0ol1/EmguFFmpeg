@@ -38,6 +38,7 @@ namespace EmguFFmpeg
             while ((oformat = ffmpeg.av_muxer_iterate(&ofmtOpaque)) != null)
             {
                 OutFormat format = new OutFormat(oformat);
+                // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
                 string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var item in names)
                 {

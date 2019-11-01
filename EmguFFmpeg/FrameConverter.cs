@@ -37,9 +37,6 @@ namespace EmguFFmpeg
         public new abstract T Convert(MediaFrame frame);
     }
 
-    /// <summary>
-    /// 图像转码器
-    /// </summary>
     public unsafe class VideoFrameConverter : FrameConverter<VideoFrame>
     {
         protected SwsContext* pSwsContext = null;
@@ -110,9 +107,6 @@ namespace EmguFFmpeg
         #endregion
     }
 
-    /// <summary>
-    /// 音频转码器
-    /// </summary>
     public unsafe class AudioFrameConverter : FrameConverter<AudioFrame>
     {
         protected SwrContext* pSwrContext = null;
