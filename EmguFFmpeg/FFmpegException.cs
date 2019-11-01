@@ -24,7 +24,11 @@ namespace EmguFFmpeg
         {
         }
 
-        public FFmpegException(Exception exception) : base($"ffmpeg error {exception.GetType()} {exception.Message}")
+        /// <summary>
+        /// convert exception message
+        /// </summary>
+        /// <param name="exception"></param>
+        public FFmpegException(Exception exception) : this(exception.Message)
         {
         }
 
