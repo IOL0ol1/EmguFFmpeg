@@ -4,7 +4,13 @@
         <name>EmguFFmpeg</name>
     </assembly>
     <members>
-        <member name="M:EmguFFmpeg.FFmpegHelper.SetupLogging(System.Int32,System.Int32)">
+        <member name="M:EmguFFmpeg.FFmpegException.#ctor(System.Exception)">
+            <summary>
+            convert exception message
+            </summary>
+            <param name="exception"></param>
+        </member>
+        <member name="M:EmguFFmpeg.FFmpegHelper.SetupLogging(System.Int32,System.Int32,System.Action{System.String})">
              <summary>
              Set ffmpeg internal log
              </summary>
@@ -62,16 +68,7 @@
                 </item>
              </list>
              </param>
-        </member>
-        <member name="T:EmguFFmpeg.VideoFrameConverter">
-            <summary>
-            图像转码器
-            </summary>
-        </member>
-        <member name="T:EmguFFmpeg.AudioFrameConverter">
-            <summary>
-            音频转码器
-            </summary>
+             <param name="writeLogAction">set <see langword="null"/> to use default log output</param>
         </member>
         <member name="M:EmguFFmpeg.AudioFrameConverter.Convert(EmguFFmpeg.MediaFrame)">
             <summary>

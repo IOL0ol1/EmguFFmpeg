@@ -104,24 +104,31 @@ namespace EmguFFmpeg
         ///    </item>
         /// </list>
         /// </param>
-        public static unsafe void SetupLogging(int logLevel = ffmpeg.AV_LOG_VERBOSE, int logFlags = ffmpeg.AV_LOG_PRINT_LEVEL)
+        /// <param name="writeLogAction">set <see langword="null"/> to use default log output</param>
+        public static unsafe void SetupLogging(int logLevel = ffmpeg.AV_LOG_VERBOSE, int logFlags = ffmpeg.AV_LOG_PRINT_LEVEL, Action<string> writeLogAction = null)
         {
             ffmpeg.av_log_set_level(logLevel);
             ffmpeg.av_log_set_flags(logFlags);
 
-            // do not convert to local function
-            av_log_set_callback_callback logCallback = (p0, level, format, vl) =>
+            if (writeLogAction == null)
             {
-                if (level > ffmpeg.av_log_get_level()) return;
-
-                var lineSize = 1024;
-                var printPrefix = 1;
-                var lineBuffer = stackalloc byte[lineSize];
-                ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
-                Trace.Write(((IntPtr)lineBuffer).PtrToStringUTF8());
-            };
-
+                logCallback = ffmpeg.av_log_default_callback;
+            }
+            else
+            {
+                logCallback = (p0, level, format, vl) =>
+                {
+                    if (level > ffmpeg.av_log_get_level()) return;
+                    var lineSize = 1024;
+                    var printPrefix = 1;
+                    var lineBuffer = stackalloc byte[lineSize];
+                    ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
+                    writeLogAction.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
+                };
+            }
             ffmpeg.av_log_set_callback(logCallback);
         }
+
+        private static unsafe av_log_set_callback_callback logCallback;
     }
 }
