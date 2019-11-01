@@ -9,12 +9,12 @@ A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.
 
 ## HowTo
 
-- Download ffmpeg binarys file.     
+1. Download ffmpeg binarys file.     
 	- Download from [Zeranoe](https://ffmpeg.zeranoe.com/builds/).    
 	- **Copy** from nuget [FFmpeg.Nightly](https://www.nuget.org/packages/FFmpeg.Nightly/) / [FFmpeg.Nightly.LGPL](https://www.nuget.org/packages/FFmpeg.Nightly.LGPL/). 
         - **DO NOT INSTALL** them in c# project. valid only for C++ projects.
-- Install [EmguFFmpeg](https://www.nuget.org/packages/EmguFFmpeg/) nuget packet.    
-- Import namespace:
+2. Install [EmguFFmpeg](https://www.nuget.org/packages/EmguFFmpeg/) nuget packet.    
+3. Import namespace:
 	```csharp
 	using EmguFFmpeg;
 	```
@@ -30,17 +30,19 @@ foreach(var packet in reader.Packets)
 {
     foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
     {
-        // get frame here
+        var data = frame.GetData();
     }
 }
 ```
 
 **Encode**
 ```csharp
+/* create a 60s duration video */
+
 int height = 600;
 int width = 800;
 int fps = 30;
-long lastpts = -1;
+int duration = 60;
 
 // create media writer
 MediaWriter writer = new MediaWriter("output.mp4");
@@ -50,15 +52,20 @@ MediaEncode videoEncode = MediaEncode.CreateVideoEncode(writer.Format.VideoCodec
 writer.AddStream(videoEncode);
 // init writer
 writer.Initialize();
+// create video frame
+VideoFrame videoFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_YUV420P, width, height);
 
 // write 60s duration video
+long lastpts = -1;
 Stopwatch timer = Stopwatch.StartNew();
-for(stopwatch.Elapsed <= TimeSpan.FromSeconds(60)) 
+for(stopwatch.Elapsed <= TimeSpan.FromSeconds(duration)) 
 {
     long curpts = (long)(timeSpan.TotalSeconds * fps);
     if(curpts > lastpts)
     {
-        // TODO: create a videoFrame
+        lastpts = curpts;
+        // TODO: add converter to fill video frame yuv data from bgr24 data
+        // TODO: change WriteFrame interface, add timespan parame
 
         videoFrame.PTS = curpts;
         // write frame, encode to packet and write to writer
@@ -66,7 +73,6 @@ for(stopwatch.Elapsed <= TimeSpan.FromSeconds(60))
         {
             writer.WritePacket(packet);
         }
-        lastpts = curpts;
     }
 }
 
@@ -78,7 +84,6 @@ writer.Dispose();
 ## TODO
 
 - [ ] **Encode audio need to redesign the AudioFrameConverter, maybe also use IEnumable<>.**    
-- [ ] **WriteFrame function will add pts optional parameter.**
 - [ ] Convert MediaFrame data easy with EmguCV Mat/Image etc.
 - [ ] MediaEncode/MediaDecode.Create... function remove flags param.
 - [ ] Add MedaiFilter support.
