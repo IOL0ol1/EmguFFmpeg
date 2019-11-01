@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmguFFmpeg", "EmguFFmpeg\Em
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmguFFmpeg.Example", "EmguFFmpeg.Example\EmguFFmpeg.Example.csproj", "{D8DF27BB-2CCA-45D2-9F34-4B1981EF3D2C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmguFFmpeg.EmguCV", "EmguFFmpeg.EmguCV\EmguFFmpeg.EmguCV.csproj", "{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,18 @@ Global
 		{D8DF27BB-2CCA-45D2-9F34-4B1981EF3D2C}.Release|x64.Build.0 = Release|x64
 		{D8DF27BB-2CCA-45D2-9F34-4B1981EF3D2C}.Release|x86.ActiveCfg = Release|x86
 		{D8DF27BB-2CCA-45D2-9F34-4B1981EF3D2C}.Release|x86.Build.0 = Release|x86
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Debug|x64.ActiveCfg = Debug|x64
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Debug|x64.Build.0 = Debug|x64
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Debug|x86.ActiveCfg = Debug|x86
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Debug|x86.Build.0 = Debug|x86
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Release|x64.ActiveCfg = Release|x64
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Release|x64.Build.0 = Release|x64
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Release|x86.ActiveCfg = Release|x86
+		{1416CFD0-BABC-4A3F-9607-6B8CA14BFB9A}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
