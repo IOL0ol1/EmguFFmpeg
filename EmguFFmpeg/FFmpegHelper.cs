@@ -48,67 +48,15 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Set ffmpeg internal log
+        /// Set ffmpeg log
         /// </summary>
-        /// <param name="logLevel">
-        /// log level
-        /// <list type="bullet">
-        ///    <item>
-        ///        <term>64</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_MAX_OFFSET"/></description>
-        ///    </item>
-        ///    <item>
-        ///        <term>56</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_TRACE"/></description>
-        ///    </item>
-        ///    <item>
-        ///        <term>48</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_DEBUG"/></description>
-        ///    </item>
-        ///    <item>
-        ///        <term>40</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_VERBOSE"/></description>
-        ///    </item>
-        ///    <item>
-        ///        <term>16</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_ERROR"/></description>
-        ///    </item>
-        ///    <item>
-        ///        <term>24</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_WARNING"/></description>
-        ///    </item>
-        ///    <item>
-        ///        <term>8</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_FATAL"/></description>
-        ///    </item>
-        ///    <item>
-        ///        <term>0</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_PANIC"/></description>
-        ///    </item>
-        ///    <item>
-        ///        <term>-8</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_QUIET"/></description>
-        ///    </item>
-        ///</list>
-        /// </param>
-        /// <param name="logFlags">
-        /// log flags, support AND operator
-        /// <list type="bullet">
-        ///    <item>
-        ///        <term>1</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_SKIP_REPEATED"/></description>
-        ///    </item>
-        ///    <item>
-        ///        <term>2</term>
-        ///        <description><see cref="ffmpeg.AV_LOG_PRINT_LEVEL"/></description>
-        ///    </item>
-        /// </list>
-        /// </param>
+        /// <param name="logLevel">log level</param>
+        /// <param name="logFlags">log flags, support AND operator </param>
         /// <param name="writeLogAction">set <see langword="null"/> to use default log output</param>
-        public static unsafe void SetupLogging(int logLevel = ffmpeg.AV_LOG_VERBOSE, int logFlags = ffmpeg.AV_LOG_PRINT_LEVEL, Action<string> writeLogAction = null)
+        public static unsafe void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string> writeLogAction = null)
         {
-            ffmpeg.av_log_set_level(logLevel);
-            ffmpeg.av_log_set_flags(logFlags);
+            ffmpeg.av_log_set_level((int)logLevel);
+            ffmpeg.av_log_set_flags((int)logFlags);
 
             if (writeLogAction == null)
             {
@@ -130,5 +78,28 @@ namespace EmguFFmpeg
         }
 
         private static unsafe av_log_set_callback_callback logCallback;
+    }
+
+    public enum LogLevel : int
+    {
+        All = ffmpeg.AV_LOG_MAX_OFFSET,
+        Trace = ffmpeg.AV_LOG_TRACE,
+        Debug = ffmpeg.AV_LOG_DEBUG,
+        Verbose = ffmpeg.AV_LOG_VERBOSE,
+        Error = ffmpeg.AV_LOG_ERROR,
+        Warning = ffmpeg.AV_LOG_WARNING,
+        Fatal = ffmpeg.AV_LOG_FATAL,
+        Panic = ffmpeg.AV_LOG_PANIC,
+        Quiet = ffmpeg.AV_LOG_QUIET,
+    }
+
+    [Flags]
+    public enum LogFlags : int
+    {
+        None = 0,
+
+        // No effect??
+        //SkipRepeated = ffmpeg.AV_LOG_SKIP_REPEATED,
+        PrintLevel = ffmpeg.AV_LOG_PRINT_LEVEL,
     }
 }

@@ -10,65 +10,13 @@
             </summary>
             <param name="exception"></param>
         </member>
-        <member name="M:EmguFFmpeg.FFmpegHelper.SetupLogging(System.Int32,System.Int32,System.Action{System.String})">
-             <summary>
-             Set ffmpeg internal log
-             </summary>
-             <param name="logLevel">
-             log level
-             <list type="bullet">
-                <item>
-                    <term>64</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_MAX_OFFSET"/></description>
-                </item>
-                <item>
-                    <term>56</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_TRACE"/></description>
-                </item>
-                <item>
-                    <term>48</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_DEBUG"/></description>
-                </item>
-                <item>
-                    <term>40</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_VERBOSE"/></description>
-                </item>
-                <item>
-                    <term>16</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_ERROR"/></description>
-                </item>
-                <item>
-                    <term>24</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_WARNING"/></description>
-                </item>
-                <item>
-                    <term>8</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_FATAL"/></description>
-                </item>
-                <item>
-                    <term>0</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_PANIC"/></description>
-                </item>
-                <item>
-                    <term>-8</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_QUIET"/></description>
-                </item>
-            </list>
-             </param>
-             <param name="logFlags">
-             log flags, support AND operator
-             <list type="bullet">
-                <item>
-                    <term>1</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_SKIP_REPEATED"/></description>
-                </item>
-                <item>
-                    <term>2</term>
-                    <description><see cref="F:FFmpeg.AutoGen.ffmpeg.AV_LOG_PRINT_LEVEL"/></description>
-                </item>
-             </list>
-             </param>
-             <param name="writeLogAction">set <see langword="null"/> to use default log output</param>
+        <member name="M:EmguFFmpeg.FFmpegHelper.SetupLogging(EmguFFmpeg.LogLevel,EmguFFmpeg.LogFlags,System.Action{System.String})">
+            <summary>
+            Set ffmpeg log
+            </summary>
+            <param name="logLevel">log level</param>
+            <param name="logFlags">log flags, support AND operator </param>
+            <param name="writeLogAction">set <see langword="null"/> to use default log output</param>
         </member>
         <member name="M:EmguFFmpeg.AudioFrameConverter.Convert(EmguFFmpeg.MediaFrame)">
             <summary>
