@@ -15,9 +15,6 @@ namespace EmguFFmpeg
             pStream = stream;
         }
 
-        public bool HasDecoder => Codec == null ? false : Codec.IsDecoder;
-        public bool HasEncoder => Codec == null ? false : Codec.IsEncoder;
-
         public AVRational TimeBase
         {
             get => pStream->time_base;
@@ -51,6 +48,10 @@ namespace EmguFFmpeg
         public AVStream Stream => *pStream;
 
         public int Index => pStream->index;
+
+        public bool HasDecoder => Codec == null ? false : Codec.IsDecoder;
+
+        public bool HasEncoder => Codec == null ? false : Codec.IsEncoder;
 
         /// <summary>
         /// Read a fram from <see cref="MediaPacket"/>
@@ -107,7 +108,7 @@ namespace EmguFFmpeg
         public TimeSpan ToTimeSpan(long pts)
         {
             if (pts < 0)
-                throw new FFmpegException(new ArgumentOutOfRangeException(nameof(pts), pts, ""));
+                throw new FFmpegException(new ArgumentOutOfRangeException(nameof(pts), pts, $"0~{long.MaxValue}"));
             return TimeSpan.FromSeconds(pts * ffmpeg.av_q2d(TimeBase));
         }
 

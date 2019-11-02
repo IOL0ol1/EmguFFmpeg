@@ -13,15 +13,20 @@ namespace EmguFFmpeg
 
         protected AVCodecContext* pCodecContext = null;
 
-        protected MediaCodec(AVCodec* codec)
-        {
-            pCodec = codec;
-        }
-
         public abstract void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null);
 
+        /// <summary>
+        /// Get value if <see cref="Id"/> is not <see cref="AVCodecID.AV_CODEC_ID_NONE"/>
+        /// </summary>
+        /// <exception cref="FFmpegException"/>
         public AVCodec AVCodec => pCodec == null ? throw new FFmpegException(new NullReferenceException()) : *pCodec;
+
+        /// <summary>
+        /// Get value if <see cref="Id"/> is not <see cref="AVCodecID.AV_CODEC_ID_NONE"/>
+        /// </summary>
+        /// <exception cref="FFmpegException"/>
         public AVCodecContext AVCodecContext => pCodecContext == null ? throw new FFmpegException(new NullReferenceException()) : *pCodecContext;
+
         public AVMediaType Type => pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type;
         public AVCodecID Id => pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id;
         public string Name => pCodec == null ? null : ((IntPtr)pCodec->name).PtrToStringUTF8();
@@ -35,8 +40,8 @@ namespace EmguFFmpeg
         {
             get
             {
-                if (pCodec == null) return null;
                 List<AVCodecHWConfig> result = new List<AVCodecHWConfig>();
+                if (pCodec == null) return result;
                 for (int i = 0; ; i++)
                 {
                     AVCodecHWConfig* config = ffmpeg.avcodec_get_hw_config(pCodec, i);
@@ -51,9 +56,9 @@ namespace EmguFFmpeg
         {
             get
             {
-                if (pCodec == null) return null;
-                AVPixelFormat* p = pCodec->pix_fmts;
                 List<AVPixelFormat> result = new List<AVPixelFormat>();
+                if (pCodec == null) return result;
+                AVPixelFormat* p = pCodec->pix_fmts;
                 if (p != null)
                 {
                     while (*p != AVPixelFormat.AV_PIX_FMT_NONE)
@@ -70,9 +75,9 @@ namespace EmguFFmpeg
         {
             get
             {
-                if (pCodec == null) return null;
-                AVRational* p = pCodec->supported_framerates;
                 List<AVRational> result = new List<AVRational>();
+                if (pCodec == null) return result;
+                AVRational* p = pCodec->supported_framerates;
                 if (p != null)
                 {
                     while (p->num != 0)
@@ -89,9 +94,9 @@ namespace EmguFFmpeg
         {
             get
             {
-                if (pCodec == null) return null;
-                AVSampleFormat* p = pCodec->sample_fmts;
                 List<AVSampleFormat> result = new List<AVSampleFormat>();
+                if (pCodec == null) return result;
+                AVSampleFormat* p = pCodec->sample_fmts;
                 if (p != null)
                 {
                     while (*p != AVSampleFormat.AV_SAMPLE_FMT_NONE)
@@ -108,9 +113,9 @@ namespace EmguFFmpeg
         {
             get
             {
-                if (pCodec == null) return null;
-                int* p = pCodec->supported_samplerates;
                 List<int> result = new List<int>();
+                if (pCodec == null) return result;
+                int* p = pCodec->supported_samplerates;
                 if (p != null)
                 {
                     while (*p != 0)
@@ -127,9 +132,9 @@ namespace EmguFFmpeg
         {
             get
             {
-                if (pCodec == null) return null;
-                ulong* p = pCodec->channel_layouts;
                 List<ulong> result = new List<ulong>();
+                if (pCodec == null) return result;
+                ulong* p = pCodec->channel_layouts;
                 if (p != null)
                 {
                     while (*p != 0)
@@ -206,24 +211,33 @@ namespace EmguFFmpeg
         /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before decode
         /// </summary>
         /// <param name="codecId">codec id</param>
-        public MediaDecode(AVCodecID codecId) : base(ffmpeg.avcodec_find_decoder(codecId))
+        public MediaDecode(AVCodecID codecId)
         {
+            pCodec = ffmpeg.avcodec_find_decoder(codecId);
+            if (codecId != AVCodecID.AV_CODEC_ID_NONE && pCodec == null)
+                throw new FFmpegException("not found codec");
         }
 
         /// <summary>
         /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before decode
         /// </summary>
         /// <param name="codecName">codec name</param>
-        public MediaDecode(string codecName) : base(ffmpeg.avcodec_find_decoder_by_name(codecName))
+        public MediaDecode(string codecName)
         {
+            pCodec = ffmpeg.avcodec_find_decoder_by_name(codecName);
+            if (pCodec == null)
+                throw new FFmpegException("not found codec");
         }
 
         /// <summary>
         /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before decode
         /// </summary>
         /// <param name="codec"></param>
-        internal MediaDecode(AVCodec* codec) : base(codec)
+        internal MediaDecode(AVCodec* codec)
         {
+            if (codec == null)
+                throw new FFmpegException(new ArgumentNullException());
+            pCodec = codec;
         }
 
         /// <summary>
@@ -314,8 +328,8 @@ namespace EmguFFmpeg
         /// <param name="width">width pixel</param>
         /// <param name="height">height pixel</param>
         /// <param name="fps"></param>
-        /// <param name="bitRate">default is auto bitrate</param>
-        /// <param name="format">default is SupportedPixelFmts[0]</param>
+        /// <param name="bitRate">default is auto bitrate, must be greater than 0</param>
+        /// <param name="format">default is first supported pixel format</param>
         /// <returns></returns>
         public static MediaEncode CreateVideoEncode(AVCodecID videoCodec, int flags, int width, int height, int fps, long bitRate = 0, AVPixelFormat format = AVPixelFormat.AV_PIX_FMT_NONE)
         {
@@ -323,19 +337,18 @@ namespace EmguFFmpeg
             {
                 AVCodecContext* pCodecContext = _;
                 if (_.SupportedPixelFmts.Count() <= 0)
-                    throw new FFmpegException(new ArgumentException(videoCodec.ToString()));
-                // check or set format
+                    throw new FFmpegException(new ArgumentException());
+                if (width <= 0 || height <= 0 || fps <= 0 || bitRate < 0)
+                    throw new FFmpegException(new ArgumentOutOfRangeException());
                 if (format == AVPixelFormat.AV_PIX_FMT_NONE)
                     format = _.SupportedPixelFmts[0];
                 else if (_.SupportedPixelFmts.Where(__ => __ == format).Count() <= 0)
-                    throw new FFmpegException(new NotSupportedException(format.ToString()));
+                    throw new FFmpegException(new ArgumentException());
                 pCodecContext->width = width;
                 pCodecContext->height = height;
                 pCodecContext->time_base = new AVRational { num = 1, den = fps };
                 pCodecContext->pix_fmt = format;
-                // set 0 to use auto bitrate by ffmpeg
-                if (bitRate >= 0)
-                    pCodecContext->bit_rate = bitRate;
+                pCodecContext->bit_rate = bitRate;
             });
         }
 
@@ -404,24 +417,33 @@ namespace EmguFFmpeg
         /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before encode
         /// </summary>
         /// <param name="codecId">codec id</param>
-        public MediaEncode(AVCodecID codecId) : base(ffmpeg.avcodec_find_encoder(codecId))
+        public MediaEncode(AVCodecID codecId)
         {
+            pCodec = ffmpeg.avcodec_find_encoder(codecId);
+            if (codecId != AVCodecID.AV_CODEC_ID_NONE && pCodec == null)
+                throw new FFmpegException("not found codec");
         }
 
         /// <summary>
         /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before encode
         /// </summary>
         /// <param name="codecName">codec name</param>
-        public MediaEncode(string codecName) : base(ffmpeg.avcodec_find_encoder_by_name(codecName))
+        public MediaEncode(string codecName)
         {
+            pCodec = ffmpeg.avcodec_find_encoder_by_name(codecName);
+            if (pCodec == null)
+                throw new FFmpegException("not found codec");
         }
 
         /// <summary>
         /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before encode
         /// </summary>
         /// <param name="codec"></param>
-        internal MediaEncode(AVCodec* codec) : base(codec)
+        internal MediaEncode(AVCodec* codec)
         {
+            if (codec == null)
+                throw new FFmpegException(new ArgumentNullException());
+            pCodec = codec;
         }
 
         /// <summary>

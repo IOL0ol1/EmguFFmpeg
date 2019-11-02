@@ -70,6 +70,11 @@ namespace EmguFFmpeg
             if (streamIndex >= 0)
                 timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), streams[streamIndex].TimeBase);
             ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, timestamp, 0).ThrowExceptionIfError();
+            foreach (var stream in streams)
+            {
+                if (stream.Index == streamIndex || streamIndex < 0)
+                    ffmpeg.avcodec_flush_buffers(stream.Codec);
+            }
         }
 
         #region IEnumerable<MediaPacket>
@@ -85,7 +90,7 @@ namespace EmguFFmpeg
                     {
                         ret = ReadPacket(packet);
                         if (ret < 0 && ret != ffmpeg.AVERROR_EOF)
-                            ret.ThrowExceptionIfError();
+                            throw new FFmpegException(ret);
                         yield return packet;
                         packet.Clear();
                     } while (ret >= 0);

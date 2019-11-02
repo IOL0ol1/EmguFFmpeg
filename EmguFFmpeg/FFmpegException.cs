@@ -28,7 +28,7 @@ namespace EmguFFmpeg
         /// convert exception message
         /// </summary>
         /// <param name="exception"></param>
-        public FFmpegException(Exception exception) : this(exception.Message)
+        internal FFmpegException(Exception exception) : this(exception.Message)
         {
         }
 
