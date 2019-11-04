@@ -20,7 +20,7 @@ namespace EmguFFmpeg.Example
             {
                 var stream = reader.Where(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_AUDIO).FirstOrDefault();
 
-                foreach (var packet in reader.Packets)
+                foreach (var packet in reader.ReadPacket())
                 {
                     foreach (var frame in stream.ReadFrame(packet))
                     {

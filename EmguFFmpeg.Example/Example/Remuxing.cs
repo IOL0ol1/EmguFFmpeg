@@ -33,7 +33,7 @@ namespace EmguFFmpeg.Example
                 writer.Initialize();
 
                 // read and write packet
-                foreach (var packet in reader.Packets)
+                foreach (var packet in reader.ReadPacket())
                 {
                     int index = packet.StreamIndex;
                     AVRounding rounding = AVRounding.AV_ROUND_NEAR_INF | AVRounding.AV_ROUND_PASS_MINMAX;

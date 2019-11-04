@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
@@ -79,26 +80,23 @@ namespace EmguFFmpeg
 
         #region IEnumerable<MediaPacket>
 
-        public IEnumerable<MediaPacket> Packets
+        public IEnumerable<MediaPacket> ReadPacket()
         {
-            get
+            using (MediaPacket packet = new MediaPacket())
             {
-                using (MediaPacket packet = new MediaPacket())
+                int ret;
+                do
                 {
-                    int ret;
-                    do
-                    {
-                        ret = ReadPacket(packet);
-                        if (ret < 0 && ret != ffmpeg.AVERROR_EOF)
-                            throw new FFmpegException(ret);
-                        yield return packet;
-                        packet.Clear();
-                    } while (ret >= 0);
-                }
+                    ret = ReadPacket(packet);
+                    if (ret < 0 && ret != ffmpeg.AVERROR_EOF)
+                        throw new FFmpegException(ret);
+                    yield return packet;
+                    packet.Clear();
+                } while (ret >= 0);
             }
         }
 
-        private int ReadPacket(MediaPacket packet)
+        public int ReadPacket([Out]MediaPacket packet)
         {
             return ffmpeg.av_read_frame(pFormatContext, packet);
         }

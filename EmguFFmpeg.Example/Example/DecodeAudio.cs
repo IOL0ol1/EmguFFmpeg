@@ -17,7 +17,7 @@ namespace EmguFFmpeg.Example
         {
             using (MediaReader reader = new MediaReader(input))
             {
-                foreach (var packet in reader.Packets)
+                foreach (var packet in reader.ReadPacket())
                 {
                     // audio maybe have one more stream, e.g.: 0 is mp3 audio, 1 is mpeg cover
                     foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))

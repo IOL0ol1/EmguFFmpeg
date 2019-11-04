@@ -25,7 +25,7 @@ namespace EmguFFmpeg.Example
                 var codecContext = reader.Where(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_VIDEO).First().Codec.AVCodecContext;
 
                 VideoFrameConverter videoFrameConverter = new VideoFrameConverter(AVPixelFormat.AV_PIX_FMT_BGR24, codecContext.width, codecContext.height);
-                foreach (var packet in reader.Packets)
+                foreach (var packet in reader.ReadPacket())
                 {
                     foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
                     {

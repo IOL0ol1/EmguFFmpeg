@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
@@ -96,7 +97,7 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public int WritePacket(MediaPacket packet)
+        public int WritePacket([In]MediaPacket packet)
         {
             int ret = ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
             packet.Clear();
