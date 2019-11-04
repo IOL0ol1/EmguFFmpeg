@@ -43,13 +43,13 @@ namespace EmguFFmpeg
         public readonly AVPixelFormat DstFormat;
         public readonly int DstWidth;
         public readonly int DstHeight;
-        private int flag;
+        public readonly int SwsFlag;
 
-        public static VideoFrameConverter CreateConverter(MediaCodec dstEncode, int flag = ffmpeg.SWS_BILINEAR)
+        public static VideoFrameConverter CreateConverter(MediaCodec dst, int flag = ffmpeg.SWS_BILINEAR)
         {
-            if (dstEncode as MediaEncode == null || dstEncode.AVCodecContext.codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO)
+            if (dst.AVCodecContext.codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException(new ArgumentException());
-            return new VideoFrameConverter(dstEncode.AVCodecContext.pix_fmt, dstEncode.AVCodecContext.width, dstEncode.AVCodecContext.height, flag);
+            return new VideoFrameConverter(dst.AVCodecContext.pix_fmt, dst.AVCodecContext.width, dst.AVCodecContext.height, flag);
         }
 
         public VideoFrameConverter(AVPixelFormat srcFormat, int srcWidth, int srcHeight, AVPixelFormat dstFormat, int dstWidth, int dstHeight, int flag = ffmpeg.SWS_BILINEAR)
@@ -63,11 +63,20 @@ namespace EmguFFmpeg
 
         public VideoFrameConverter(AVPixelFormat dstFormat, int dstWidth, int dstHeight, int flag = ffmpeg.SWS_BILINEAR)
         {
-            this.DstWidth = dstWidth;
-            this.DstHeight = dstHeight;
-            this.DstFormat = dstFormat;
-            this.flag = flag;
+            DstWidth = dstWidth;
+            DstHeight = dstHeight;
+            DstFormat = dstFormat;
+            SwsFlag = flag;
             dstFrame = new VideoFrame(dstFormat, dstWidth, dstHeight);
+        }
+
+        public VideoFrameConverter(VideoFrame dst, int flag = ffmpeg.SWS_BILINEAR)
+        {
+            DstWidth = dst.AVFrame.width;
+            DstHeight = dst.AVFrame.height;
+            DstFormat = (AVPixelFormat)dst.AVFrame.format;
+            SwsFlag = flag;
+            dstFrame = dst;
         }
 
         public static implicit operator SwsContext*(VideoFrameConverter value)
@@ -83,7 +92,7 @@ namespace EmguFFmpeg
             {
                 pSwsContext = ffmpeg.sws_getContext(
                     src->width, src->height, (AVPixelFormat)src->format,
-                    DstWidth, DstHeight, DstFormat, flag, null, null, null);
+                    DstWidth, DstHeight, DstFormat, SwsFlag, null, null, null);
             }
             ffmpeg.sws_scale(pSwsContext, src->data, src->linesize, 0, src->height, dst->data, dst->linesize).ThrowExceptionIfError();
             return dstFrame as VideoFrame;
@@ -112,13 +121,13 @@ namespace EmguFFmpeg
         protected SwrContext* pSwrContext = null;
         public readonly AVSampleFormat DstFormat;
         public readonly ulong DstChannelLayout;
-        public int DstSampleRate;
+        public readonly int DstSampleRate;
 
-        public static AudioFrameConverter CreateConverter(MediaCodec dstEncode)
+        public static AudioFrameConverter CreateConverter(MediaCodec dst)
         {
-            if (dstEncode as MediaEncode == null || dstEncode.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
+            if (dst.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException(new ArgumentException());
-            return new AudioFrameConverter(dstEncode.AVCodecContext.sample_fmt, dstEncode.AVCodecContext.channel_layout, dstEncode.AVCodecContext.sample_rate);
+            return new AudioFrameConverter(dst.AVCodecContext.sample_fmt, dst.AVCodecContext.channel_layout, dst.AVCodecContext.sample_rate);
         }
 
         public AudioFrameConverter(AVSampleFormat srcFormat, ulong srcChannelLayout, int srcSampleRate, AVSampleFormat dstFormat, ulong dstChannelLayout, int dstSampleRate)
@@ -134,10 +143,18 @@ namespace EmguFFmpeg
 
         public AudioFrameConverter(AVSampleFormat dstFormat, ulong dstChannelLayout, int dstSampleRate)
         {
-            this.DstChannelLayout = dstChannelLayout;
-            this.DstFormat = dstFormat;
-            this.DstSampleRate = dstSampleRate;
+            DstChannelLayout = dstChannelLayout;
+            DstFormat = dstFormat;
+            DstSampleRate = dstSampleRate;
             dstFrame = new AudioFrame();
+        }
+
+        public AudioFrameConverter(AudioFrame dst)
+        {
+            DstChannelLayout = dst.AVFrame.channel_layout;
+            DstFormat = (AVSampleFormat)dst.AVFrame.format;
+            DstSampleRate = dst.AVFrame.sample_rate;
+            dstFrame = dst;
         }
 
         public static implicit operator SwrContext*(AudioFrameConverter value)

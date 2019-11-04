@@ -15,7 +15,7 @@ namespace EmguFFmpeg
             pFrame = ffmpeg.av_frame_alloc();
         }
 
-        public AVFrame Frame => *pFrame;
+        public AVFrame AVFrame => *pFrame;
 
         /// <summary>
         /// Deep clone frame
@@ -247,6 +247,11 @@ namespace EmguFFmpeg
 
     public unsafe class VideoFrame : MediaFrame
     {
+        public static VideoFrame CreateFrame(MediaCodec codec)
+        {
+            return new VideoFrame(codec.AVCodecContext.pix_fmt, codec.AVCodecContext.width, codec.AVCodecContext.height);
+        }
+
         public VideoFrame() : base()
         { }
 
@@ -302,6 +307,12 @@ namespace EmguFFmpeg
 
     public unsafe class AudioFrame : MediaFrame
     {
+
+        public static AudioFrame CreateFrame(MediaCodec codec)
+        {
+            return new AudioFrame(codec.AVCodecContext.sample_fmt, (AVChannelLayout)codec.AVCodecContext.channel_layout, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
+        }
+
         public AudioFrame() : base()
         { }
 
