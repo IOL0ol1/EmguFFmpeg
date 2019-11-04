@@ -22,7 +22,7 @@ namespace EmguFFmpeg
         public AVCodec AVCodec => pCodec == null ? throw new FFmpegException(new NullReferenceException()) : *pCodec;
 
         /// <summary>
-        /// Get value if <see cref="Id"/> is not <see cref="AVCodecID.AV_CODEC_ID_NONE"/>
+        /// Get value after <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/>
         /// </summary>
         /// <exception cref="FFmpegException"/>
         public AVCodecContext AVCodecContext => pCodecContext == null ? throw new FFmpegException(new NullReferenceException()) : *pCodecContext;
@@ -208,7 +208,10 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before decode
+        /// Find decoder by id
+        /// <para>
+        /// Must call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before decode
+        /// </para>
         /// </summary>
         /// <param name="codecId">codec id</param>
         public MediaDecode(AVCodecID codecId)
@@ -219,7 +222,10 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before decode
+        /// Find decoder by name
+        /// <para>
+        /// Must call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before decode
+        /// </para>
         /// </summary>
         /// <param name="codecName">codec name</param>
         public MediaDecode(string codecName)
@@ -229,10 +235,6 @@ namespace EmguFFmpeg
                 throw new FFmpegException("not found codec");
         }
 
-        /// <summary>
-        /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before decode
-        /// </summary>
-        /// <param name="codec"></param>
         internal MediaDecode(AVCodec* codec)
         {
             if (codec == null)
@@ -241,24 +243,31 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// alloc <see cref="AVCodecContext"/> and <see cref="ffmpeg.avcodec_open2(AVCodecContext*,
-        /// AVCodec*, AVDictionary**)"/>
+        /// alloc <see cref="AVCodecContext"/> and <see cref="ffmpeg.avcodec_open2(AVCodecContext*, AVCodec*, AVDictionary**)"/>
         /// </summary>
         /// <param name="setBeforeOpen">
-        /// set "AVCodecContext" after "avcodec_alloc_context3" and before "avcodec_open2"
+        /// set <see cref="AVCodecContext"/> after <see cref="ffmpeg.avcodec_alloc_context3(AVCodec*)"/> and before <see cref="ffmpeg.avcodec_open2(AVCodecContext*, AVCodec*, AVDictionary**)"/>
         /// </param>
-        /// <param name="flags">not used</param>
+        /// <param name="flags">no used</param>
         /// <param name="opts">options for "avcodec_open2"</param>
         public override void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null)
         {
+            pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
+            setBeforeOpen?.Invoke(this);
             if (pCodec != null)
             {
-                pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
-                setBeforeOpen?.Invoke(this);
                 ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
             }
         }
 
+        /// <summary>
+        /// decode packet to get frame.
+        /// <para>
+        /// <see cref="SendPacket(MediaPacket)"/> and <see cref="ReceiveFrame(MediaFrame)"/>
+        /// </para>
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <returns></returns>
         public virtual IEnumerable<MediaFrame> DecodePacket(MediaPacket packet)
         {
             SendPacket(packet);
@@ -271,16 +280,29 @@ namespace EmguFFmpeg
             }
         }
 
+        /// <summary>
+        /// send packet to decoder
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <returns></returns>
         public int SendPacket([In]MediaPacket packet)
         {
             return ffmpeg.avcodec_send_packet(pCodecContext, packet);
         }
 
+        /// <summary>
+        /// receive frame from decoder
+        /// </summary>
+        /// <param name="frame"></param>
+        /// <returns></returns>
         public int ReceiveFrame([Out]MediaFrame frame)
         {
             return ffmpeg.avcodec_receive_frame(pCodecContext, frame);
         }
 
+        /// <summary>
+        /// get all decodes
+        /// </summary>
         public static List<MediaDecode> Decodes
         {
             get
@@ -321,14 +343,14 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Create video encode
+        /// Create and init video encode
         /// </summary>
         /// <param name="videoCodec"></param>
-        /// <param name="flags"></param>
-        /// <param name="width">width pixel</param>
-        /// <param name="height">height pixel</param>
-        /// <param name="fps"></param>
-        /// <param name="bitRate">default is auto bitrate, must be greater than 0</param>
+        /// <param name="flags"><see cref="MediaFormat.Flags"/></param>
+        /// <param name="width">width pixel, must be greater than 0</param>
+        /// <param name="height">height pixel, must be greater than 0</param>
+        /// <param name="fps">fps, must be greater than 0</param>
+        /// <param name="bitRate">default is auto bit rate, must be greater than or equal to 0</param>
         /// <param name="format">default is first supported pixel format</param>
         /// <returns></returns>
         public static MediaEncode CreateVideoEncode(AVCodecID videoCodec, int flags, int width, int height, int fps, long bitRate = 0, AVPixelFormat format = AVPixelFormat.AV_PIX_FMT_NONE)
@@ -368,17 +390,14 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Create audio encode
+        /// Create and init audio encode
         /// </summary>
         /// <param name="audioCodec"></param>
-        /// <param name="flags"></param>
-        /// <param name="channelLayout">
-        /// ffmpeg.AV_CH_LAYOUT_XXX, also get from <see
-        /// cref="ffmpeg.av_get_default_channel_layout(int)"/> by channels
-        /// </param>
-        /// <param name="sampleRate">default is SupportedSampleRates[0]</param>
-        /// <param name="bitRate">default is auto bitrate</param>
-        /// <param name="format"></param>
+        /// <param name="flags"><see cref="MediaFormat.Flags"/></param>
+        /// <param name="channelLayout">channel layout</param>
+        /// <param name="sampleRate">default is first supported sample rates, must be greater than 0</param>
+        /// <param name="bitRate">default is auto bit rate, must be greater than or equal to 0</param>
+        /// <param name="format">default is first supported pixel format</param>
         /// <returns></returns>
         public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, AVChannelLayout channelLayout, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
@@ -414,7 +433,10 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before encode
+        /// Find encoder by id
+        /// <para>
+        /// Must call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before encode
+        /// </para>
         /// </summary>
         /// <param name="codecId">codec id</param>
         public MediaEncode(AVCodecID codecId)
@@ -425,7 +447,10 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before encode
+        /// Find encoder by name
+        /// <para>
+        /// Must call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before encode
+        /// </para>
         /// </summary>
         /// <param name="codecName">codec name</param>
         public MediaEncode(string codecName)
@@ -435,10 +460,6 @@ namespace EmguFFmpeg
                 throw new FFmpegException("not found codec");
         }
 
-        /// <summary>
-        /// Call <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/> before encode
-        /// </summary>
-        /// <param name="codec"></param>
         internal MediaEncode(AVCodec* codec)
         {
             if (codec == null)
@@ -447,27 +468,25 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// alloc <see cref="AVCodecContext"/> and <see cref="ffmpeg.avcodec_open2(AVCodecContext*,
-        /// AVCodec*, AVDictionary**)"/>
+        /// alloc <see cref="AVCodecContext"/> and <see cref="ffmpeg.avcodec_open2(AVCodecContext*, AVCodec*, AVDictionary**)"/>
         /// </summary>
         /// <param name="setBeforeOpen">
-        /// set "AVCodecContext" after "avcodec_alloc_context3" and before "avcodec_open2"
+        /// set <see cref="AVCodecContext"/> after <see cref="ffmpeg.avcodec_alloc_context3(AVCodec*)"/> and before <see cref="ffmpeg.avcodec_open2(AVCodecContext*, AVCodec*, AVDictionary**)"/>
         /// </param>
         /// <param name="flags">
-        /// use " <see cref="MediaFormat.Flags"/>" for set " <see cref="AVCodecContext.flags"/>" with
-        /// " <see cref="ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER"/>"
+        /// check <see cref="MediaFormat.Flags"/> &amp; <see cref="ffmpeg.AVFMT_GLOBALHEADER"/> set <see cref="ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER"/>
         /// </param>
         /// <param name="opts">options for "avcodec_open2"</param>
         public override void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null)
         {
+            pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
+            setBeforeOpen?.Invoke(this);
+            if ((flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+            {
+                pCodecContext->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+            }
             if (pCodec != null)
             {
-                pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
-                setBeforeOpen?.Invoke(this);
-                if ((flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
-                {
-                    pCodecContext->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
-                }
                 ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
             }
         }
