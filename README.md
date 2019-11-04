@@ -1,24 +1,32 @@
 EmguFFmpeg
 =====================
 
-A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.
+A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.    
+    
+This is **NOT** a command-line warpper library, but is based on the FFmpeg API.    
 
 [![NuGet version (EmguFFmpeg)](https://img.shields.io/nuget/v/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)
 [![NuGet downloads (EmguFFmpeg)](https://img.shields.io/nuget/dt/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)    
 [![Build status](https://ci.appveyor.com/api/projects/status/184vgaesdp86jo5p?svg=true)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg)
 
-## HowTo
+## Usage
 
-1. Download ffmpeg binarys file.     
-	- Download from [Zeranoe](https://ffmpeg.zeranoe.com/builds/).    
-	- **Copy** from nuget [FFmpeg.Nightly](https://www.nuget.org/packages/FFmpeg.Nightly/) / [FFmpeg.Nightly.LGPL](https://www.nuget.org/packages/FFmpeg.Nightly.LGPL/). 
-        - **DO NOT INSTALL** them in c# project. valid only for C++ projects.
+1. Download ffmpeg binarys file:     
+	1. Windows:    
+        - Download from [Zeranoe](https://ffmpeg.zeranoe.com/builds/).    
+        - Download from [FFmpeg.Nightly](https://www.nuget.org/packages/FFmpeg.Nightly/) / [FFmpeg.Nightly.LGPL](https://www.nuget.org/packages/FFmpeg.Nightly.LGPL/) (.nupkg is zip file).    
+          **DO NOT INSTALL** them in C# project. valid only for C++ projects.
+	2. Other platforms see [this](https://github.com/Ruslan-B/FFmpeg.AutoGen#usage)
 2. Install [EmguFFmpeg](https://www.nuget.org/packages/EmguFFmpeg/) nuget packet.    
-3. Import namespace:
+	```powershell
+	Install-Package EmguFFmpeg -Version 1.0.3
+	```
+3. Import namespace:    
 	```csharp
+	using FFmpeg.AutoGen; // use some struct
 	using EmguFFmpeg;
 	```
-- Media codec with c#
+4. Media codec with c#
 
 ## Example
 
@@ -26,7 +34,7 @@ A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.
 ```csharp
 MediaReader reader = new MediaReader("input.mp4");
 
-foreach(var packet in reader.Packets)
+foreach(var packet in reader.ReadPacket())
 {
     foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
     {
@@ -85,6 +93,5 @@ writer.Dispose();
 
 - [ ] **Encode audio need to redesign the AudioFrameConverter, maybe also use IEnumable<>.**    
 - [ ] Convert MediaFrame data easy with EmguCV Mat/Image etc.
-- [ ] MediaEncode/MediaDecode.Create... function remove flags param.
 - [ ] Add MedaiFilter support.
 - [ ] Add test code.
