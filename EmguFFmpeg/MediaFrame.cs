@@ -63,6 +63,10 @@ namespace EmguFFmpeg
             throw new FFmpegException(new NotSupportedException());
         }
 
+        /// <summary>
+        /// <see cref="ffmpeg.av_image_copy(ref byte_ptrArray4, ref int_array4, ref byte_ptrArray4, int_array4, AVPixelFormat, int, int)"/>
+        /// </summary>
+        /// <returns></returns>
         private byte[][] GetVideoData()
         {
             List<byte[]> result = new List<byte[]>();
@@ -72,13 +76,8 @@ namespace EmguFFmpeg
 
             if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PSEUDOPAL) != 0)
             {
-                for (int i = 0; i < pFrame->height; i++)
-                {
-                    byte[] line0 = new byte[pFrame->width];
-                    Marshal.Copy((IntPtr)pFrame->data[0], line0, 0, line0.Length);
-                    result.Add(line0);
-                }
-                if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 || pFrame->data[1] != null)
+                result.Add(GetPlane((IntPtr)pFrame->data[0], pFrame->linesize[0], pFrame->width, pFrame->height));
+                if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 && pFrame->data[1] != null)
                 {
                     byte[] line1 = new byte[4 * 256];
                     Marshal.Copy((IntPtr)pFrame->data[1], line1, 0, line1.Length);
@@ -92,14 +91,24 @@ namespace EmguFFmpeg
                     planes_nb = Math.Max(planes_nb, desc->comp[(uint)i].plane + 1);
                 for (i = 0; i < planes_nb; i++)
                 {
+                    int h = pFrame->height;
                     int bwidth = ffmpeg.av_image_get_linesize((AVPixelFormat)pFrame->format, pFrame->width, i);
                     bwidth.ThrowExceptionIfError();
-                    byte[] line = new byte[bwidth];
-                    Marshal.Copy((IntPtr)pFrame->data[(uint)i], line, 0, line.Length);
-                    result.Add(line);
+                    if (i == 1 || i == 2)
+                        h = (int)Math.Ceiling((double)pFrame->height / (1 << desc->log2_chroma_h));
+                    result.Add(GetPlane((IntPtr)pFrame->data[(uint)i], pFrame->linesize[(uint)i], bwidth, h));
                 }
             }
             return result.ToArray();
+        }
+
+        private byte[] GetPlane(IntPtr srcData, int linesize, int bytewidth, int height)
+        {
+            if (linesize < bytewidth)
+                throw new FFmpegException(new ArgumentException());
+            byte[] result = new byte[height * linesize];
+            Marshal.Copy(srcData, result, 0, result.Length);
+            return result;
         }
 
         private byte[][] GetAudioData()
