@@ -106,7 +106,6 @@ namespace EmguFFmpeg
         {
             if (!disposedValue)
             {
-                dstFrame.Dispose();
                 ffmpeg.sws_freeContext(pSwsContext);
 
                 disposedValue = true;
@@ -204,7 +203,6 @@ namespace EmguFFmpeg
         {
             if (!disposedValue)
             {
-                dstFrame.Dispose();
                 fixed (SwrContext** ppSwrContext = &pSwrContext)
                 {
                     ffmpeg.swr_free(ppSwrContext);
