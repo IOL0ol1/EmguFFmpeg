@@ -33,9 +33,12 @@ namespace EmguFFmpeg
             dst->channels = pFrame->channels;
             dst->nb_samples = pFrame->nb_samples;
             dst->sample_rate = pFrame->sample_rate;
-            ffmpeg.av_frame_get_buffer(dst, 0);
-            ffmpeg.av_frame_copy_props(dst, pFrame);
-            ffmpeg.av_frame_copy(dst, pFrame).ThrowExceptionIfError();
+            if (ffmpeg.av_frame_is_writable(pFrame) != 0)
+            {
+                ffmpeg.av_frame_get_buffer(dst, 0).ThrowExceptionIfError();
+                ffmpeg.av_frame_copy(dst, pFrame).ThrowExceptionIfError();
+            }
+            ffmpeg.av_frame_copy_props(dst, pFrame).ThrowExceptionIfError();
             return dstFrame;
         }
 
@@ -53,13 +56,63 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public byte[][] GetData()
         {
+            if (pFrame->width > 0 && pFrame->height > 0)
+                return GetVideoData();
+            else if (pFrame->nb_samples > 0 && pFrame->channels > 0)
+                return GetAudioData();
+            throw new FFmpegException(new NotSupportedException());
+        }
+
+        private byte[][] GetVideoData()
+        {
             List<byte[]> result = new List<byte[]>();
-            IntPtr intPtr;
-            for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero; i++)
+            AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)pFrame->format);
+            if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
+                throw new FFmpegException("");
+
+            if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PSEUDOPAL) != 0)
             {
-                if (0 < pFrame->channels && pFrame->channels < i)
-                    break;
-                byte[] line = new byte[pFrame->linesize[pFrame->channels > 0 ? 0 : i]];
+                for (int i = 0; i < pFrame->height; i++)
+                {
+                    byte[] line0 = new byte[pFrame->width];
+                    Marshal.Copy((IntPtr)pFrame->data[0], line0, 0, line0.Length);
+                    result.Add(line0);
+                }
+                if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 || pFrame->data[1] != null)
+                {
+                    byte[] line1 = new byte[4 * 256];
+                    Marshal.Copy((IntPtr)pFrame->data[1], line1, 0, line1.Length);
+                    result.Add(line1);
+                }
+            }
+            else
+            {
+                int i, planes_nb = 0;
+                for (i = 0; i < desc->nb_components; i++)
+                    planes_nb = Math.Max(planes_nb, desc->comp[(uint)i].plane + 1);
+                for (i = 0; i < planes_nb; i++)
+                {
+                    int bwidth = ffmpeg.av_image_get_linesize((AVPixelFormat)pFrame->format, pFrame->width, i);
+                    bwidth.ThrowExceptionIfError();
+                    byte[] line = new byte[bwidth];
+                    Marshal.Copy((IntPtr)pFrame->data[(uint)i], line, 0, line.Length);
+                    result.Add(line);
+                }
+            }
+            return result.ToArray();
+        }
+
+        private byte[][] GetAudioData()
+        {
+            List<byte[]> result = new List<byte[]>();
+            int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format);
+            int planes = planar != 0 ? pFrame->channels : 1;
+            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format) * (planar != 0 ? 1 : pFrame->channels);
+            int data_size = pFrame->nb_samples * block_align;
+            IntPtr intPtr;
+            for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)
+            {
+                byte[] line = new byte[data_size];
                 Marshal.Copy(intPtr, line, 0, line.Length);
                 result.Add(line);
             }
@@ -262,6 +315,8 @@ namespace EmguFFmpeg
 
         private void AllocBuffer(AVPixelFormat format, int width, int height, int align = 0)
         {
+            if (ffmpeg.av_frame_is_writable(pFrame) != 0)
+                return;
             pFrame->format = (int)format;
             pFrame->width = width;
             pFrame->height = height;
@@ -307,7 +362,6 @@ namespace EmguFFmpeg
 
     public unsafe class AudioFrame : MediaFrame
     {
-
         public static AudioFrame CreateFrame(MediaCodec codec)
         {
             return new AudioFrame(codec.AVCodecContext.sample_fmt, (AVChannelLayout)codec.AVCodecContext.channel_layout, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
@@ -338,6 +392,8 @@ namespace EmguFFmpeg
 
         private void AllocBuffer(AVSampleFormat format, ulong channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
         {
+            if (ffmpeg.av_frame_is_writable(pFrame) != 0)
+                return;
             pFrame->format = (int)format;
             pFrame->channel_layout = channelLayout;
             pFrame->nb_samples = nbSamples;
