@@ -65,17 +65,32 @@ namespace EmguFFmpeg
             }
         }
 
-        public void Seek(TimeSpan time, int streamIndex = -1)
+        /// <summary>
+        /// Seek timestamp base <see cref="ffmpeg.AV_TIME_BASE"/>. it's precision than <see cref="Seek(TimeSpan, int)"/>
+        /// <para></para>
+        /// </summary>
+        /// <param name="timestamp">Seconds * <see cref="ffmpeg.AV_TIME_BASE"/> </param>
+        /// <param name="streamIndex"></param>
+        public void Seek(long timestamp, int streamIndex = -1)
         {
-            long timestamp = (long)(time.TotalSeconds * ffmpeg.AV_TIME_BASE);
             if (streamIndex >= 0)
                 timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), streams[streamIndex].TimeBase);
-            ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, timestamp, 0).ThrowExceptionIfError();
+            ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, long.MaxValue, 0).ThrowExceptionIfError();
             foreach (var stream in streams)
             {
                 if (stream.Index == streamIndex || streamIndex < 0)
                     ffmpeg.avcodec_flush_buffers(stream.Codec);
             }
+        }
+
+        /// <summary>
+        /// <see cref="Seek(long, int)"/>
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="streamIndex"></param>
+        public void Seek(TimeSpan time, int streamIndex = -1)
+        {
+            Seek((long)(time.TotalSeconds * ffmpeg.AV_TIME_BASE), streamIndex);
         }
 
         #region IEnumerable<MediaPacket>
