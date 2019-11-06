@@ -33,6 +33,8 @@ namespace EmguFFmpeg
 
     public abstract class FrameConverter<T> : FrameConverter where T : MediaFrame
     {
+        protected bool isDisposing = false;
+
         protected T dstFrame;
 
         public new abstract T Convert(MediaFrame frame);
@@ -40,7 +42,7 @@ namespace EmguFFmpeg
 
     public unsafe class VideoFrameConverter : FrameConverter<VideoFrame>
     {
-        protected SwsContext* pSwsContext = null;
+        private SwsContext* pSwsContext = null;
         public readonly AVPixelFormat DstFormat;
         public readonly int DstWidth;
         public readonly int DstHeight;
@@ -84,7 +86,7 @@ namespace EmguFFmpeg
         {
             AVFrame* src = srcFrame;
             AVFrame* dst = dstFrame;
-            if (pSwsContext == null)
+            if (pSwsContext == null && !isDisposing)
             {
                 pSwsContext = ffmpeg.sws_getContext(
                     src->width, src->height, (AVPixelFormat)src->format,
@@ -102,6 +104,7 @@ namespace EmguFFmpeg
         {
             if (!disposedValue)
             {
+                isDisposing = true;
                 ffmpeg.sws_freeContext(pSwsContext);
 
                 disposedValue = true;
@@ -164,7 +167,7 @@ namespace EmguFFmpeg
             AVFrame* src = srcFrame;
             AVFrame* dst = dstFrame;
 
-            if (pSwrContext == null)
+            if (pSwrContext == null && !isDisposing)
             {
                 pSwrContext = ffmpeg.swr_alloc_set_opts(null,
                     (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,
@@ -183,10 +186,55 @@ namespace EmguFFmpeg
             audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
         }
 
-        //public IEnumerator<AudioFrame> Convert(MediaFrame srcFrame)
-        //{
-        //    long outSamples = ffmpeg.av_rescale_rnd(ffmpeg.swr_get_delay(pSwrContext, srcFrame.AVFrame.sample_rate) + srcFrame.AVFrame.nb_samples, DstSampleRate, srcFrame.AVFrame.sample_rate, AVRounding.AV_ROUND_UP);
-        //}
+        private void InitContext(MediaFrame srcFrame)
+        {
+            AVFrame* src = srcFrame;
+            AVFrame* dst = dstFrame;
+            if (pSwrContext == null && !isDisposing)
+            {
+                pSwrContext = ffmpeg.swr_alloc_set_opts(null,
+                    (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,
+                    (long)src->channel_layout, (AVSampleFormat)src->format, src->sample_rate,
+                    0, null);
+                ffmpeg.swr_init(pSwrContext).ThrowExceptionIfError();
+            }
+        }
+
+        private int GetOutSamples(MediaFrame srcFrame)
+        {
+            AVFrame* src = srcFrame;
+            AVFrame* dst = dstFrame;
+            if (pSwrContext == null && !isDisposing)
+            {
+                pSwrContext = ffmpeg.swr_alloc_set_opts(null,
+                    (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,
+                    (long)src->channel_layout, (AVSampleFormat)src->format, src->sample_rate,
+                    0, null);
+                ffmpeg.swr_init(pSwrContext).ThrowExceptionIfError();
+            }
+            return ffmpeg.swr_get_out_samples(pSwrContext, src->nb_samples);
+        }
+
+        private int Convert2(MediaFrame srcFrame)
+        {
+            AVFrame* src = srcFrame;
+            AVFrame* dst = dstFrame;
+            return ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, src->extended_data, src->nb_samples).ThrowExceptionIfError();
+        }
+
+        private long outSamplesCount = 0;
+
+        public IEnumerable<AudioFrame> Convert3(MediaFrame srcFrame)
+        {
+            outSamplesCount += GetOutSamples(srcFrame);
+            for (int i = 0; i * DstNbSamples <= outSamplesCount; i++)
+            {
+                int out_samples = Convert2(srcFrame);
+                outSamplesCount -= out_samples;
+                dstFrame.Pts = srcFrame.Pts;
+                yield return dstFrame;
+            }
+        }
 
         #region IDisposable Support
 
@@ -196,6 +244,7 @@ namespace EmguFFmpeg
         {
             if (!disposedValue)
             {
+                isDisposing = true;
                 fixed (SwrContext** ppSwrContext = &pSwrContext)
                 {
                     ffmpeg.swr_free(ppSwrContext);
