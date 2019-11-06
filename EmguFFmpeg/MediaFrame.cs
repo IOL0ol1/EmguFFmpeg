@@ -318,6 +318,11 @@ namespace EmguFFmpeg
 
     public unsafe class VideoFrame : MediaFrame
     {
+        public static VideoFrame CreateFrameByCodec(MediaCodec codec)
+        {
+            return new VideoFrame(codec.AVCodecContext.pix_fmt, codec.AVCodecContext.width, codec.AVCodecContext.height);
+        }
+
         public VideoFrame() : base()
         { }
 
@@ -375,6 +380,11 @@ namespace EmguFFmpeg
 
     public unsafe class AudioFrame : MediaFrame
     {
+        public static AudioFrame CreateFrameByCodec(MediaCodec codec)
+        {
+            return new AudioFrame(codec.AVCodecContext.sample_fmt, (AVChannelLayout)codec.AVCodecContext.channel_layout, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
+        }
+
         public static AudioFrame CreateSilenceFrame(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
         {
             AudioFrame audioFrame = new AudioFrame(format, channelLayout, nbSamples, sampleRate, align);
