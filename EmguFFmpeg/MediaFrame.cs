@@ -47,10 +47,17 @@ namespace EmguFFmpeg
             return Clone<MediaFrame>();
         }
 
+        public void Clear()
+        {
+            ffmpeg.av_frame_unref(pFrame);
+        }
+
+        #region GetData
+
         /// <summary>
-        /// Get managed copy of <see cref="AVFrame.data"/> by <see cref="AVFrame.linesize"/>
+        /// Get managed copy of <see cref="AVFrame.data"/>
         /// <para>
-        /// NOTE: length maybe greater than valid data, because memory alignment.
+        /// reference <see cref="ffmpeg.av_frame_copy(AVFrame*, AVFrame*)"/>
         /// </para>
         /// </summary>
         /// <returns></returns>
@@ -64,7 +71,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// <see cref="ffmpeg.av_image_copy(ref byte_ptrArray4, ref int_array4, ref byte_ptrArray4, int_array4, AVPixelFormat, int, int)"/>
+        /// reference <see cref="ffmpeg.av_image_copy(ref byte_ptrArray4, ref int_array4, ref byte_ptrArray4, int_array4, AVPixelFormat, int, int)"/>
         /// </summary>
         /// <returns></returns>
         private byte[][] GetVideoData()
@@ -72,7 +79,7 @@ namespace EmguFFmpeg
             List<byte[]> result = new List<byte[]>();
             AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)pFrame->format);
             if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
-                throw new FFmpegException("");
+                throw new FFmpegException(new NotSupportedException());
 
             if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PSEUDOPAL) != 0)
             {
@@ -107,10 +114,15 @@ namespace EmguFFmpeg
             if (linesize < bytewidth)
                 throw new FFmpegException(new ArgumentException());
             byte[] result = new byte[height * linesize];
-            Marshal.Copy(srcData, result, 0, result.Length);
+            for (int i = 0; i < height; i++)
+                Marshal.Copy(IntPtr.Add(srcData, i * linesize), result, i * linesize, bytewidth);
             return result;
         }
 
+        /// <summary>
+        /// reference <see cref="ffmpeg.av_samples_copy(byte**, byte**, int, int, int, int, AVSampleFormat)"/>
+        /// </summary>
+        /// <returns></returns>
         private byte[][] GetAudioData()
         {
             List<byte[]> result = new List<byte[]>();
@@ -122,16 +134,13 @@ namespace EmguFFmpeg
             for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)
             {
                 byte[] line = new byte[data_size];
-                Marshal.Copy(intPtr, line, 0, line.Length);
+                Marshal.Copy(intPtr, line, 0, data_size);
                 result.Add(line);
             }
             return result.ToArray();
         }
 
-        public void Clear()
-        {
-            ffmpeg.av_frame_unref(pFrame);
-        }
+        #endregion
 
         public IntPtr[] Data
         {
@@ -309,11 +318,6 @@ namespace EmguFFmpeg
 
     public unsafe class VideoFrame : MediaFrame
     {
-        public static VideoFrame CreateFrame(MediaCodec codec)
-        {
-            return new VideoFrame(codec.AVCodecContext.pix_fmt, codec.AVCodecContext.width, codec.AVCodecContext.height);
-        }
-
         public VideoFrame() : base()
         { }
 
@@ -371,9 +375,11 @@ namespace EmguFFmpeg
 
     public unsafe class AudioFrame : MediaFrame
     {
-        public static AudioFrame CreateFrame(MediaCodec codec)
+        public static AudioFrame CreateSilenceFrame(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
         {
-            return new AudioFrame(codec.AVCodecContext.sample_fmt, (AVChannelLayout)codec.AVCodecContext.channel_layout, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
+            AudioFrame audioFrame = new AudioFrame(format, channelLayout, nbSamples, sampleRate, align);
+            audioFrame.SetSilence(0);
+            return audioFrame;
         }
 
         public AudioFrame() : base()
@@ -420,6 +426,41 @@ namespace EmguFFmpeg
         {
             Clear();
             AllocBuffer(format, (ulong)channelLayout, nbSamples, sampleRate, align);
+        }
+
+        /// <summary>
+        /// refance <see cref="ffmpeg.av_samples_set_silence(byte**, int, int, int, AVSampleFormat)"/>
+        /// </summary>
+        /// <param name="offset">sample offset</param>
+        /// <param name="fill"></param>
+        public void SetSilence(int offset, params byte[] fill)
+        {
+            fill = (fill == null || fill.Length < 1) ? new byte[] { 0x00 } : fill;
+            AVSampleFormat sample_fmt = (AVSampleFormat)pFrame->format;
+            int planar = ffmpeg.av_sample_fmt_is_planar(sample_fmt);
+            int planes = planar != 0 ? pFrame->nb_samples : 1;
+            int block_align = ffmpeg.av_get_bytes_per_sample(sample_fmt) * (planar != 0 ? 1 : pFrame->nb_samples);
+            int data_size = pFrame->nb_samples * block_align;
+
+            if ((sample_fmt == AVSampleFormat.AV_SAMPLE_FMT_U8 || sample_fmt == AVSampleFormat.AV_SAMPLE_FMT_U8P))
+            {
+                for (int i = 0; i < fill.Length; i++)
+                    fill[i] &= 0x80;
+            }
+
+            offset *= block_align; // convert to byte offset
+
+            int fill_size = data_size - offset;
+            int fill_loop = (int)Math.Ceiling((double)fill_size / fill.Length);
+
+            for (int i = 0; i < planes; i++)
+            {
+                for (int j = 0; j < fill_loop; j++)
+                {
+                    int length = Math.Min(fill.Length, fill_size - j * fill.Length);
+                    Marshal.Copy(fill, 0, IntPtr.Add((IntPtr)pFrame->data[(uint)i], offset), length);
+                }
+            }
         }
 
         public byte[][] ToSamples()
