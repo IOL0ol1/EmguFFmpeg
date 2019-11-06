@@ -167,7 +167,7 @@ namespace EmguFFmpeg
             if (pSwrContext == null)
             {
                 pSwrContext = ffmpeg.swr_alloc_set_opts(null,
-                    (long)DstChannelLayout, DstFormat, DstSampleRate,
+                    (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,
                     (long)src->channel_layout, (AVSampleFormat)src->format, src->sample_rate,
                     0, null);
                 ffmpeg.swr_init(pSwrContext).ThrowExceptionIfError();
