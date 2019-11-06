@@ -219,7 +219,10 @@ namespace EmguFFmpeg
         {
             AVFrame* src = srcFrame;
             AVFrame* dst = dstFrame;
-            return ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, src->extended_data, src->nb_samples).ThrowExceptionIfError();
+            if (srcFrame != null)
+                return ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, src->extended_data, src->nb_samples).ThrowExceptionIfError();
+            else
+                return ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, null, 0).ThrowExceptionIfError();
         }
 
         private long outSamplesCount = 0;
@@ -229,9 +232,8 @@ namespace EmguFFmpeg
             outSamplesCount += GetOutSamples(srcFrame);
             for (int i = 0; i * DstNbSamples <= outSamplesCount; i++)
             {
-                int out_samples = Convert2(srcFrame);
+                int out_samples = Convert2(i == 0 ? srcFrame : null);
                 outSamplesCount -= out_samples;
-                dstFrame.Pts = srcFrame.Pts;
                 yield return dstFrame;
             }
         }
