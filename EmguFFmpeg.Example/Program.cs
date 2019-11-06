@@ -16,6 +16,31 @@ namespace EmguFFmpeg.Example
             FFmpegHelper.SetupLogging();
             Console.WriteLine("Hello FFmpeg!");
 
+            using (MediaWriter writer = new MediaWriter(@"C:\Users\Admin\Desktop\output.mp3"))
+            using (MediaReader reader = new MediaReader(@"C:\Users\Admin\Desktop\input.mp3"))
+            {
+                writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, AVChannelLayout.AV_CH_LAYOUT_STEREO));
+                writer.Initialize();
+
+                AudioFrame dstFrame = AudioFrame.CreateFrameByCodec(writer[0].Codec);
+                AudioFrameConverter converter = new AudioFrameConverter(dstFrame);
+                foreach (var packet in reader.ReadPacket())
+                {
+                    int audioIndex = reader.First(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_AUDIO).Index;
+                    foreach (var frame in reader[audioIndex].ReadFrame(packet))
+                    {
+                        foreach (var outframe in converter.Convert3(frame))
+                        {
+                            foreach (var outpacket in writer[0].WriteFrame(outframe))
+                            {
+                                writer.WritePacket(outpacket);
+                            }
+                        }
+                    }
+                }
+                writer.FlushMuxer();
+            }
+
             // No media files provided
             new List<IExample>()
             {
