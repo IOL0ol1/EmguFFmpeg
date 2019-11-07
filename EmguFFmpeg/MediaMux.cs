@@ -14,6 +14,8 @@ namespace EmguFFmpeg
 
         public AVFormatContext AVFormatContext => *pFormatContext;
 
+        public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
+
         public MediaFormat Format { get; protected set; }
 
         public static implicit operator AVFormatContext*(MediaMux value)
