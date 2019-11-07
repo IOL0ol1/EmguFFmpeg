@@ -171,10 +171,10 @@ namespace EmguFFmpeg
 
         private void SwrCheckInit(MediaFrame srcFrame)
         {
-            AVFrame* src = srcFrame;
-            AVFrame* dst = dstFrame;
             if (pSwrContext == null && !isDisposing)
             {
+                AVFrame* src = srcFrame;
+                AVFrame* dst = dstFrame;
                 pSwrContext = ffmpeg.swr_alloc_set_opts(null,
                     (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,
                     (long)src->channel_layout, (AVSampleFormat)src->format, src->sample_rate,
@@ -189,7 +189,7 @@ namespace EmguFFmpeg
             AVFrame* dst = dstFrame;
             for (int i = 0, ret = DstNbSamples; ret == DstNbSamples && src != null; i++)
             {
-                if (i == 0)
+                if (i == 0 && src != null)
                     ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, src->extended_data, src->nb_samples).ThrowExceptionIfError();
                 else
                     ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, null, 0).ThrowExceptionIfError();
@@ -227,16 +227,16 @@ namespace EmguFFmpeg
         public AudioFrame ConvertFrame(MediaFrame srcFrame, out int outSamples, out int cacheSamples)
         {
             SwrCheckInit(srcFrame);
-            int offset = FifoPush(srcFrame);
+            int curSamples = FifoPush(srcFrame);
             AudioFrame dstframe = FifoPop();
             cacheSamples = audioFifo.Size;
-            outSamples = offset - cacheSamples;
+            outSamples = curSamples - cacheSamples;
             return dstframe;
         }
 
         public void ClearCache()
         {
-            audioFifo.Drain(audioFifo.Size);
+            audioFifo.Clear();
         }
 
         #region IDisposable Support
@@ -289,13 +289,8 @@ namespace EmguFFmpeg
             ffmpeg.av_audio_fifo_realloc(pAudioFifo, nbSamples).ThrowExceptionIfError();
         }
 
-        public int Write(void** data, int nbSamples)
-        {
-            return ffmpeg.av_audio_fifo_write(pAudioFifo, data, nbSamples).ThrowExceptionIfError();
-        }
-
         /// <summary>
-        /// <see cref="Write(void**, int)"/> and auto <see cref="Realloc(int)"/> if <see cref="Space"/> less than <paramref name="nbSamples"/>
+        /// auto <see cref="Realloc(int)"/> if <see cref="Space"/> less than <paramref name="nbSamples"/>
         /// </summary>
         /// <param name="data"></param>
         /// <param name="nbSamples"></param>
