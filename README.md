@@ -90,8 +90,8 @@ writer.Dispose();
 ```
 
 ## TODO
-
-- [ ] **Encode audio need to redesign the AudioFrameConverter, maybe also use IEnumable<>.**    
-- [ ] Convert MediaFrame data easy with EmguCV Mat/Image etc.
+   
+- [ ] Convert MediaFrame data easy with EmguCV etc.
+- [ ] Data exchange with NAudio and SharpAVI.
 - [ ] Add MedaiFilter support.
-- [ ] Add test code.
+- [ ] Add more example.
