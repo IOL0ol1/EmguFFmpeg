@@ -142,19 +142,15 @@ namespace EmguFFmpeg
 
         #endregion
 
-        public IntPtr[] Data
+        public IReadOnlyList<IntPtr> Data
         {
             get
             {
                 List<IntPtr> result = new List<IntPtr>();
                 IntPtr intPtr;
                 for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero; i++)
-                {
-                    if (0 < pFrame->channels && pFrame->channels < i)
-                        break;
                     result.Add(intPtr);
-                }
-                return result.ToArray();
+                return result;
             }
         }
 
@@ -320,6 +316,8 @@ namespace EmguFFmpeg
     {
         public static VideoFrame CreateFrameByCodec(MediaCodec codec)
         {
+            if (codec.Type != AVMediaType.AVMEDIA_TYPE_VIDEO)
+                throw new FFmpegException(new ArgumentException(codec.Type.ToString(), nameof(codec)));
             return new VideoFrame(codec.AVCodecContext.pix_fmt, codec.AVCodecContext.width, codec.AVCodecContext.height);
         }
 
@@ -346,50 +344,15 @@ namespace EmguFFmpeg
             Clear();
             AllocBuffer(format, width, height, align);
         }
-
-#if NETFRAMEWORK
-
-        public System.Drawing.Bitmap ToBitmap()
-        {
-            var width = pFrame->width;
-            var height = pFrame->height;
-            var stride = pFrame->linesize[0];
-            var data = pFrame->data;
-            var format = (AVPixelFormat)pFrame->format;
-            switch (format)
-            {
-                case AVPixelFormat.AV_PIX_FMT_BGRA:
-                    return new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format32bppArgb, (IntPtr)data[0]);
-
-                case AVPixelFormat.AV_PIX_FMT_BGR24:
-                    return new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format24bppRgb, (IntPtr)data[0]);
-
-                case AVPixelFormat.AV_PIX_FMT_GRAY8:
-                    return new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format8bppIndexed, (IntPtr)data[0]);
-
-                case AVPixelFormat.AV_PIX_FMT_BGR0:
-                    return new System.Drawing.Bitmap(width, height, stride, System.Drawing.Imaging.PixelFormat.Format32bppRgb, (IntPtr)data[0]);
-
-                default:
-                    throw new FFmpegException(ffmpeg.AVERROR(ffmpeg.EINVAL));
-            }
-        }
-
-#endif
     }
 
     public unsafe class AudioFrame : MediaFrame
     {
         public static AudioFrame CreateFrameByCodec(MediaCodec codec)
         {
+            if (codec.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
+                throw new FFmpegException(nameof(codec));
             return new AudioFrame(codec.AVCodecContext.sample_fmt, (AVChannelLayout)codec.AVCodecContext.channel_layout, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
-        }
-
-        public static AudioFrame CreateSilenceFrame(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
-        {
-            AudioFrame audioFrame = new AudioFrame(format, channelLayout, nbSamples, sampleRate, align);
-            audioFrame.SetSilence(0);
-            return audioFrame;
         }
 
         public AudioFrame() : base()
@@ -442,14 +405,14 @@ namespace EmguFFmpeg
         /// refance <see cref="ffmpeg.av_samples_set_silence(byte**, int, int, int, AVSampleFormat)"/>
         /// </summary>
         /// <param name="offset">sample offset</param>
-        /// <param name="fill"></param>
+        /// <param name="fill">default is 0x00</param>
         public void SetSilence(int offset, params byte[] fill)
         {
             fill = (fill == null || fill.Length < 1) ? new byte[] { 0x00 } : fill;
             AVSampleFormat sample_fmt = (AVSampleFormat)pFrame->format;
             int planar = ffmpeg.av_sample_fmt_is_planar(sample_fmt);
-            int planes = planar != 0 ? pFrame->nb_samples : 1;
-            int block_align = ffmpeg.av_get_bytes_per_sample(sample_fmt) * (planar != 0 ? 1 : pFrame->nb_samples);
+            int planes = planar != 0 ? pFrame->channels : 1;
+            int block_align = ffmpeg.av_get_bytes_per_sample(sample_fmt) * (planar != 0 ? 1 : pFrame->channels);
             int data_size = pFrame->nb_samples * block_align;
 
             if ((sample_fmt == AVSampleFormat.AV_SAMPLE_FMT_U8 || sample_fmt == AVSampleFormat.AV_SAMPLE_FMT_U8P))
@@ -460,43 +423,15 @@ namespace EmguFFmpeg
 
             offset *= block_align; // convert to byte offset
 
-            int fill_size = data_size - offset;
-            int fill_loop = (int)Math.Ceiling((double)fill_size / fill.Length);
+            int fill_size = data_size - offset; // number of bytes to fill per plane
+            List<byte> fill_data = new List<byte>(); // data to fill per plane
+            while (fill_data.Count < fill_size)
+                fill_data.AddRange(fill);
 
             for (int i = 0; i < planes; i++)
             {
-                for (int j = 0; j < fill_loop; j++)
-                {
-                    int length = Math.Min(fill.Length, fill_size - j * fill.Length);
-                    Marshal.Copy(fill, 0, IntPtr.Add((IntPtr)pFrame->data[(uint)i], offset), length);
-                }
+                Marshal.Copy(fill_data.ToArray(), 0, IntPtr.Add((IntPtr)pFrame->extended_data[(uint)i], offset), fill_size);
             }
-        }
-
-        public byte[][] ToSamples()
-        {
-            if (pFrame->data[0] == null)
-                return null;
-            int samplesize = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format);
-            int planarsize = samplesize * pFrame->nb_samples;
-            byte[][] result;
-            if (ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format) > 0)
-            {
-                result = new byte[pFrame->channels][];
-                for (uint ch = 0; ch < pFrame->channels; ch++)
-                {
-                    result[ch] = new byte[planarsize];
-                    Marshal.Copy((IntPtr)pFrame->data[ch], result[ch], 0, planarsize);
-                }
-            }
-            else
-            {
-                result = new byte[1][];
-                int totalsize = planarsize * pFrame->channels;
-                result[0] = new byte[totalsize];
-                Marshal.Copy((IntPtr)pFrame->data[0], result[0], 0, totalsize);
-            }
-            return result;
         }
     }
 }
