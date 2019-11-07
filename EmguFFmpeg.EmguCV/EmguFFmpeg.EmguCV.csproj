@@ -11,8 +11,10 @@
     <RepositoryUrl>https://github.com/IOL0ol1/EmguFFmpeg</RepositoryUrl>
     <Company>EmguFFmpeg</Company>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>EmguFFmpeg with EmguCV expansian (net45)</PackageReleaseNotes>
+    <PackageReleaseNotes>EmguFFmpeg with EmguCV expansian (EmguCV only net45) 
+MediaFrame and Mat convert to each other</PackageReleaseNotes>
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet emgucv image</PackageTags>
+    <Version>1.0.4</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
