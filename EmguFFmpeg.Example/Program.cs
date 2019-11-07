@@ -1,4 +1,5 @@
-﻿using FFmpeg.AutoGen;
+﻿using EmguFFmpeg.Example.Example;
+using FFmpeg.AutoGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,41 +10,19 @@ namespace EmguFFmpeg.Example
 {
     internal class Program
     {
-        private static void Main(string[] args)
+        private unsafe static void Main(string[] args)
         {
             // copy ffmpeg binarys to ./bin
             FFmpegHelper.RegisterBinaries();
-            FFmpegHelper.SetupLogging();
+            FFmpegHelper.SetupLogging(logAction: _ => Trace.Write(_));
             Console.WriteLine("Hello FFmpeg!");
-            string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-            using (MediaWriter writer = new MediaWriter(Path.Combine(desktop, "output.mp3")))
-            using (MediaReader reader = new MediaReader(Path.Combine(desktop, "input.mp3")))
-            {
-                writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, AVChannelLayout.AV_CH_LAYOUT_STEREO, 22050));
-                writer.Initialize();
 
-                AudioFrame dstFrame = AudioFrame.CreateFrameByCodec(writer[0].Codec);
-                AudioFrameConverter converter = new AudioFrameConverter(dstFrame);
-                int i = 0;
-                foreach (var packet in reader.ReadPacket())
-                {
-                    int audioIndex = reader.First(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_AUDIO).Index;
-                    if (reader[audioIndex].TryToTimeSpan(packet.Pts, out TimeSpan t))
-                        Trace.TraceInformation($"{t}");
-                    foreach (var frame in reader[audioIndex].ReadFrame(packet))
-                    {
-                        foreach (var outframe in converter.Convert3(frame))
-                        {
-                            outframe.Pts = outframe.NbSamples * (++i);
-                            foreach (var outpacket in writer[0].WriteFrame(outframe))
-                            {
-                                writer.WritePacket(outpacket);
-                            }
-                        }
-                    }
-                }
-                writer.FlushMuxer();
-            }
+            string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            string input = Path.Combine(desktop, "input.flac");
+            string output = Path.Combine(desktop, "output.mp3");
+            AudioTranscode audioTranscode = new AudioTranscode(input, output);
+
+            Trace.TraceInformation("-----------------------");
             return;
 
             // No media files provided
