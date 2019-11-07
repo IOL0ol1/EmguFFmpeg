@@ -32,19 +32,19 @@ namespace EmguFFmpeg
             return error < 0 ? throw new FFmpegException(error) : error;
         }
 
+        public static int ToChannels(this AVChannelLayout channelLayout)
+        {
+            return ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout);
+        }
+
         public static double ToDouble(this AVRational rational)
         {
             return ffmpeg.av_q2d(rational);
         }
 
-        public static AVRational ToTranspose(this AVRational src, bool srcZeroAllow = true, bool dstZeroAllow = true)
+        public static AVRational ToTranspose(this AVRational rational)
         {
-            AVRational dst = new AVRational() { den = src.num, num = src.den };
-            if (!srcZeroAllow && src.den == 0)
-                throw new FFmpegException(new ArgumentException($"{nameof(srcZeroAllow)} == {srcZeroAllow} && src.den == {src.den}"));
-            if (!dstZeroAllow && dst.den == 0)
-                throw new FFmpegException(new ArgumentException($"{nameof(dstZeroAllow)} == {dstZeroAllow} && dst.den == {dst.den}"));
-            return dst;
+            return new AVRational() { den = rational.num, num = rational.den };
         }
 
         /// <summary>
