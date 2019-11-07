@@ -9,6 +9,5 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EmguFFmpeg.EmguCV\EmguFFmpeg.EmguCV.csproj" />
-    <ProjectReference Include="..\EmguFFmpeg\EmguFFmpeg.csproj" />
   </ItemGroup>
 </Project>
