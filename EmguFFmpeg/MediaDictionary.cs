@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace EmguFFmpeg
 {
@@ -193,6 +194,14 @@ namespace EmguFFmpeg
         }
 
         #endregion
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (var item in KeyValues)
+                stringBuilder.Append(item);
+            return stringBuilder.ToString();
+        }
     }
 
     [Flags]

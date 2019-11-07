@@ -15,7 +15,7 @@ namespace EmguFFmpeg
 
         public override string ToString()
         {
-            return $"Name: {Name}, Extension: {Extensions}, MimeType: {MimeType}, LongName: {LongName}";
+            return Name;
         }
     }
 

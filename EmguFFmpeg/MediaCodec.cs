@@ -149,6 +149,11 @@ namespace EmguFFmpeg
 
         #endregion
 
+        public override string ToString()
+        {
+            return Name;
+        }
+
         public static implicit operator AVCodec*(MediaCodec value)
         {
             if (value == null) return null;
