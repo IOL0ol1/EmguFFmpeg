@@ -11,7 +11,7 @@ namespace EmguFFmpeg
     {
         public virtual IEnumerable<MediaFrame> Convert(MediaFrame frame)
         {
-            throw new FFmpegException(new NotImplementedException());
+            throw new FFmpegException(FFmpegMessage.NotImplemented);
         }
 
         #region IDisposable Support
@@ -61,7 +61,7 @@ namespace EmguFFmpeg
         public PixelConverter(MediaCodec dstCodec, int flag = ffmpeg.SWS_BILINEAR)
         {
             if (dstCodec.Type != AVMediaType.AVMEDIA_TYPE_VIDEO)
-                throw new FFmpegException(dstCodec.Type.ToString());
+                throw new FFmpegException(FFmpegMessage.CodecTypeError);
             DstWidth = dstCodec.AVCodecContext.width;
             DstHeight = dstCodec.AVCodecContext.height;
             DstFormat = dstCodec.AVCodecContext.pix_fmt;
@@ -142,7 +142,7 @@ namespace EmguFFmpeg
         public SampleConverter(MediaCodec dstCodec)
         {
             if (dstCodec.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
-                throw new FFmpegException(dstCodec.Type.ToString());
+                throw new FFmpegException(FFmpegMessage.CodecTypeError);
             DstFormat = dstCodec.AVCodecContext.sample_fmt;
             DstChannelLayout = dstCodec.AVCodecContext.channel_layout;
             DstNbSamples = dstCodec.AVCodecContext.frame_size;

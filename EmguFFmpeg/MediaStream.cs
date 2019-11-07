@@ -108,7 +108,7 @@ namespace EmguFFmpeg
         public TimeSpan ToTimeSpan(long pts)
         {
             if (pts < 0)
-                throw new FFmpegException(new ArgumentOutOfRangeException(nameof(pts), pts, $"0~{long.MaxValue}"));
+                throw new FFmpegException(FFmpegMessage.PtsOutOfRange);
             return TimeSpan.FromSeconds(pts * ffmpeg.av_q2d(TimeBase));
         }
 

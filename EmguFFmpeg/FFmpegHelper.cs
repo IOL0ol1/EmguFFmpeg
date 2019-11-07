@@ -52,13 +52,13 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="logLevel">log level</param>
         /// <param name="logFlags">log flags, support AND operator </param>
-        /// <param name="writeLogAction">set <see langword="null"/> to use default log output</param>
-        public static unsafe void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string> writeLogAction = null)
+        /// <param name="logAction">set <see langword="null"/> to use default log output</param>
+        public static unsafe void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string> logAction = null)
         {
             ffmpeg.av_log_set_level((int)logLevel);
             ffmpeg.av_log_set_flags((int)logFlags);
 
-            if (writeLogAction == null)
+            if (logAction == null)
             {
                 logCallback = ffmpeg.av_log_default_callback;
             }
@@ -71,7 +71,7 @@ namespace EmguFFmpeg
                     var printPrefix = 1;
                     var lineBuffer = stackalloc byte[lineSize];
                     ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
-                    writeLogAction.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
+                    logAction.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
                 };
             }
             ffmpeg.av_log_set_callback(logCallback);

@@ -19,13 +19,13 @@ namespace EmguFFmpeg
         /// Get value if <see cref="Id"/> is not <see cref="AVCodecID.AV_CODEC_ID_NONE"/>
         /// </summary>
         /// <exception cref="FFmpegException"/>
-        public AVCodec AVCodec => pCodec == null ? throw new FFmpegException(new NullReferenceException()) : *pCodec;
+        public AVCodec AVCodec => pCodec == null ? throw new FFmpegException(FFmpegMessage.NullReference) : *pCodec;
 
         /// <summary>
         /// Get value after <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/>
         /// </summary>
         /// <exception cref="FFmpegException"/>
-        public AVCodecContext AVCodecContext => pCodecContext == null ? throw new FFmpegException(new NullReferenceException()) : *pCodecContext;
+        public AVCodecContext AVCodecContext => pCodecContext == null ? throw new FFmpegException(FFmpegMessage.NullReference) : *pCodecContext;
 
         public AVMediaType Type => pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type;
         public AVCodecID Id => pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id;
@@ -223,7 +223,7 @@ namespace EmguFFmpeg
         {
             pCodec = ffmpeg.avcodec_find_decoder(codecId);
             if (codecId != AVCodecID.AV_CODEC_ID_NONE && pCodec == null)
-                throw new FFmpegException("not found codec");
+                throw new FFmpegException(ffmpeg.AVERROR_DECODER_NOT_FOUND);
         }
 
         /// <summary>
@@ -237,13 +237,11 @@ namespace EmguFFmpeg
         {
             pCodec = ffmpeg.avcodec_find_decoder_by_name(codecName);
             if (pCodec == null)
-                throw new FFmpegException("not found codec");
+                throw new FFmpegException(ffmpeg.AVERROR_DECODER_NOT_FOUND);
         }
 
         internal MediaDecode(AVCodec* codec)
         {
-            if (codec == null)
-                throw new FFmpegException(new ArgumentNullException());
             pCodec = codec;
         }
 
@@ -364,13 +362,13 @@ namespace EmguFFmpeg
             {
                 AVCodecContext* pCodecContext = _;
                 if (_.SupportedPixelFmts.Count() <= 0)
-                    throw new FFmpegException(new ArgumentException());
+                    throw new FFmpegException(FFmpegMessage.CodecIDError);
                 if (width <= 0 || height <= 0 || fps <= 0 || bitRate < 0)
-                    throw new FFmpegException(new ArgumentOutOfRangeException());
+                    throw new FFmpegException(FFmpegMessage.NonNegative);
                 if (format == AVPixelFormat.AV_PIX_FMT_NONE)
                     format = _.SupportedPixelFmts[0];
                 else if (_.SupportedPixelFmts.Where(__ => __ == format).Count() <= 0)
-                    throw new FFmpegException(new ArgumentException());
+                    throw new FFmpegException(FFmpegMessage.FormatError);
                 pCodecContext->width = width;
                 pCodecContext->height = height;
                 pCodecContext->time_base = new AVRational { num = 1, den = fps };
@@ -409,24 +407,22 @@ namespace EmguFFmpeg
             return CreateEncode(audioCodec, flags, _ =>
             {
                 AVCodecContext* pCodecContext = _;
-                if (_.SupportedSampelFmts.Count() <= 0)
-                    throw new FFmpegException(new ArgumentException(audioCodec.ToString()));
-                if (_.SupportedSampleRates.Count <= 0)
-                    throw new FFmpegException(new ArgumentException(audioCodec.ToString()));
+                if (_.SupportedSampelFmts.Count() <= 0 || _.SupportedSampleRates.Count <= 0)
+                    throw new FFmpegException(FFmpegMessage.CodecIDError);
                 // check or set sampleRate
                 if (sampleRate <= 0)
                     sampleRate = _.SupportedSampleRates[0];
                 else if (_.SupportedSampleRates.Where(__ => __ == sampleRate).Count() <= 0)
-                    throw new FFmpegException(new NotSupportedException(sampleRate.ToString()));
+                    throw new FFmpegException(FFmpegMessage.SampleRateError);
                 // check or set format
                 if (format == AVSampleFormat.AV_SAMPLE_FMT_NONE)
                     format = _.SupportedSampelFmts[0];
                 else if (_.SupportedSampelFmts.Where(__ => __ == format).Count() <= 0)
-                    throw new FFmpegException(new NotSupportedException(format.ToString()));
+                    throw new FFmpegException(FFmpegMessage.FormatError);
                 // check channelLayout when SupportedChannelLayout.Count() > 0
                 if (_.SupportedChannelLayout.Count() > 0
                      && _.SupportedChannelLayout.Where(__ => __ == (ulong)channelLayout).Count() <= 0)
-                    throw new FFmpegException(new NotSupportedException(channelLayout.ToString()));
+                    throw new FFmpegException(FFmpegMessage.ChannelLayoutError);
                 pCodecContext->sample_rate = sampleRate;
                 pCodecContext->channel_layout = (ulong)channelLayout;
                 pCodecContext->sample_fmt = format;
@@ -448,7 +444,7 @@ namespace EmguFFmpeg
         {
             pCodec = ffmpeg.avcodec_find_encoder(codecId);
             if (codecId != AVCodecID.AV_CODEC_ID_NONE && pCodec == null)
-                throw new FFmpegException("not found codec");
+                throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
         }
 
         /// <summary>
@@ -462,13 +458,11 @@ namespace EmguFFmpeg
         {
             pCodec = ffmpeg.avcodec_find_encoder_by_name(codecName);
             if (pCodec == null)
-                throw new FFmpegException("not found codec");
+                throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
         }
 
         internal MediaEncode(AVCodec* codec)
         {
-            if (codec == null)
-                throw new FFmpegException(new ArgumentNullException());
             pCodec = codec;
         }
 

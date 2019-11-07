@@ -25,31 +25,32 @@ namespace EmguFFmpeg
 
         internal OutFormat(AVOutputFormat* oformat)
         {
-            if (oformat == null) throw new FFmpegException(new NullReferenceException());
+            if (oformat == null) throw new FFmpegException(FFmpegMessage.NullReference);
             pOutputFormat = oformat;
         }
 
         public OutFormat(string name)
         {
-            if (string.IsNullOrEmpty(name))
-                throw new FFmpegException(new ArgumentNullException());
-            void* ofmtOpaque = null;
-            AVOutputFormat* oformat;
-            while ((oformat = ffmpeg.av_muxer_iterate(&ofmtOpaque)) != null)
+            if (!string.IsNullOrEmpty(name))
             {
-                OutFormat format = new OutFormat(oformat);
-                // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
-                string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var item in names)
+                void* ofmtOpaque = null;
+                AVOutputFormat* oformat;
+                while ((oformat = ffmpeg.av_muxer_iterate(&ofmtOpaque)) != null)
                 {
-                    if (item == name.ToLower())
+                    OutFormat format = new OutFormat(oformat);
+                    // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
+                    string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var item in names)
                     {
-                        pOutputFormat = oformat;
-                        return;
+                        if (item == name.ToLower())
+                        {
+                            pOutputFormat = oformat;
+                            return;
+                        }
                     }
                 }
             }
-            throw new FFmpegException(new ArgumentException());
+            throw new FFmpegException(ffmpeg.AVERROR_MUXER_NOT_FOUND);
         }
 
         /// <summary>
@@ -112,31 +113,32 @@ namespace EmguFFmpeg
 
         internal InFormat(AVInputFormat* iformat)
         {
-            if (iformat == null) throw new FFmpegException(new NullReferenceException());
+            if (iformat == null) throw new FFmpegException(FFmpegMessage.NullReference);
             pInputFormat = iformat;
         }
 
         public InFormat(string name)
         {
-            if (string.IsNullOrEmpty(name))
-                throw new FFmpegException(new ArgumentNullException());
-            void* ifmtOpaque = null;
-            AVInputFormat* iformat;
-            while ((iformat = ffmpeg.av_demuxer_iterate(&ifmtOpaque)) != null)
+            if (!string.IsNullOrEmpty(name))
             {
-                InFormat format = new InFormat(iformat);
-                // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
-                string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var item in names)
+                void* ifmtOpaque = null;
+                AVInputFormat* iformat;
+                while ((iformat = ffmpeg.av_demuxer_iterate(&ifmtOpaque)) != null)
                 {
-                    if (item == name.ToLower())
+                    InFormat format = new InFormat(iformat);
+                    // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
+                    string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var item in names)
                     {
-                        pInputFormat = iformat;
-                        return;
+                        if (item == name.ToLower())
+                        {
+                            pInputFormat = iformat;
+                            return;
+                        }
                     }
                 }
             }
-            throw new FFmpegException(new ArgumentException());
+            throw new FFmpegException(ffmpeg.AVERROR_DEMUXER_NOT_FOUND);
         }
 
         public static IReadOnlyList<InFormat> Formats
