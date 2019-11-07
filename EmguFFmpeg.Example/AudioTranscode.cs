@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EmguFFmpeg.Example.Example
+namespace EmguFFmpeg.Example
 {
     public class AudioTranscode
     {

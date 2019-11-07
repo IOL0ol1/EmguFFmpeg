@@ -6,6 +6,5 @@ namespace EmguFFmpeg.Example
 {
     internal interface IExample
     {
-        void Start();
     }
 }
