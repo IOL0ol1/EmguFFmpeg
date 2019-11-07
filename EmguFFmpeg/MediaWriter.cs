@@ -124,7 +124,6 @@ namespace EmguFFmpeg
                 }
                 catch (FFmpegException) { }
             }
-            ffmpeg.av_write_trailer(pFormatContext);
         }
 
         #region IDisposable
@@ -140,6 +139,7 @@ namespace EmguFFmpeg
             {
                 try
                 {
+                    ffmpeg.av_write_trailer(pFormatContext);
                     // Close the output file.
                     if ((pFormatContext->flags & ffmpeg.AVFMT_NOFILE) == 0)
                     {
