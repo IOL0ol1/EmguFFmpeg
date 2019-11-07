@@ -8,19 +8,12 @@ namespace EmguFFmpeg.Example
 {
     public class Remuxing : IExample
     {
-        private string input;
-        private string output;
 
-        public Remuxing(string inputMedia)
+        public unsafe Remuxing(string inputFile)
         {
-            input = inputMedia;
-            output = Path.GetFileNameWithoutExtension(input) + "_remuxing" + Path.GetExtension(input);
-        }
-
-        public unsafe void Start()
-        {
-            using (MediaReader reader = new MediaReader(input))
-            using (MediaWriter writer = new MediaWriter(output))
+            string outputFile = Path.GetFileNameWithoutExtension(inputFile) + "_remuxing" + Path.GetExtension(inputFile);
+            using (MediaReader reader = new MediaReader(inputFile))
+            using (MediaWriter writer = new MediaWriter(outputFile))
             {
                 // add stream with reader's codec_id
                 for (int i = 0; i < reader.Count; i++)
@@ -45,6 +38,7 @@ namespace EmguFFmpeg.Example
                     packet.Pos = -1;
                     writer.WritePacket(packet);
                 }
+                writer.FlushMuxer();
             }
         }
     }

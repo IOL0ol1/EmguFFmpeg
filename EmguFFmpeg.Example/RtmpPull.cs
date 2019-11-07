@@ -8,17 +8,10 @@ namespace EmguFFmpeg.Example
 {
     public class RtmpPull : IExample
     {
-        private string input;
-
-        public RtmpPull(string rtmpUrl)
-        {
-            input = rtmpUrl;
-        }
-
-        public void Start()
+        public RtmpPull(string input)
         {
             MediaDictionary options = new MediaDictionary();
-            options.Add("stimeout", "30000000", 0); // set timeout 30s
+            options.Add("stimeout", "30000000"); // set connect timeout 30s
 
             using (MediaReader reader = new MediaReader(input, null, options))
             {
@@ -29,11 +22,11 @@ namespace EmguFFmpeg.Example
                 {
                     foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
                     {
-                        // TODO: converter to bgr24 data
-                        var avframeData = frame.GetData();
+                        // TODO
                     }
                 }
             }
         }
+
     }
 }
