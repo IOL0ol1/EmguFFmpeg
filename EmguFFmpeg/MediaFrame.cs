@@ -52,6 +52,10 @@ namespace EmguFFmpeg
             ffmpeg.av_frame_unref(pFrame);
         }
 
+        public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->channels > 0;
+
+        public bool IsVideoFrame => pFrame->width > 0 && pFrame->height > 0;
+
         #region GetData
 
         /// <summary>
@@ -432,6 +436,80 @@ namespace EmguFFmpeg
             {
                 Marshal.Copy(fill_data.ToArray(), 0, IntPtr.Add((IntPtr)pFrame->extended_data[(uint)i], offset), fill_size);
             }
+        }
+
+        public AudioFrame ToPlanar()
+        {
+            if (ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format) > 0)
+                return this;
+            AVSampleFormat dstFormat = (AVSampleFormat)pFrame->format;
+            if (dstFormat == AVSampleFormat.AV_SAMPLE_FMT_NB || dstFormat == AVSampleFormat.AV_SAMPLE_FMT_NONE)
+                throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFormat);
+            switch ((AVSampleFormat)pFrame->format)
+            {
+                case AVSampleFormat.AV_SAMPLE_FMT_U8:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_U8P;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S16:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_S16P;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S32:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_S32P;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_FLT:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_DBL:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_DBLP;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S64:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_S64P;
+                    break;
+            }
+            SampleConverter converter = new SampleConverter(new AudioFrame(dstFormat, pFrame->channel_layout, pFrame->nb_samples, pFrame->sample_rate));
+            return converter.ConvertFrame(this, out int _, out int __);
+        }
+
+        public AudioFrame ToPacket()
+        {
+            if (ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format) <= 0)
+                return this;
+            AVSampleFormat dstFormat = (AVSampleFormat)pFrame->format;
+            if (dstFormat == AVSampleFormat.AV_SAMPLE_FMT_NB || dstFormat == AVSampleFormat.AV_SAMPLE_FMT_NONE)
+                throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFormat);
+            switch ((AVSampleFormat)pFrame->format)
+            {
+                case AVSampleFormat.AV_SAMPLE_FMT_U8P:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_U8;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S16P:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_S16;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S32P:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_S32;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_FLTP:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_FLT;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_DBLP:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_DBL;
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S64P:
+                    dstFormat = AVSampleFormat.AV_SAMPLE_FMT_S64;
+                    break;
+            }
+            SampleConverter converter = new SampleConverter(new AudioFrame(dstFormat, pFrame->channel_layout, pFrame->nb_samples, pFrame->sample_rate));
+            return converter.ConvertFrame(this, out int _, out int __);
         }
     }
 }
