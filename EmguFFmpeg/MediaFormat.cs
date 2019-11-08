@@ -25,7 +25,7 @@ namespace EmguFFmpeg
 
         internal OutFormat(AVOutputFormat* oformat)
         {
-            if (oformat == null) throw new FFmpegException(FFmpegMessage.NullReference);
+            if (oformat == null) throw new FFmpegException(FFmpegException.ErrorMessages.NullReference);
             pOutputFormat = oformat;
         }
 
@@ -113,7 +113,7 @@ namespace EmguFFmpeg
 
         internal InFormat(AVInputFormat* iformat)
         {
-            if (iformat == null) throw new FFmpegException(FFmpegMessage.NullReference);
+            if (iformat == null) throw new FFmpegException(FFmpegException.ErrorMessages.NullReference);
             pInputFormat = iformat;
         }
 

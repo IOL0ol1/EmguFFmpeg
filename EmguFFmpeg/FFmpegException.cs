@@ -8,22 +8,40 @@ namespace EmguFFmpeg
     [Serializable]
     public class FFmpegException : Exception
     {
+        public static class ErrorMessages
+        {
+            public const string FFmpegError = "FFmpeg error";
+            public const string NotSupportCodecId = "not supported codec id";
+            public const string NotSupportSampleRate = "not supported sample rate";
+            public const string NotSupportFormat = "not supported format";
+            public const string NotSupportChLayout = "not supported channle layout";
+            public const string NotSupportFrame = "not supported frame";
+            public const string NonNegative = "argument must be non-negative";
+            public const string NotImplemented = "not implemented";
+            public const string NullReference = "null reference";
+            public const string CodecTypeError = "codec type error";
+            public const string LineSizeError = "line size error";
+            public const string PtsOutOfRange = "pts out of range";
+            public const string InvalidVideoFrame = "invalid video frame";
+            public const string InvalidFrame = "invalid frame";
+        }
+
         public int ErrorCode { get; } = 0;
 
-        public FFmpegException(int errorCode) : base($"{FFmpegMessage.FFmpegError} [{errorCode}] {GetErrorString(errorCode)}")
+        public FFmpegException(int errorCode) : base($"{ErrorMessages.FFmpegError} [{errorCode}] {GetErrorString(errorCode)}")
         {
             ErrorCode = errorCode;
         }
 
-        public FFmpegException(int errorCode, string message) : base($"{FFmpegMessage.FFmpegError} [{errorCode}] {GetErrorString(errorCode)} {message}")
+        public FFmpegException(int errorCode, string message) : base($"{ErrorMessages.FFmpegError} [{errorCode}] {GetErrorString(errorCode)} {message}")
         {
             ErrorCode = errorCode;
         }
 
-        public FFmpegException(string message) : base($"{FFmpegMessage.FFmpegError} {message}")
+        public FFmpegException(string message) : base($"{ErrorMessages.FFmpegError} {message}")
         { }
 
-        public FFmpegException(string message, Exception innerException) : base($"{FFmpegMessage.FFmpegError} {message}", innerException)
+        public FFmpegException(string message, Exception innerException) : base($"{ErrorMessages.FFmpegError} {message}", innerException)
         { }
 
         public static unsafe string GetErrorString(int errorCode)
@@ -36,21 +54,5 @@ namespace EmguFFmpeg
         protected FFmpegException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         { }
-    }
-
-    internal static class FFmpegMessage
-    {
-        public const string FFmpegError = "FFmpeg error";
-        public const string CodecIDError = "not supported codec id";
-        public const string SampleRateError = "not supported sample rate";
-        public const string FormatError = "not supported format";
-        public const string ChannelLayoutError = "not supported channle layout";
-        public const string NonNegative = "argument must be non-negative";
-        public const string NullReference = "null reference";
-        public const string CodecTypeError = "codec type error";
-        public const string NotSupportFrame = "not supported frame";
-        public const string LineSizeError = "line size error";
-        public const string PtsOutOfRange = "pts out of range";
-        public const string NotImplemented = "not implemented";
     }
 }

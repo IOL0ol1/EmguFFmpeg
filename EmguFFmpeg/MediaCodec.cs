@@ -19,13 +19,13 @@ namespace EmguFFmpeg
         /// Get value if <see cref="Id"/> is not <see cref="AVCodecID.AV_CODEC_ID_NONE"/>
         /// </summary>
         /// <exception cref="FFmpegException"/>
-        public AVCodec AVCodec => pCodec == null ? throw new FFmpegException(FFmpegMessage.NullReference) : *pCodec;
+        public AVCodec AVCodec => pCodec == null ? throw new FFmpegException(FFmpegException.ErrorMessages.NullReference) : *pCodec;
 
         /// <summary>
         /// Get value after <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/>
         /// </summary>
         /// <exception cref="FFmpegException"/>
-        public AVCodecContext AVCodecContext => pCodecContext == null ? throw new FFmpegException(FFmpegMessage.NullReference) : *pCodecContext;
+        public AVCodecContext AVCodecContext => pCodecContext == null ? throw new FFmpegException(FFmpegException.ErrorMessages.NullReference) : *pCodecContext;
 
         public AVMediaType Type => pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type;
         public AVCodecID Id => pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id;
@@ -362,13 +362,13 @@ namespace EmguFFmpeg
             {
                 AVCodecContext* pCodecContext = _;
                 if (_.SupportedPixelFmts.Count() <= 0)
-                    throw new FFmpegException(FFmpegMessage.CodecIDError);
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportCodecId);
                 if (width <= 0 || height <= 0 || fps <= 0 || bitRate < 0)
-                    throw new FFmpegException(FFmpegMessage.NonNegative);
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NonNegative);
                 if (format == AVPixelFormat.AV_PIX_FMT_NONE)
                     format = _.SupportedPixelFmts[0];
                 else if (_.SupportedPixelFmts.Where(__ => __ == format).Count() <= 0)
-                    throw new FFmpegException(FFmpegMessage.FormatError);
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFormat);
                 pCodecContext->width = width;
                 pCodecContext->height = height;
                 pCodecContext->time_base = new AVRational { num = 1, den = fps };
@@ -408,21 +408,21 @@ namespace EmguFFmpeg
             {
                 AVCodecContext* pCodecContext = _;
                 if (_.SupportedSampelFmts.Count() <= 0 || _.SupportedSampleRates.Count <= 0)
-                    throw new FFmpegException(FFmpegMessage.CodecIDError);
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportCodecId);
                 // check or set sampleRate
                 if (sampleRate <= 0)
                     sampleRate = _.SupportedSampleRates[0];
                 else if (_.SupportedSampleRates.Where(__ => __ == sampleRate).Count() <= 0)
-                    throw new FFmpegException(FFmpegMessage.SampleRateError);
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportSampleRate);
                 // check or set format
                 if (format == AVSampleFormat.AV_SAMPLE_FMT_NONE)
                     format = _.SupportedSampelFmts[0];
                 else if (_.SupportedSampelFmts.Where(__ => __ == format).Count() <= 0)
-                    throw new FFmpegException(FFmpegMessage.FormatError);
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFormat);
                 // check channelLayout when SupportedChannelLayout.Count() > 0
                 if (_.SupportedChannelLayout.Count() > 0
                      && _.SupportedChannelLayout.Where(__ => __ == (ulong)channelLayout).Count() <= 0)
-                    throw new FFmpegException(FFmpegMessage.ChannelLayoutError);
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportChLayout);
                 pCodecContext->sample_rate = sampleRate;
                 pCodecContext->channel_layout = (ulong)channelLayout;
                 pCodecContext->sample_fmt = format;

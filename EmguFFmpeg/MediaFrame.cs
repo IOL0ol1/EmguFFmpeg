@@ -67,7 +67,7 @@ namespace EmguFFmpeg
                 return GetVideoData();
             else if (pFrame->nb_samples > 0 && pFrame->channels > 0)
                 return GetAudioData();
-            throw new FFmpegException(FFmpegMessage.NotSupportFrame);
+            throw new FFmpegException(FFmpegException.ErrorMessages.InvalidFrame);
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace EmguFFmpeg
             List<byte[]> result = new List<byte[]>();
             AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)pFrame->format);
             if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
-                throw new FFmpegException(FFmpegMessage.NotSupportFrame);
+                throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFrame);
 
             if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PSEUDOPAL) != 0)
             {
@@ -112,7 +112,7 @@ namespace EmguFFmpeg
         private byte[] GetPlane(IntPtr srcData, int linesize, int bytewidth, int height)
         {
             if (linesize < bytewidth)
-                throw new FFmpegException(FFmpegMessage.LineSizeError);
+                throw new FFmpegException(FFmpegException.ErrorMessages.LineSizeError);
             byte[] result = new byte[height * linesize];
             for (int i = 0; i < height; i++)
                 Marshal.Copy(IntPtr.Add(srcData, i * linesize), result, i * linesize, bytewidth);
@@ -317,7 +317,7 @@ namespace EmguFFmpeg
         public static VideoFrame CreateFrameByCodec(MediaCodec codec)
         {
             if (codec.Type != AVMediaType.AVMEDIA_TYPE_VIDEO)
-                throw new FFmpegException(FFmpegMessage.CodecTypeError);
+                throw new FFmpegException(FFmpegException.ErrorMessages.CodecTypeError);
             return new VideoFrame(codec.AVCodecContext.pix_fmt, codec.AVCodecContext.width, codec.AVCodecContext.height);
         }
 
@@ -351,7 +351,7 @@ namespace EmguFFmpeg
         public static AudioFrame CreateFrameByCodec(MediaCodec codec)
         {
             if (codec.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
-                throw new FFmpegException(FFmpegMessage.CodecTypeError);
+                throw new FFmpegException(FFmpegException.ErrorMessages.CodecTypeError);
             return new AudioFrame(codec.AVCodecContext.sample_fmt, (AVChannelLayout)codec.AVCodecContext.channel_layout, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
         }
 
