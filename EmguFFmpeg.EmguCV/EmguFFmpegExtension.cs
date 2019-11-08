@@ -26,9 +26,9 @@ namespace EmguFFmpeg.EmguCV
         /// <returns></returns>
         public static Mat ToMat(this MediaFrame frame)
         {
-            if (frame.Width > 0 && frame.Height > 0)
+            if (frame.IsVideoFrame)
                 return VideoFrameToMat(frame);
-            else if (frame.NbSamples > 0 && frame.Channels > 0)
+            else if (frame.IsAudioFrame)
                 return AudioFrameToMat(frame);
             throw new FFmpegException(FFmpegException.ErrorMessages.InvalidFrame);
         }
@@ -74,11 +74,11 @@ namespace EmguFFmpeg.EmguCV
                     return PlanarToMat<long>(frame);
 
                 default:
-                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFrame);
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFormat);
             }
         }
 
-        private static MediaFrame PacketToPlanar(MediaFrame frame, AVSampleFormat dstPlanarFormat)
+        public static MediaFrame PacketToPlanar(MediaFrame frame, AVSampleFormat dstPlanarFormat)
         {
             AudioFrame dstFrame = new AudioFrame(dstPlanarFormat, frame.ChannelLayout, frame.NbSamples, frame.SampleRate);
             using (SampleConverter converter = new SampleConverter(dstFrame))
@@ -144,14 +144,92 @@ namespace EmguFFmpeg.EmguCV
 
         public static AudioFrame ToAudioFrame(this Mat image, AVSampleFormat dstFotmat = AVSampleFormat.AV_SAMPLE_FMT_S16P, int dstSampleRate = 0)
         {
+            switch (dstFotmat)
+            {
+                case AVSampleFormat.AV_SAMPLE_FMT_U8:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_U8P:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S16:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S16P:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S32:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S32P:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_FLT:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_FLTP:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_DBL:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_DBLP:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S64:
+                    break;
+
+                case AVSampleFormat.AV_SAMPLE_FMT_S64P:
+                    break;
+
+                default:
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFormat);
+            }
+
             if (dstFotmat != AVSampleFormat.AV_SAMPLE_FMT_S16P)
             {
                 using (SampleConverter converter = new SampleConverter(dstFotmat, image.Height, image.Width, dstSampleRate))
+
                 {
                     return converter.ConvertFrame(MatToAudioFrame(image, dstSampleRate), out int a, out int b);
                 }
             }
+
             return MatToAudioFrame(image, dstSampleRate);
+        }
+
+        private static AudioFrame MatToPlanar<T>(Mat mat, int dstSampleRate = 0) where T : new()
+        {
+            using (Image<Gray, T> image = mat.ToImage<Gray, T>())
+            {
+                AVSampleFormat format;
+                if (typeof(T) == typeof(byte))
+                    format = AVSampleFormat.AV_SAMPLE_FMT_U8P;
+                else if (typeof(T) == typeof(short))
+                    format = AVSampleFormat.AV_SAMPLE_FMT_S16P;
+                else if (typeof(T) == typeof(int))
+                    format = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+                else if (typeof(T) == typeof(long))
+                    format = AVSampleFormat.AV_SAMPLE_FMT_S64P;
+                else if (typeof(T) == typeof(float))
+                    format = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+                else if (typeof(T) == typeof(double))
+                    format = AVSampleFormat.AV_SAMPLE_FMT_DBLP;
+                else
+                    throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFormat);
+                AudioFrame frame = new AudioFrame(format, image.Height, image.Width, dstSampleRate);
+                int stride = image.Width * image.NumberOfChannels;
+                for (int i = 0; i < image.Height; i++)
+                {
+                    Marshal.Copy(image.Bytes, i * stride, frame.Data[i], stride);
+                }
+                return frame;
+            }
+        }
+
+        private static AudioFrame PlanarToPacket(AudioFrame srcframe)
+        {
+            return null;
         }
 
         private static AudioFrame MatToAudioFrame(Mat mat, int dstSampleRate)
