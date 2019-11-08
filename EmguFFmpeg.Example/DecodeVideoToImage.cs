@@ -7,7 +7,7 @@ using System;
 
 namespace EmguFFmpeg.Example
 {
-    class DecodeVideoToImage
+    internal class DecodeVideoToImage
     {
         /// <summary>
         /// decode video to image
@@ -25,11 +25,17 @@ namespace EmguFFmpeg.Example
                 {
                     foreach (var frame in reader[videoIndex].ReadFrame(packet))
                     {
-                        using (var image = frame.ToImage())
+                        using (var image = frame.ToMat())
                         {
                             // convert pts to timespan string
-                            string ts = reader[videoIndex].ToTimeSpan(frame.Pts).ToString().Replace(":", ".");
-                            image.Save(Path.Combine(outputdir, $"{ts}.bmp"));
+                            if (reader[videoIndex].TryToTimeSpan(frame.Pts, out TimeSpan ts))
+                            {
+                                image.Save(Path.Combine(outputdir, $"{ts.ToString().Replace(":", ".")}.bmp"));
+                            }
+                            else
+                            {
+                                image.Save(Path.Combine(outputdir, $"{frame.Pts}.bmp"));
+                            }
                         }
                     }
                 }

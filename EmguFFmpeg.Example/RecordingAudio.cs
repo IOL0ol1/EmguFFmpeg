@@ -27,7 +27,7 @@ namespace EmguFFmpeg.Example
             {
                 var stream = reader.Where(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_AUDIO).First();
 
-                writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, (AVChannelLayout)stream.Codec.AVCodecContext.channel_layout, stream.Codec.AVCodecContext.sample_rate));
+                writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, stream.Codec.AVCodecContext.channel_layout, stream.Codec.AVCodecContext.sample_rate));
                 writer.Initialize();
 
                 AudioFrame dstFrame = AudioFrame.CreateFrameByCodec(writer[0].Codec);
