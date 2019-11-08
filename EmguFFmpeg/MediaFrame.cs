@@ -352,7 +352,7 @@ namespace EmguFFmpeg
         {
             if (codec.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException(FFmpegException.ErrorMessages.CodecTypeError);
-            return new AudioFrame(codec.AVCodecContext.sample_fmt, (AVChannelLayout)codec.AVCodecContext.channel_layout, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
+            return new AudioFrame(codec.AVCodecContext.sample_fmt, codec.AVCodecContext.channel_layout, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
         }
 
         public AudioFrame() : base()
@@ -361,16 +361,16 @@ namespace EmguFFmpeg
         /// <summary>
         /// </summary>
         /// <param name="format"><see cref="AVCodecContext.sample_fmt"/></param>
-        /// <param name="channelLayout"><see cref="AVCodecContext.channel_layout"/></param>
-        /// <param name="nbSamples"><see cref="AVCodecContext.frame_size"/></param>
-        /// <param name="sampleRate"><see cref="AVCodecContext.sample_rate"/></param>
+        /// <param name="channelLayout">see <see cref="AVChannelLayout"/></param>
+        /// <param name="nbSamples">recommended use <see cref="AVCodecContext.frame_size"/></param>
+        /// <param name="sampleRate"></param>
         /// <param name="align">
         /// Required buffer size alignment. If equal to 0, alignment will be chosen automatically for
         /// the current CPU. It is highly recommended to pass 0 here unless you know what you are doing.
         /// </param>
-        public AudioFrame(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0) : base()
+        public AudioFrame(AVSampleFormat format, ulong channelLayout, int nbSamples, int sampleRate = 0, int align = 0) : base()
         {
-            AllocBuffer(format, (ulong)channelLayout, nbSamples, sampleRate, align);
+            AllocBuffer(format, channelLayout, nbSamples, sampleRate, align);
         }
 
         public AudioFrame(AVSampleFormat format, int channels, int nbSamples, int sampleRate = 0, int align = 0) : base()
@@ -395,10 +395,10 @@ namespace EmguFFmpeg
             AllocBuffer(format, (ulong)ffmpeg.av_get_default_channel_layout(channels), nbSamples, sampleRate, align);
         }
 
-        public void Init(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
+        public void Init(AVSampleFormat format, ulong channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
         {
             Clear();
-            AllocBuffer(format, (ulong)channelLayout, nbSamples, sampleRate, align);
+            AllocBuffer(format, channelLayout, nbSamples, sampleRate, align);
         }
 
         /// <summary>

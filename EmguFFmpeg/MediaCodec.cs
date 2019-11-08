@@ -377,19 +377,19 @@ namespace EmguFFmpeg
             });
         }
 
-        public static MediaEncode CreateAudioEncode(OutFormat Oformat, AVChannelLayout channelLayout, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        public static MediaEncode CreateAudioEncode(OutFormat Oformat, ulong channelLayout, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
             return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, channelLayout, sampleRate, bitRate, format);
         }
 
         public static MediaEncode CreateAudioEncode(OutFormat Oformat, int channels, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
-            return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, (AVChannelLayout)ffmpeg.av_get_default_channel_layout(channels), sampleRate, bitRate, format);
+            return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, (ulong)ffmpeg.av_get_default_channel_layout(channels), sampleRate, bitRate, format);
         }
 
         public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, int channels, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
-            return CreateAudioEncode(audioCodec, flags, (AVChannelLayout)ffmpeg.av_get_default_channel_layout(channels), sampleRate, bitRate, format);
+            return CreateAudioEncode(audioCodec, flags, (ulong)ffmpeg.av_get_default_channel_layout(channels), sampleRate, bitRate, format);
         }
 
         /// <summary>
@@ -397,12 +397,12 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="audioCodec"></param>
         /// <param name="flags"><see cref="MediaFormat.Flags"/></param>
-        /// <param name="channelLayout">channel layout</param>
+        /// <param name="channelLayout">channel layout see <see cref="AVChannelLayout"/></param>
         /// <param name="sampleRate">default is first supported sample rates, must be greater than 0</param>
         /// <param name="bitRate">default is auto bit rate, must be greater than or equal to 0</param>
         /// <param name="format">default is first supported pixel format</param>
         /// <returns></returns>
-        public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, AVChannelLayout channelLayout, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, ulong channelLayout, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
             return CreateEncode(audioCodec, flags, _ =>
             {
@@ -421,10 +421,10 @@ namespace EmguFFmpeg
                     throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportFormat);
                 // check channelLayout when SupportedChannelLayout.Count() > 0
                 if (_.SupportedChannelLayout.Count() > 0
-                     && _.SupportedChannelLayout.Where(__ => __ == (ulong)channelLayout).Count() <= 0)
+                     && _.SupportedChannelLayout.Where(__ => __ == channelLayout).Count() <= 0)
                     throw new FFmpegException(FFmpegException.ErrorMessages.NotSupportChLayout);
                 pCodecContext->sample_rate = sampleRate;
-                pCodecContext->channel_layout = (ulong)channelLayout;
+                pCodecContext->channel_layout = channelLayout;
                 pCodecContext->sample_fmt = format;
                 pCodecContext->channels = ffmpeg.av_get_channel_layout_nb_channels(pCodecContext->channel_layout);
                 // set 0 to use auto bitrate by ffmpeg
@@ -550,277 +550,64 @@ namespace EmguFFmpeg
         }
     }
 
+    /// <summary>
+    ///
+    /// </summary>
     [Flags]
     public enum AVChannelLayout : ulong
     {
-        /// <summary>
-        ///     AV_CH_BACK_CENTER = 0x00000100
-        /// </summary>
-        AV_CH_BACK_CENTER = 256,
-
-        /// <summary>
-        ///     AV_CH_BACK_LEFT = 0x00000010
-        /// </summary>
-        AV_CH_BACK_LEFT = 16,
-
-        /// <summary>
-        ///     AV_CH_BACK_RIGHT = 0x00000020
-        /// </summary>
-        AV_CH_BACK_RIGHT = 32,
-
-        /// <summary>
-        ///     AV_CH_FRONT_CENTER = 0x00000004
-        /// </summary>
-        AV_CH_FRONT_CENTER = 4,
-
-        /// <summary>
-        ///     AV_CH_FRONT_LEFT = 0x00000001
-        /// </summary>
-        AV_CH_FRONT_LEFT = 1,
-
-        /// <summary>
-        ///     AV_CH_FRONT_LEFT_OF_CENTER = 0x00000040
-        /// </summary>
-        AV_CH_FRONT_LEFT_OF_CENTER = 64,
-
-        /// <summary>
-        ///     AV_CH_FRONT_RIGHT = 0x00000002
-        /// </summary>
-        AV_CH_FRONT_RIGHT = 2,
-
-        /// <summary>
-        ///     AV_CH_FRONT_RIGHT_OF_CENTER = 0x00000080
-        /// </summary>
-        AV_CH_FRONT_RIGHT_OF_CENTER = 128,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_2_1 = (AV_CH_LAYOUT_STEREO|AV_CH_BACK_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_2_1 = 259,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_2_2 = (AV_CH_LAYOUT_STEREO|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_2_2 = 1539,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_2POINT1 = (AV_CH_LAYOUT_STEREO|AV_CH_LOW_FREQUENCY)
-        /// </summary>
-        AV_CH_LAYOUT_2POINT1 = 11,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_3POINT1 = (AV_CH_LAYOUT_SURROUND|AV_CH_LOW_FREQUENCY)
-        /// </summary>
-        AV_CH_LAYOUT_3POINT1 = 15,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_4POINT0 = (AV_CH_LAYOUT_SURROUND|AV_CH_BACK_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_4POINT0 = 263,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_4POINT1 = (AV_CH_LAYOUT_4POINT0|AV_CH_LOW_FREQUENCY)
-        /// </summary>
-        AV_CH_LAYOUT_4POINT1 = 271,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_5POINT0 = (AV_CH_LAYOUT_SURROUND|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_5POINT0 = 1543,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_5POINT0_BACK = (AV_CH_LAYOUT_SURROUND|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_5POINT0_BACK = 55,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_5POINT1 = (AV_CH_LAYOUT_5POINT0|AV_CH_LOW_FREQUENCY)
-        /// </summary>
-        AV_CH_LAYOUT_5POINT1 = 1551,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_5POINT1_BACK = (AV_CH_LAYOUT_5POINT0_BACK|AV_CH_LOW_FREQUENCY)
-        /// </summary>
-        AV_CH_LAYOUT_5POINT1_BACK = 63,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_6POINT0 = (AV_CH_LAYOUT_5POINT0|AV_CH_BACK_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_6POINT0 = 1799,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_6POINT0_FRONT = (AV_CH_LAYOUT_2_2|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_6POINT0_FRONT = 1731,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_6POINT1 = (AV_CH_LAYOUT_5POINT1|AV_CH_BACK_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_6POINT1 = 1807,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_6POINT1_BACK = (AV_CH_LAYOUT_5POINT1_BACK|AV_CH_BACK_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_6POINT1_BACK = 319,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_6POINT1_FRONT = (AV_CH_LAYOUT_6POINT0_FRONT|AV_CH_LOW_FREQUENCY)
-        /// </summary>
-        AV_CH_LAYOUT_6POINT1_FRONT = 1739,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_7POINT0 = (AV_CH_LAYOUT_5POINT0|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_7POINT0 = 1591,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_7POINT0_FRONT = (AV_CH_LAYOUT_5POINT0|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_7POINT0_FRONT = 1735,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_7POINT1 = (AV_CH_LAYOUT_5POINT1|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_7POINT1 = 1599,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_7POINT1_WIDE = (AV_CH_LAYOUT_5POINT1|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_7POINT1_WIDE = 1743,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_7POINT1_WIDE_BACK = (AV_CH_LAYOUT_5POINT1_BACK|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_7POINT1_WIDE_BACK = 255,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_HEXADECAGONAL = (AV_CH_LAYOUT_OCTAGONAL|AV_CH_WIDE_LEFT|AV_CH_WIDE_RIGHT|AV_CH_TOP_BACK_LEFT|AV_CH_TOP_BACK_RIGHT|AV_CH_TOP_BACK_CENTER|AV_CH_TOP_FRONT_CENTER|AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_FRONT_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_HEXADECAGONAL = 6442710839uL,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_HEXAGONAL = (AV_CH_LAYOUT_5POINT0_BACK|AV_CH_BACK_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_HEXAGONAL = 311,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_MONO = (AV_CH_FRONT_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_MONO = 4,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_NATIVE = 0x8000000000000000ULL
-        /// </summary>
-        AV_CH_LAYOUT_NATIVE = 9223372036854775808uL,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_OCTAGONAL = (AV_CH_LAYOUT_5POINT0|AV_CH_BACK_LEFT|AV_CH_BACK_CENTER|AV_CH_BACK_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_OCTAGONAL = 1847,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_QUAD = (AV_CH_LAYOUT_STEREO|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_QUAD = 51,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_STEREO = (AV_CH_FRONT_LEFT|AV_CH_FRONT_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_STEREO = 3,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_STEREO_DOWNMIX = (AV_CH_STEREO_LEFT|AV_CH_STEREO_RIGHT)
-        /// </summary>
-        AV_CH_LAYOUT_STEREO_DOWNMIX = 1610612736,
-
-        /// <summary>
-        ///     AV_CH_LAYOUT_SURROUND = (AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER)
-        /// </summary>
-        AV_CH_LAYOUT_SURROUND = 7,
-
-        /// <summary>
-        ///     AV_CH_LOW_FREQUENCY = 0x00000008
-        /// </summary>
-        AV_CH_LOW_FREQUENCY = 8,
-
-        /// <summary>
-        ///     AV_CH_LOW_FREQUENCY_2 = 0x0000000800000000ULL
-        /// </summary>
-        AV_CH_LOW_FREQUENCY_2 = 34359738368uL,
-
-        /// <summary>
-        ///     AV_CH_SIDE_LEFT = 0x00000200
-        /// </summary>
-        AV_CH_SIDE_LEFT = 512,
-
-        /// <summary>
-        ///     AV_CH_SIDE_RIGHT = 0x00000400
-        /// </summary>
-        AV_CH_SIDE_RIGHT = 1024,
-
-        /// <summary>
-        ///     AV_CH_STEREO_LEFT = 0x20000000
-        /// </summary>
-        AV_CH_STEREO_LEFT = 536870912,
-
-        /// <summary>
-        ///     AV_CH_STEREO_RIGHT = 0x40000000
-        /// </summary>
-        AV_CH_STEREO_RIGHT = 1073741824,
-
-        /// <summary>
-        ///     AV_CH_SURROUND_DIRECT_LEFT = 0x0000000200000000ULL
-        /// </summary>
-        AV_CH_SURROUND_DIRECT_LEFT = 8589934592uL,
-
-        /// <summary>
-        ///     AV_CH_SURROUND_DIRECT_RIGHT = 0x0000000400000000ULL
-        /// </summary>
-        AV_CH_SURROUND_DIRECT_RIGHT = 17179869184uL,
-
-        /// <summary>
-        ///     AV_CH_TOP_BACK_CENTER = 0x00010000
-        /// </summary>
-        AV_CH_TOP_BACK_CENTER = 65536,
-
-        /// <summary>
-        ///     AV_CH_TOP_BACK_LEFT = 0x00008000
-        /// </summary>
-        AV_CH_TOP_BACK_LEFT = 32768,
-
-        /// <summary>
-        ///     AV_CH_TOP_BACK_RIGHT = 0x00020000
-        /// </summary>
-        AV_CH_TOP_BACK_RIGHT = 131072,
-
-        /// <summary>
-        ///     AV_CH_TOP_CENTER = 0x00000800
-        /// </summary>
-        AV_CH_TOP_CENTER = 2048,
-
-        /// <summary>
-        ///     AV_CH_TOP_FRONT_CENTER = 0x00002000
-        /// </summary>
-        AV_CH_TOP_FRONT_CENTER = 8192,
-
-        /// <summary>
-        ///     AV_CH_TOP_FRONT_LEFT = 0x00001000
-        /// </summary>
-        AV_CH_TOP_FRONT_LEFT = 4096,
-
-        /// <summary>
-        ///     AV_CH_TOP_FRONT_RIGHT = 0x00004000
-        /// </summary>
-        AV_CH_TOP_FRONT_RIGHT = 16384,
-
-        /// <summary>
-        ///     AV_CH_WIDE_LEFT = 0x0000000080000000ULL
-        /// </summary>
-        AV_CH_WIDE_LEFT = 2147483648uL,
-
-        /// <summary>
-        ///     AV_CH_WIDE_RIGHT = 0x0000000100000000ULL
-        /// </summary>
-        AV_CH_WIDE_RIGHT = 4294967296uL,
+        AV_CH_FRONT_LEFT = 0x00000001UL,
+        AV_CH_FRONT_RIGHT = 0x00000002UL,
+        AV_CH_FRONT_CENTER = 0x00000004UL,
+        AV_CH_LOW_FREQUENCY = 0x00000008UL,
+        AV_CH_BACK_LEFT = 0x00000010UL,
+        AV_CH_BACK_RIGHT = 0x00000020UL,
+        AV_CH_FRONT_LEFT_OF_CENTER = 0x00000040UL,
+        AV_CH_FRONT_RIGHT_OF_CENTER = 0x00000080UL,
+        AV_CH_BACK_CENTER = 0x00000100UL,
+        AV_CH_SIDE_LEFT = 0x00000200UL,
+        AV_CH_SIDE_RIGHT = 0x00000400UL,
+        AV_CH_TOP_CENTER = 0x00000800UL,
+        AV_CH_TOP_FRONT_LEFT = 0x00001000UL,
+        AV_CH_TOP_FRONT_CENTER = 0x00002000UL,
+        AV_CH_TOP_FRONT_RIGHT = 0x00004000UL,
+        AV_CH_TOP_BACK_LEFT = 0x00008000UL,
+        AV_CH_TOP_BACK_CENTER = 0x00010000UL,
+        AV_CH_TOP_BACK_RIGHT = 0x00020000UL,
+        AV_CH_STEREO_LEFT = 0x20000000UL,
+        AV_CH_STEREO_RIGHT = 0x40000000UL,
+        AV_CH_WIDE_LEFT = 0x0000000080000000UL,
+        AV_CH_WIDE_RIGHT = 0x0000000100000000UL,
+        AV_CH_SURROUND_DIRECT_LEFT = 0x0000000200000000UL,
+        AV_CH_SURROUND_DIRECT_RIGHT = 0x0000000400000000UL,
+        AV_CH_LOW_FREQUENCY_2 = 0x0000000800000000UL,
+        AV_CH_LAYOUT_MONO = (AV_CH_FRONT_CENTER),
+        AV_CH_LAYOUT_STEREO = (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT),
+        AV_CH_LAYOUT_2POINT1 = (AV_CH_LAYOUT_STEREO | AV_CH_LOW_FREQUENCY),
+        AV_CH_LAYOUT_2_1 = (AV_CH_LAYOUT_STEREO | AV_CH_BACK_CENTER),
+        AV_CH_LAYOUT_SURROUND = (AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER),
+        AV_CH_LAYOUT_3POINT1 = (AV_CH_LAYOUT_SURROUND | AV_CH_LOW_FREQUENCY),
+        AV_CH_LAYOUT_4POINT0 = (AV_CH_LAYOUT_SURROUND | AV_CH_BACK_CENTER),
+        AV_CH_LAYOUT_4POINT1 = (AV_CH_LAYOUT_4POINT0 | AV_CH_LOW_FREQUENCY),
+        AV_CH_LAYOUT_2_2 = (AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT),
+        AV_CH_LAYOUT_QUAD = (AV_CH_LAYOUT_STEREO | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT),
+        AV_CH_LAYOUT_5POINT0 = (AV_CH_LAYOUT_SURROUND | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT),
+        AV_CH_LAYOUT_5POINT1 = (AV_CH_LAYOUT_5POINT0 | AV_CH_LOW_FREQUENCY),
+        AV_CH_LAYOUT_5POINT0_BACK = (AV_CH_LAYOUT_SURROUND | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT),
+        AV_CH_LAYOUT_5POINT1_BACK = (AV_CH_LAYOUT_5POINT0_BACK | AV_CH_LOW_FREQUENCY),
+        AV_CH_LAYOUT_6POINT0 = (AV_CH_LAYOUT_5POINT0 | AV_CH_BACK_CENTER),
+        AV_CH_LAYOUT_6POINT0_FRONT = (AV_CH_LAYOUT_2_2 | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER),
+        AV_CH_LAYOUT_HEXAGONAL = (AV_CH_LAYOUT_5POINT0_BACK | AV_CH_BACK_CENTER),
+        AV_CH_LAYOUT_6POINT1 = (AV_CH_LAYOUT_5POINT1 | AV_CH_BACK_CENTER),
+        AV_CH_LAYOUT_6POINT1_BACK = (AV_CH_LAYOUT_5POINT1_BACK | AV_CH_BACK_CENTER),
+        AV_CH_LAYOUT_6POINT1_FRONT = (AV_CH_LAYOUT_6POINT0_FRONT | AV_CH_LOW_FREQUENCY),
+        AV_CH_LAYOUT_7POINT0 = (AV_CH_LAYOUT_5POINT0 | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT),
+        AV_CH_LAYOUT_7POINT0_FRONT = (AV_CH_LAYOUT_5POINT0 | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER),
+        AV_CH_LAYOUT_7POINT1 = (AV_CH_LAYOUT_5POINT1 | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT),
+        AV_CH_LAYOUT_7POINT1_WIDE = (AV_CH_LAYOUT_5POINT1 | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER),
+        AV_CH_LAYOUT_7POINT1_WIDE_BACK = (AV_CH_LAYOUT_5POINT1_BACK | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER),
+        AV_CH_LAYOUT_OCTAGONAL = (AV_CH_LAYOUT_5POINT0 | AV_CH_BACK_LEFT | AV_CH_BACK_CENTER | AV_CH_BACK_RIGHT),
+        AV_CH_LAYOUT_HEXADECAGONAL = (AV_CH_LAYOUT_OCTAGONAL | AV_CH_WIDE_LEFT | AV_CH_WIDE_RIGHT | AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT | AV_CH_TOP_BACK_CENTER | AV_CH_TOP_FRONT_CENTER | AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT),
+        AV_CH_LAYOUT_STEREO_DOWNMIX = (AV_CH_STEREO_LEFT | AV_CH_STEREO_RIGHT),
     }
 }

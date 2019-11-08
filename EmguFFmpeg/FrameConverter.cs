@@ -126,16 +126,36 @@ namespace EmguFFmpeg
         private SwrContext* pSwrContext = null;
         public readonly AVSampleFormat DstFormat;
         public readonly ulong DstChannelLayout;
+        public readonly int DstChannels;
         public readonly int DstNbSamples;
         public readonly int DstSampleRate;
 
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="dstFormat"></param>
+        /// <param name="dstChannelLayout">see <see cref="AVChannelLayout"/></param>
+        /// <param name="dstNbSamples"></param>
+        /// <param name="dstSampleRate"></param>
         public SampleConverter(AVSampleFormat dstFormat, ulong dstChannelLayout, int dstNbSamples, int dstSampleRate)
         {
             DstFormat = dstFormat;
             DstChannelLayout = dstChannelLayout;
+            DstChannels = ffmpeg.av_get_channel_layout_nb_channels(dstChannelLayout);
             DstNbSamples = dstNbSamples;
             DstSampleRate = dstSampleRate;
-            dstFrame = new AudioFrame(DstFormat, (AVChannelLayout)DstChannelLayout, DstNbSamples, DstSampleRate);
+            dstFrame = new AudioFrame(DstFormat, DstChannelLayout, DstNbSamples, DstSampleRate);
+            audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
+        }
+
+        public SampleConverter(AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate)
+        {
+            DstFormat = dstFormat;
+            DstChannels = dstChannels;
+            DstChannelLayout = (ulong)ffmpeg.av_get_default_channel_layout(dstChannels);
+            DstNbSamples = dstNbSamples;
+            DstSampleRate = dstSampleRate;
+            dstFrame = new AudioFrame(DstFormat, DstChannelLayout, DstNbSamples, DstSampleRate);
             audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
         }
 
@@ -147,7 +167,7 @@ namespace EmguFFmpeg
             DstChannelLayout = dstCodec.AVCodecContext.channel_layout;
             DstNbSamples = dstCodec.AVCodecContext.frame_size;
             DstSampleRate = dstCodec.AVCodecContext.sample_rate;
-            dstFrame = new AudioFrame(DstFormat, (AVChannelLayout)DstChannelLayout, DstNbSamples, DstSampleRate);
+            dstFrame = new AudioFrame(DstFormat, DstChannelLayout, DstNbSamples, DstSampleRate);
             audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
         }
 
@@ -264,6 +284,9 @@ namespace EmguFFmpeg
     public unsafe class AudioFifo : IDisposable
     {
         private AVAudioFifo* pAudioFifo;
+
+        public AudioFifo(AVSampleFormat format, ulong channelLayout, int nbSamples) : this(format, ffmpeg.av_get_channel_layout_nb_channels(channelLayout), nbSamples)
+        { }
 
         public AudioFifo(AVSampleFormat format, int channels, int nbSamples)
         {
