@@ -20,6 +20,7 @@ namespace EmguFFmpeg
             public const string NotImplemented = "not implemented";
             public const string NullReference = "null reference";
             public const string CodecTypeError = "codec type error";
+            public const string MediaTypeError = "media type error";
             public const string LineSizeError = "line size error";
             public const string PtsOutOfRange = "pts out of range";
             public const string InvalidVideoFrame = "invalid video frame";
