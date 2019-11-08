@@ -20,9 +20,9 @@ namespace EmguFFmpeg.EmguCV
         public static Image<Bgr, byte> ToImage(this MediaFrame frame)
         {
             if (frame == null)
-                throw new FFmpegException(FFmpegMessage.NullReference);
+                throw new FFmpegException(FFmpegException.ErrorMessages.NullReference);
             if (frame.Height <= 0 || frame.Width <= 0)
-                throw new FFmpegException(FFmpegMessage.InvalidVideoFrame);
+                throw new FFmpegException(FFmpegException.ErrorMessages.InvalidVideoFrame);
 
             if ((AVPixelFormat)frame.Format != AVPixelFormat.AV_PIX_FMT_BGR24)
             {
@@ -51,8 +51,6 @@ namespace EmguFFmpeg.EmguCV
                 }
             }
             return ToBgrFrame(image);
-
-
         }
 
         public static AudioFrame ToAudioFrame(this DenseHistogram histogram)
@@ -60,7 +58,6 @@ namespace EmguFFmpeg.EmguCV
             // TODO
             return null;
         }
-
 
         private static VideoFrame ToBgrFrame(Image<Bgr, byte> image)
         {
@@ -84,11 +81,5 @@ namespace EmguFFmpeg.EmguCV
             }
             return image;
         }
-    }
-
-    internal static class FFmpegMessage
-    {
-        public const string NullReference = "null reference";
-        public const string InvalidVideoFrame = "invalid video frame";
     }
 }
