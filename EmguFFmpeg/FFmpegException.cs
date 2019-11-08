@@ -23,6 +23,7 @@ namespace EmguFFmpeg
             public const string LineSizeError = "line size error";
             public const string PtsOutOfRange = "pts out of range";
             public const string InvalidVideoFrame = "invalid video frame";
+            public const string InvalidAudioFrame = "invalid audio frame";
             public const string InvalidFrame = "invalid frame";
         }
 
