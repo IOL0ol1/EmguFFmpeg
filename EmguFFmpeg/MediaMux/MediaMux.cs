@@ -72,11 +72,6 @@ namespace EmguFFmpeg
 
         public abstract void DumpInfo();
 
-        public void Close()
-        {
-            Dispose();
-        }
-
         #region IReadOnlyList<MediaStream>
 
         protected List<MediaStream> streams = new List<MediaStream>();
