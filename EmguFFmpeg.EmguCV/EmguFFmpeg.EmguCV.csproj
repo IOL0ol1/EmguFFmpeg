@@ -15,6 +15,7 @@
 MediaFrame and Mat convert to each other</PackageReleaseNotes>
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet emgucv image</PackageTags>
     <Version>1.0.4</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
