@@ -93,7 +93,7 @@ namespace EmguFFmpeg.Example.Example
                 throw new NotSupportedException();
 
             Marshal.Copy(data, 0, audioFrame.Data[0], data.Length);
-            lastSamples += audioFrame.NbSamples;
+            lastSamples += audioFrame.AVFrame.nb_samples;
             audioFrame.Pts = lastSamples;
             foreach (var packet in writer[videoIndex].WriteFrame(audioFrame))
             {

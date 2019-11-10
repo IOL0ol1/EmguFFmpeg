@@ -39,7 +39,7 @@ namespace EmguFFmpeg.Example
                     {
                         foreach (var dstframe in converter.Convert(frame))
                         {
-                            pts += dstFrame.NbSamples;
+                            pts += dstFrame.AVFrame.nb_samples;
                             dstFrame.Pts = pts;
                             foreach (var dstpacket in writer[0].WriteFrame(dstFrame))
                             {

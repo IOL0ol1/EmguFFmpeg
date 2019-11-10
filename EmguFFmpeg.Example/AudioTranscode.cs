@@ -36,7 +36,7 @@ namespace EmguFFmpeg.Example
                     {
                         foreach (var dstframe in converter.Convert(srcframe))
                         {
-                            pts += dstframe.NbSamples;
+                            pts += dstframe.AVFrame.nb_samples;
                             dstframe.Pts = pts; // audio's pts is total samples, pts can only increase.
                             foreach (var outpacket in writer[0].WriteFrame(dstframe))
                             {
