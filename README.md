@@ -91,7 +91,7 @@ writer.Dispose();
 
 ## TODO
    
-- [ ] Convert MediaFrame data easy with EmguCV etc.
+- [x] Convert MediaFrame data easy with EmguCV etc.
 - [ ] Data exchange with NAudio and SharpAVI.
 - [ ] Add MedaiFilter support.
 - [ ] Add more example.
