@@ -37,6 +37,20 @@ namespace EmguFFmpeg
             return ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout);
         }
 
+        public static ulong ChannelsToChannelLayout(int channels)
+        {
+            if (channels > 64)
+                throw new FFmpegException(FFmpegException.TooManyChannels);
+            ulong result;
+            if ((result = (ulong)ffmpeg.av_get_default_channel_layout(channels)) > 0)
+                return result;
+            while (channels-- > 0)
+            {
+                result |= 1ul << channels;
+            }
+            return result;
+        }
+
         public static double ToDouble(this AVRational rational)
         {
             return ffmpeg.av_q2d(rational);
@@ -160,5 +174,4 @@ namespace EmguFFmpeg
         AV_CH_LAYOUT_HEXADECAGONAL = (AV_CH_LAYOUT_OCTAGONAL | AV_CH_WIDE_LEFT | AV_CH_WIDE_RIGHT | AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT | AV_CH_TOP_BACK_CENTER | AV_CH_TOP_FRONT_CENTER | AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT),
         AV_CH_LAYOUT_STEREO_DOWNMIX = (AV_CH_STEREO_LEFT | AV_CH_STEREO_RIGHT),
     }
-
 }
