@@ -14,12 +14,45 @@ namespace EmguFFmpeg.EmguCV
     public static partial class EmguFFmpegExtension
     {
         /// <summary>
-        /// convert frame to mat
+        /// Convert to Mat
         /// <para>
-        /// video frame: convert to AV_PIX_FMT_BGR24 and get new Mat(frame.Height, frame.Width, DepthType.Cv8U, 3)
+        /// video frame: convert to AV_PIX_FMT_BGR24 and return new Mat(frame.Height, frame.Width, DepthType.Cv8U, 3)
         /// </para>
         /// <para>
-        /// audio frame: convert to AV_SAMPLE_FMT_S16P and get new Mat(frame.Channels, frame.NbSamples, DepthType.Cv16S, 1)
+        /// audio frame:
+        /// <list type="bullet">
+        /// <item>if is planar, return new Mat(frame.AVFrame.nb_samples, frame.AVFrame.channels , depthType, 1);</item>
+        /// <item>if is packet, return new Mat(frame.AVFrame.nb_samples, 1 , depthType, frame.AVFrame.channels);</item>
+        /// </list>
+        /// <para><see cref="AVSampleFormat"/> to <see cref="DepthType"/> mapping table</para>
+        /// <list type="table" >
+        /// <item>
+        /// <term><see cref="AVSampleFormat.AV_SAMPLE_FMT_U8"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_U8P"/></term>
+        /// <description><see cref="DepthType.Cv8U"/></description>
+        /// </item>
+        /// <item>
+        /// <term><see cref="AVSampleFormat.AV_SAMPLE_FMT_S16"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S16P"/></term>
+        /// <description><see cref="DepthType.Cv16S"/></description>
+        /// </item>
+        /// <item>
+        /// <term><see cref="AVSampleFormat.AV_SAMPLE_FMT_S32"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S32P"/></term>
+        /// <description><see cref="DepthType.Cv32S"/></description>
+        /// </item>
+        /// <item>
+        /// <term><see cref="AVSampleFormat.AV_SAMPLE_FMT_FLT"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_FLTP"/></term>
+        /// <description><see cref="DepthType.Cv32F"/></description>
+        /// </item>
+        /// <item>
+        /// <term><see cref="AVSampleFormat.AV_SAMPLE_FMT_DBL"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_DBLP"/></term>
+        /// <description><see cref="DepthType.Cv64F"/></description>
+        /// </item>
+        /// <item>
+        /// <term><see cref="AVSampleFormat.AV_SAMPLE_FMT_S64"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S64P"/></term>
+        /// <description><see cref="DepthType.Cv64F"/></description>
+        /// </item>
+        /// <item>NOTE: Emgucv not supported int64, replace with Cv64F, so read result by bytes convert to int64, otherwise will read <see cref="double.NaN"/>
+        /// </item>
+        /// </list>
         /// </para>
         /// </summary>
         /// <param name="frame"></param>
@@ -27,59 +60,64 @@ namespace EmguFFmpeg.EmguCV
         public static Mat ToMat(this MediaFrame frame)
         {
             if (frame.IsVideoFrame)
-                return VideoFrameToMat(frame);
+                return VideoFrameToMat(frame as VideoFrame);
             else if (frame.IsAudioFrame)
-                return AudioFrameToMat(frame);
+                return AudioFrameToMat(frame as AudioFrame);
             throw new FFmpegException(FFmpegException.InvalidFrame);
         }
 
-        private static Mat AudioFrameToMat(MediaFrame frame)
+        private static Mat AudioFrameToMat(AudioFrame frame)
         {
-            frame = (frame as AudioFrame).ToPlanar();
+            DepthType dstType;
             switch ((AVSampleFormat)frame.AVFrame.format)
             {
                 case AVSampleFormat.AV_SAMPLE_FMT_U8:
                 case AVSampleFormat.AV_SAMPLE_FMT_U8P:
-                    return PlanarToMat<byte>(frame);
+                    dstType = DepthType.Cv8U;
+                    break;
 
                 case AVSampleFormat.AV_SAMPLE_FMT_S16:
                 case AVSampleFormat.AV_SAMPLE_FMT_S16P:
-                    return PlanarToMat<short>(frame);
+                    dstType = DepthType.Cv16S;
+                    break;
 
                 case AVSampleFormat.AV_SAMPLE_FMT_S32:
                 case AVSampleFormat.AV_SAMPLE_FMT_S32P:
-                    return PlanarToMat<int>(frame);
+                    dstType = DepthType.Cv32S;
+                    break;
 
                 case AVSampleFormat.AV_SAMPLE_FMT_FLT:
                 case AVSampleFormat.AV_SAMPLE_FMT_FLTP:
-                    return PlanarToMat<float>(frame);
+                    dstType = DepthType.Cv32F;
+                    break;
 
                 case AVSampleFormat.AV_SAMPLE_FMT_DBL:
                 case AVSampleFormat.AV_SAMPLE_FMT_DBLP:
-                    return PlanarToMat<double>(frame);
-
+                // emgucv not have S64, use 64F
                 case AVSampleFormat.AV_SAMPLE_FMT_S64:
                 case AVSampleFormat.AV_SAMPLE_FMT_S64P:
-                    return PlanarToMat<long>(frame);
+                    dstType = DepthType.Cv64F;
+                    break;
 
                 default:
                     throw new FFmpegException(FFmpegException.NotSupportFormat);
             }
-        }
 
-        private static Mat PlanarToMat<T>(MediaFrame frame) where T : struct
-        {
-            Image<Gray, T> image = new Image<Gray, T>(frame.AVFrame.nb_samples, frame.AVFrame.channels);
-            int stride = image.MIplImage.WidthStep;
-            byte[][] planes = frame.GetData();
-            for (int i = 0; i < frame.Channels; i++)
+            int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)frame.AVFrame.format);
+            int planes = planar != 0 ? frame.AVFrame.channels : 1;
+            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)frame.AVFrame.format) * (planar != 0 ? 1 : frame.AVFrame.channels);
+            int stride = frame.AVFrame.nb_samples * block_align;
+
+            Mat mat = new Mat(frame.AVFrame.nb_samples, planes, dstType, (planar != 0 ? 1 : frame.AVFrame.channels));
+            byte[][] data = frame.GetData();
+            for (int i = 0; i < planes; i++)
             {
-                Marshal.Copy(planes[i], 0, IntPtr.Add(image.Mat.DataPointer, i * stride), stride);
+                Marshal.Copy(data[i], 0, IntPtr.Add(mat.DataPointer, i * stride), stride);
             }
-            return image.Mat;
+            return mat;
         }
 
-        private static Mat VideoFrameToMat(MediaFrame frame)
+        private static Mat VideoFrameToMat(VideoFrame frame)
         {
             if ((AVPixelFormat)frame.AVFrame.format != AVPixelFormat.AV_PIX_FMT_BGR24)
             {
@@ -105,125 +143,122 @@ namespace EmguFFmpeg.EmguCV
         }
 
         /// <summary>
-        /// convert to video frame
+        /// Convert to video frame to <paramref name="dstFormat"/> after Mat.ToImage&lt;Bgr, byte&gt;"
         /// </summary>
-        /// <param name="image"></param>
+        /// <param name="mat"></param>
         /// <param name="dstFormat">video frame format</param>
         /// <returns></returns>
-        public static VideoFrame ToVideoFrame(this Mat image, AVPixelFormat dstFormat = AVPixelFormat.AV_PIX_FMT_BGR24)
+        public static VideoFrame ToVideoFrame(this Mat mat, AVPixelFormat dstFormat = AVPixelFormat.AV_PIX_FMT_BGR24)
         {
             if (dstFormat != AVPixelFormat.AV_PIX_FMT_BGR24)
             {
-                using (PixelConverter converter = new PixelConverter(dstFormat, image.Width, image.Height))
+                using (PixelConverter converter = new PixelConverter(dstFormat, mat.Width, mat.Height))
                 {
-                    return converter.ConvertFrame(MatToVideoFrame(image));
+                    return converter.ConvertFrame(MatToVideoFrame(mat));
                 }
             }
-            return MatToVideoFrame(image);
+            return MatToVideoFrame(mat);
         }
 
-        public static AudioFrame ToAudioFrame(this Mat image, AVSampleFormat dstFotmat = AVSampleFormat.AV_SAMPLE_FMT_S16P, int dstSampleRate = 0)
+        /// <summary>
+        /// Convert to audio frame to <paramref name="dstFotmat"/>
+        /// <para><see cref="DepthType"/> to <see cref="AVSampleFormat"/> mapping table.
+        /// if <see cref="Mat.NumberOfChannels"/> > 1, use packet format, otherwise planar</para>
+        /// <list type="table" >
+        /// <item>
+        /// <term><see cref="DepthType.Cv8U"/></term>
+        /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_U8"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_U8P"/></description1>
+        /// </item>
+        /// <item>
+        /// <term><see cref="DepthType.Cv16S"/></term>
+        /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_S16"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S16P"/></description1>
+        /// </item>
+        /// <item>
+        /// <term><see cref="DepthType.Cv32S"/></term>
+        /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_S32"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S32P"/></description1>
+        /// </item>
+        /// <item>
+        /// <term><see cref="DepthType.Cv32F"/></term>
+        /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_FLT"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_FLTP"/></description1>
+        /// </item>
+        /// <item>
+        /// <term><see cref="DepthType.Cv64F"/></term>
+        /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_DBL"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_DBLP"/></description1>
+        /// </item>
+        /// <item>
+        /// <term><see cref="DepthType.Cv64F"/></term>
+        /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_S64"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S64P"/></description1>
+        /// </item>
+        /// <item>NOTE: Emgucv not supported int64, mapping Cv64F to int64,
+        /// so set Mat with int64 if <paramref name="dstFotmat"/> is <see cref="AVSampleFormat.AV_SAMPLE_FMT_S64"/> or <see cref="AVSampleFormat.AV_SAMPLE_FMT_S64P"/>
+        /// </item>
+        /// </list>
+        /// </summary>
+        /// <param name="mat"></param>
+        /// <param name="dstFotmat">Default is auto format by <see cref="Mat.Depth"/> and <see cref="Mat.NumberOfChannels"/> use mapping table</param>
+        /// <param name="dstSampleRate">Mat not have sample rate, set value here or later</param>
+        /// <returns></returns>
+        public static AudioFrame ToAudioFrame(this Mat mat, AVSampleFormat dstFotmat = AVSampleFormat.AV_SAMPLE_FMT_NONE, int dstSampleRate = 0)
         {
-            switch (dstFotmat)
+            AVSampleFormat srcformat;
+            switch (mat.Depth)
             {
-                case AVSampleFormat.AV_SAMPLE_FMT_U8:
+                case DepthType.Default:
+                case DepthType.Cv8U:
+                case DepthType.Cv8S:
+                    srcformat = mat.NumberOfChannels > 1 ? AVSampleFormat.AV_SAMPLE_FMT_U8 : AVSampleFormat.AV_SAMPLE_FMT_U8P;
                     break;
 
-                case AVSampleFormat.AV_SAMPLE_FMT_U8P:
+                case DepthType.Cv16U:
+                case DepthType.Cv16S:
+                    srcformat = mat.NumberOfChannels > 1 ? AVSampleFormat.AV_SAMPLE_FMT_S16 : AVSampleFormat.AV_SAMPLE_FMT_S16P;
                     break;
 
-                case AVSampleFormat.AV_SAMPLE_FMT_S16:
+                case DepthType.Cv32S:
+                    srcformat = mat.NumberOfChannels > 1 ? AVSampleFormat.AV_SAMPLE_FMT_S32 : AVSampleFormat.AV_SAMPLE_FMT_S32P;
                     break;
 
-                case AVSampleFormat.AV_SAMPLE_FMT_S16P:
+                case DepthType.Cv32F:
+                    srcformat = mat.NumberOfChannels > 1 ? AVSampleFormat.AV_SAMPLE_FMT_FLT : AVSampleFormat.AV_SAMPLE_FMT_FLTP;
                     break;
 
-                case AVSampleFormat.AV_SAMPLE_FMT_S32:
-                    break;
-
-                case AVSampleFormat.AV_SAMPLE_FMT_S32P:
-                    break;
-
-                case AVSampleFormat.AV_SAMPLE_FMT_FLT:
-                    break;
-
-                case AVSampleFormat.AV_SAMPLE_FMT_FLTP:
-                    break;
-
-                case AVSampleFormat.AV_SAMPLE_FMT_DBL:
-                    break;
-
-                case AVSampleFormat.AV_SAMPLE_FMT_DBLP:
-                    break;
-
-                case AVSampleFormat.AV_SAMPLE_FMT_S64:
-                    break;
-
-                case AVSampleFormat.AV_SAMPLE_FMT_S64P:
+                case DepthType.Cv64F:
+                    srcformat = mat.NumberOfChannels > 1 ? AVSampleFormat.AV_SAMPLE_FMT_DBL : AVSampleFormat.AV_SAMPLE_FMT_DBLP;
                     break;
 
                 default:
                     throw new FFmpegException(FFmpegException.NotSupportFormat);
             }
 
-            if (dstFotmat != AVSampleFormat.AV_SAMPLE_FMT_S16P)
+            if (dstFotmat != AVSampleFormat.AV_SAMPLE_FMT_NONE && dstFotmat != srcformat)
             {
-                using (SampleConverter converter = new SampleConverter(dstFotmat, image.Height, image.Width, dstSampleRate))
-
+                // converter must need set sample rate
+                using (SampleConverter converter = new SampleConverter(dstFotmat, mat.NumberOfChannels > 1 ? mat.NumberOfChannels : mat.Height, mat.Width, Math.Min(1, dstSampleRate)))
                 {
-                    return converter.ConvertFrame(MatToAudioFrame(image, dstSampleRate), out int a, out int b);
+                    AudioFrame frame = converter.ConvertFrame(MatToAudioFrame(mat, srcformat, Math.Min(1, dstSampleRate)), out int a, out int b);
+                    unsafe
+                    {
+                        // set real sample rate after convert
+                        ((AVFrame*)frame)->sample_rate = dstSampleRate;
+                    }
                 }
             }
 
-            return MatToAudioFrame(image, dstSampleRate);
+            return MatToAudioFrame(mat, srcformat, dstSampleRate);
         }
 
-        private static AudioFrame MatToPlanar<T>(Mat mat, int dstSampleRate = 0) where T : new()
+        private static AudioFrame MatToAudioFrame(Mat mat, AVSampleFormat srctFormat, int sampleRate)
         {
-            using (Image<Gray, T> image = mat.ToImage<Gray, T>())
+            int channels = mat.NumberOfChannels > 1 ? mat.NumberOfChannels : mat.Height;
+            AudioFrame frame = new AudioFrame(srctFormat, channels, mat.Width, sampleRate);
+            bool isPlanar = ffmpeg.av_sample_fmt_is_planar(srctFormat) > 0;
+            int stride = mat.Step;
+            byte[] image = mat.GetRawData();
+            for (int i = 0; i < (isPlanar ? channels : 1); i++)
             {
-                AVSampleFormat format;
-                if (typeof(T) == typeof(byte))
-                    format = AVSampleFormat.AV_SAMPLE_FMT_U8P;
-                else if (typeof(T) == typeof(short))
-                    format = AVSampleFormat.AV_SAMPLE_FMT_S16P;
-                else if (typeof(T) == typeof(int))
-                    format = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
-                else if (typeof(T) == typeof(long))
-                    format = AVSampleFormat.AV_SAMPLE_FMT_S64P;
-                else if (typeof(T) == typeof(float))
-                    format = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
-                else if (typeof(T) == typeof(double))
-                    format = AVSampleFormat.AV_SAMPLE_FMT_DBLP;
-                else
-                    throw new FFmpegException(FFmpegException.NotSupportFormat);
-                AudioFrame frame = new AudioFrame(format, image.Height, image.Width, dstSampleRate);
-                int stride = image.Width * image.NumberOfChannels;
-                for (int i = 0; i < image.Height; i++)
-                {
-                    Marshal.Copy(image.Bytes, i * stride, frame.Data[i], stride);
-                }
-                return frame;
+                Marshal.Copy(image, i * stride, frame.Data[i], stride);
             }
-        }
-
-        private static AudioFrame PlanarToPacket(AudioFrame srcframe)
-        {
-            return null;
-        }
-
-        private static AudioFrame MatToAudioFrame(Mat mat, int dstSampleRate)
-        {
-            using (Image<Gray, short> image = mat.ToImage<Gray, short>())
-            {
-                AudioFrame frame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_S16P, image.Height, image.Width, dstSampleRate);
-                int stride = image.Width * image.NumberOfChannels;
-                for (int i = 0; i < image.Height; i++)
-                {
-                    Marshal.Copy(image.Bytes, i * stride, frame.Data[i], stride);
-                }
-                return frame;
-            }
+            return frame;
         }
 
         private unsafe static VideoFrame MatToVideoFrame(Mat mat)
@@ -234,7 +269,7 @@ namespace EmguFFmpeg.EmguCV
                 int stride = image.Width * image.NumberOfChannels;
                 for (int i = 0; i < frame.AVFrame.height; i++)
                 {
-                    Marshal.Copy(image.Bytes, i * stride, IntPtr.Add((IntPtr)frame.AVFrame.data[0], frame.AVFrame.linesize[0]), stride);
+                    Marshal.Copy(image.Bytes, i * stride, IntPtr.Add((IntPtr)frame.AVFrame.data[0], i * frame.AVFrame.linesize[0]), stride);
                 }
                 return frame;
             }
