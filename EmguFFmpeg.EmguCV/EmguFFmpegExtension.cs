@@ -50,7 +50,7 @@ namespace EmguFFmpeg.EmguCV
         /// <term><see cref="AVSampleFormat.AV_SAMPLE_FMT_S64"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S64P"/></term>
         /// <description><see cref="DepthType.Cv64F"/></description>
         /// </item>
-        /// <item>NOTE: Emgucv not supported int64, replace with Cv64F, so read result by bytes convert to int64, otherwise will read <see cref="double.NaN"/>
+        /// <item>NOTE: Emgucv not supported S64, replace with Cv64F, so read result by bytes convert to int64, otherwise will read <see cref="double.NaN"/>
         /// </item>
         /// </list>
         /// </para>
@@ -109,10 +109,9 @@ namespace EmguFFmpeg.EmguCV
             int stride = frame.AVFrame.nb_samples * block_align;
 
             Mat mat = new Mat(frame.AVFrame.nb_samples, planes, dstType, (planar != 0 ? 1 : frame.AVFrame.channels));
-            byte[][] data = frame.GetData();
             for (int i = 0; i < planes; i++)
             {
-                Marshal.Copy(data[i], 0, IntPtr.Add(mat.DataPointer, i * stride), stride);
+                FFmpeg.CopyMemory(mat.DataPointer + i * stride, frame.Data[i], (uint)stride);
             }
             return mat;
         }
@@ -134,10 +133,9 @@ namespace EmguFFmpeg.EmguCV
         {
             Mat mat = new Mat(frame.AVFrame.height, frame.AVFrame.width, DepthType.Cv8U, 3);
             int stride = mat.Step;
-            byte[] plane = frame.GetData()[0];
             for (int i = 0; i < frame.AVFrame.height; i++)
             {
-                Marshal.Copy(plane, i * frame.AVFrame.linesize[0], IntPtr.Add(mat.DataPointer, i * stride), stride);
+                FFmpeg.CopyMemory(mat.DataPointer + i * stride, frame.Data[0] + i * frame.AVFrame.linesize[0], (uint)stride);
             }
             return mat;
         }
@@ -253,15 +251,14 @@ namespace EmguFFmpeg.EmguCV
             AudioFrame frame = new AudioFrame(srctFormat, channels, mat.Width, sampleRate);
             bool isPlanar = ffmpeg.av_sample_fmt_is_planar(srctFormat) > 0;
             int stride = mat.Step;
-            byte[] image = mat.GetRawData();
             for (int i = 0; i < (isPlanar ? channels : 1); i++)
             {
-                Marshal.Copy(image, i * stride, frame.Data[i], stride);
+                FFmpeg.CopyMemory(frame.Data[i], mat.DataPointer + i * stride, (uint)stride);
             }
             return frame;
         }
 
-        private unsafe static VideoFrame MatToVideoFrame(Mat mat)
+        private static VideoFrame MatToVideoFrame(Mat mat)
         {
             using (Image<Bgr, byte> image = mat.ToImage<Bgr, byte>())
             {
@@ -269,10 +266,41 @@ namespace EmguFFmpeg.EmguCV
                 int stride = image.Width * image.NumberOfChannels;
                 for (int i = 0; i < frame.AVFrame.height; i++)
                 {
-                    Marshal.Copy(image.Bytes, i * stride, IntPtr.Add((IntPtr)frame.AVFrame.data[0], i * frame.AVFrame.linesize[0]), stride);
+                    FFmpeg.CopyMemory(frame.Data[0] + i * frame.AVFrame.linesize[0], image.Mat.DataPointer + i * stride, (uint)stride);
                 }
                 return frame;
             }
         }
+
+        //public static Mat[] ToWaveform(this AudioFrame frame, int height)
+        //{
+        //    if ((AVSampleFormat)frame.AVFrame.format != AVSampleFormat.AV_SAMPLE_FMT_DBLP)
+        //    {
+        //        AudioFrame dstFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_DBLP, frame.Channels, frame.NbSamples, frame.SampleRate);
+        //        using (SampleConverter converter = new SampleConverter(dstFrame))
+        //        {
+        //            frame = converter.Convert(frame).First();
+        //        }
+        //    }
+        //    using (Mat mat = frame.ToMat())
+        //    {
+        //        mat.MinMax(out double[] min, out double[] max, out System.Drawing.Point[] _1, out System.Drawing.Point[] _2);
+        //        var bb = mat * height;
+        //        Mat output = new Mat(mat.Rows, height, DepthType.Cv8U, 1);
+        //        int zero = height / 2;
+
+        //        for (int i = 0; i < mat.Rows; i++)
+        //        {
+        //            System.Drawing.Point p = new System.Drawing.Point(i, zero);
+        //            //System.Drawing.Size s = new System.Drawing.Size(0,  mat.DataPointer);
+        //            //var a = p1 + p2;
+        //            //CvInvoke.Line(output,mat.Get)
+        //        }
+
+        //    }
+        //    return null;
+        //}
+
+
     }
 }
