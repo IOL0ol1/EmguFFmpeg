@@ -8,13 +8,51 @@ using System.Text;
 
 namespace EmguFFmpeg
 {
-    public static class FFmpegHelper
+    public static class FFmpeg
     {
+        /// <summary>
+        /// Set ffmpeg root path
+        /// </summary>
+        /// <param name="path"></param>
         public static void RegisterBinaries(string path = "")
         {
             ffmpeg.RootPath = path;
             Trace.TraceInformation($"{nameof(ffmpeg.av_version_info)} : {ffmpeg.av_version_info()}");
         }
+
+        /// <summary>
+        /// Set ffmpeg log
+        /// </summary>
+        /// <param name="logLevel">log level</param>
+        /// <param name="logFlags">log flags, support &amp; operator </param>
+        /// <param name="logWrite">set <see langword="null"/> to use default log output</param>
+        public static unsafe void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string> logWrite = null)
+        {
+            ffmpeg.av_log_set_level((int)logLevel);
+            ffmpeg.av_log_set_flags((int)logFlags);
+
+            if (logWrite == null)
+            {
+                logCallback = ffmpeg.av_log_default_callback;
+            }
+            else
+            {
+                logCallback = (p0, level, format, vl) =>
+                {
+                    if (level > ffmpeg.av_log_get_level()) return;
+                    var lineSize = 1024;
+                    var printPrefix = 1;
+                    var lineBuffer = stackalloc byte[lineSize];
+                    ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
+                    logWrite.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
+                };
+            }
+            ffmpeg.av_log_set_callback(logCallback);
+        }
+
+        private static unsafe av_log_set_callback_callback logCallback;
+
+        #region Extension
 
         public unsafe static string PtrToStringUTF8(this IntPtr ptr)
         {
@@ -27,15 +65,26 @@ namespace EmguFFmpeg
             return new string(psbyte, 0, length, Encoding.UTF8);
         }
 
-        public static int ThrowExceptionIfError(this int error)
+        internal static int ThrowExceptionIfError(this int error)
         {
             return error < 0 ? throw new FFmpegException(error) : error;
+        }
+        public static double ToDouble(this AVRational rational)
+        {
+            return ffmpeg.av_q2d(rational);
+        }
+
+        public static AVRational ToTranspose(this AVRational rational)
+        {
+            return new AVRational() { den = rational.num, num = rational.den };
         }
 
         public static int ToChannels(this AVChannelLayout channelLayout)
         {
             return ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout);
         }
+
+        #endregion
 
         public static ulong ChannelsToChannelLayout(int channels)
         {
@@ -51,47 +100,30 @@ namespace EmguFFmpeg
             return result;
         }
 
-        public static double ToDouble(this AVRational rational)
-        {
-            return ffmpeg.av_q2d(rational);
-        }
+        [DllImport("kernel32.dll", EntryPoint = "CopyMemory", SetLastError = false)]
+        private static extern void CopyMemoryInternal(IntPtr dest, IntPtr src, uint count);
 
-        public static AVRational ToTranspose(this AVRational rational)
+        /// <summary>
+        /// Copy memory use win32 api
+        /// </summary>
+        /// <param name="dest"></param>
+        /// <param name="src"></param>
+        /// <param name="count"></param>
+        public static void CopyMemory(IntPtr dest, IntPtr src, uint count)
         {
-            return new AVRational() { den = rational.num, num = rational.den };
+            CopyMemoryInternal(dest, src, count);
         }
 
         /// <summary>
-        /// Set ffmpeg log
+        /// Copy memory use win32 api
         /// </summary>
-        /// <param name="logLevel">log level</param>
-        /// <param name="logFlags">log flags, support AND operator </param>
-        /// <param name="logAction">set <see langword="null"/> to use default log output</param>
-        public static unsafe void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string> logAction = null)
+        /// <param name="dest"></param>
+        /// <param name="src"></param>
+        /// <param name="count"></param>
+        public unsafe static void CopyMemory(void* dest, void* src, uint count)
         {
-            ffmpeg.av_log_set_level((int)logLevel);
-            ffmpeg.av_log_set_flags((int)logFlags);
-
-            if (logAction == null)
-            {
-                logCallback = ffmpeg.av_log_default_callback;
-            }
-            else
-            {
-                logCallback = (p0, level, format, vl) =>
-                {
-                    if (level > ffmpeg.av_log_get_level()) return;
-                    var lineSize = 1024;
-                    var printPrefix = 1;
-                    var lineBuffer = stackalloc byte[lineSize];
-                    ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
-                    logAction.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
-                };
-            }
-            ffmpeg.av_log_set_callback(logCallback);
+            CopyMemoryInternal((IntPtr)dest, (IntPtr)src, count);
         }
-
-        private static unsafe av_log_set_callback_callback logCallback;
     }
 
     public enum LogLevel : int
@@ -111,9 +143,7 @@ namespace EmguFFmpeg
     public enum LogFlags : int
     {
         None = 0,
-
-        // No effect??
-        //SkipRepeated = ffmpeg.AV_LOG_SKIP_REPEATED,
+        SkipRepeated = ffmpeg.AV_LOG_SKIP_REPEATED,
         PrintLevel = ffmpeg.AV_LOG_PRINT_LEVEL,
     }
 

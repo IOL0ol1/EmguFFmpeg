@@ -96,7 +96,7 @@ namespace EmguFFmpeg
 
             for (int i = 0; i < planes; i++)
             {
-                Marshal.Copy(fill_data.ToArray(), 0, IntPtr.Add((IntPtr)pFrame->extended_data[(uint)i], offset), fill_size);
+                Marshal.Copy(fill_data.ToArray(), 0, (IntPtr)pFrame->extended_data[(uint)i] + offset, fill_size);
             }
         }
 

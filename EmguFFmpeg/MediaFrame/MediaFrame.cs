@@ -116,7 +116,7 @@ namespace EmguFFmpeg
                 throw new FFmpegException(FFmpegException.LineSizeError);
             byte[] result = new byte[height * linesize];
             for (int i = 0; i < height; i++)
-                Marshal.Copy(IntPtr.Add(srcData, i * linesize), result, i * linesize, bytewidth);
+                Marshal.Copy(srcData + i * linesize, result, i * linesize, bytewidth);
             return result;
         }
 

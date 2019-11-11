@@ -1,15 +1,15 @@
 ﻿using FFmpeg.AutoGen;
+
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EmguFFmpeg.Example
 {
+    /// <summary>
+    /// Video frames and bitmaps convert to each other
+    /// </summary>
     public class BitmapConverter
     {
         public Bitmap ConvertFrom(VideoFrame frame)
@@ -23,7 +23,7 @@ namespace EmguFFmpeg.Example
             BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
             for (int i = 0; i < height; i++)
             {
-                Marshal.Copy(data, 0, IntPtr.Add(bitmapData.Scan0, i * bitmapData.Stride), data.Length);
+                Marshal.Copy(data, 0, bitmapData.Scan0 + i * bitmapData.Stride, data.Length);
             }
             bitmap.UnlockBits(bitmapData);
             return bitmap;
@@ -40,11 +40,10 @@ namespace EmguFFmpeg.Example
             // do not use frame.Data[0] = bitmapData.Scan0
             // frame.Linesize[0] may not be equal bitmapData.Stride and both of them may not be equal to width * 3,
             // because of memory alignment
+            int stride = Math.Min(bitmapData.Stride, frame.Linesize[0]);
             for (int i = 0; i < height; i++)
             {
-                byte[] tmp = new byte[bitmapData.Width * 3];
-                Marshal.Copy(IntPtr.Add(bitmapData.Scan0, i * bitmapData.Stride), tmp, 0, tmp.Length);
-                Marshal.Copy(tmp, 0, IntPtr.Add(frame.Data[0], i * frame.Linesize[0]), tmp.Length);
+                FFmpeg.CopyMemory(bitmapData.Scan0 + i * bitmapData.Stride, frame.Data[0] + i * frame.Linesize[0], (uint)stride);
             }
             bitmap.UnlockBits(bitmapData);
             return frame;
