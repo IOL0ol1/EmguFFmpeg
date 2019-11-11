@@ -1,4 +1,5 @@
 ﻿using FFmpeg.AutoGen;
+using System;
 using System.Collections.Generic;
 
 namespace EmguFFmpeg
@@ -27,7 +28,7 @@ namespace EmguFFmpeg
             DstChannels = ffmpeg.av_get_channel_layout_nb_channels(dstChannelLayout);
             DstNbSamples = dstNbSamples;
             DstSampleRate = dstSampleRate;
-            dstFrame = new AudioFrame(DstFormat, DstChannelLayout, DstNbSamples, DstSampleRate);
+            dstFrame = new AudioFrame(DstFormat, DstChannels, DstNbSamples, DstSampleRate);
             audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
         }
 
@@ -35,11 +36,11 @@ namespace EmguFFmpeg
         {
             DstFormat = dstFormat;
             DstChannels = dstChannels;
-            DstChannelLayout = (ulong)ffmpeg.av_get_default_channel_layout(dstChannels);
+            DstChannelLayout = FFmpegHelper.ChannelsToChannelLayout(dstChannels);
             DstNbSamples = dstNbSamples;
             DstSampleRate = dstSampleRate;
-            dstFrame = new AudioFrame(DstFormat, DstChannelLayout, DstNbSamples, DstSampleRate);
-            audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
+            dstFrame = new AudioFrame(DstFormat, DstChannels, DstNbSamples, DstSampleRate);
+            audioFifo = new AudioFifo(DstFormat, DstChannels);
         }
 
         public SampleConverter(MediaCodec dstCodec)
@@ -47,22 +48,28 @@ namespace EmguFFmpeg
             if (dstCodec.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException(FFmpegException.CodecTypeError);
             DstFormat = dstCodec.AVCodecContext.sample_fmt;
+            DstChannels = dstCodec.AVCodecContext.channels;
             DstChannelLayout = dstCodec.AVCodecContext.channel_layout;
+            if (DstChannelLayout == 0)
+                DstChannelLayout = FFmpegHelper.ChannelsToChannelLayout(DstChannels);
             DstNbSamples = dstCodec.AVCodecContext.frame_size;
             DstSampleRate = dstCodec.AVCodecContext.sample_rate;
-            dstFrame = new AudioFrame(DstFormat, DstChannelLayout, DstNbSamples, DstSampleRate);
-            audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
+            dstFrame = new AudioFrame(DstFormat, DstChannels, DstNbSamples, DstSampleRate);
+            audioFifo = new AudioFifo(DstFormat, DstChannels);
         }
 
         public SampleConverter(AudioFrame dstFrame)
         {
             ffmpeg.av_frame_make_writable(dstFrame).ThrowExceptionIfError();
             DstFormat = (AVSampleFormat)dstFrame.AVFrame.format;
+            DstChannels = dstFrame.AVFrame.channels;
             DstChannelLayout = dstFrame.AVFrame.channel_layout;
+            if (DstChannelLayout == 0)
+                DstChannelLayout = FFmpegHelper.ChannelsToChannelLayout(DstChannels);
             DstNbSamples = dstFrame.AVFrame.nb_samples;
             DstSampleRate = dstFrame.AVFrame.sample_rate;
             base.dstFrame = dstFrame;
-            audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
+            audioFifo = new AudioFifo(DstFormat, DstChannels);
         }
 
         public static implicit operator SwrContext*(SampleConverter value)
@@ -78,9 +85,13 @@ namespace EmguFFmpeg
             {
                 AVFrame* src = srcFrame;
                 AVFrame* dst = dstFrame;
+                ulong srcChannelLayout = src->channel_layout;
+                if (srcChannelLayout == 0)
+                    srcChannelLayout = FFmpegHelper.ChannelsToChannelLayout(src->channels);
+
                 pSwrContext = ffmpeg.swr_alloc_set_opts(null,
                     (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,
-                    (long)src->channel_layout, (AVSampleFormat)src->format, src->sample_rate,
+                    (long)srcChannelLayout, (AVSampleFormat)src->format, src->sample_rate,
                     0, null);
                 ffmpeg.swr_init(pSwrContext).ThrowExceptionIfError();
             }
