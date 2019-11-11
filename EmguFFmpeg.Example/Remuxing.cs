@@ -1,14 +1,11 @@
 ﻿using FFmpeg.AutoGen;
-using System;
-using System.Collections.Generic;
+
 using System.IO;
-using System.Text;
 
 namespace EmguFFmpeg.Example
 {
     public class Remuxing : IExample
     {
-
         public unsafe Remuxing(string inputFile)
         {
             string outputFile = Path.GetFileNameWithoutExtension(inputFile) + "_remuxing" + Path.GetExtension(inputFile);

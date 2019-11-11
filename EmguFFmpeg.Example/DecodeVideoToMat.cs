@@ -1,20 +1,21 @@
-﻿using FFmpeg.AutoGen;
-using EmguFFmpeg.EmguCV;
+﻿using EmguFFmpeg.EmguCV;
+
+using FFmpeg.AutoGen;
+
+using System;
 using System.IO;
 using System.Linq;
-using Emgu.CV;
-using System;
 
 namespace EmguFFmpeg.Example
 {
-    internal class DecodeVideoToImage
+    internal class DecodeVideoToMat
     {
         /// <summary>
         /// decode video to image
         /// </summary>
         /// <param name="inputFile">input video file</param>
         /// <param name="outDirectory">folder for output image files</param>
-        public DecodeVideoToImage(string inputFile, string outDirectory)
+        public DecodeVideoToMat(string inputFile, string outDirectory)
         {
             string outputdir = Directory.CreateDirectory(outDirectory).FullName;
             using (MediaReader reader = new MediaReader(inputFile))
@@ -32,7 +33,7 @@ namespace EmguFFmpeg.Example
                             {
                                 image.Save(Path.Combine(outputdir, $"{ts.ToString().Replace(":", ".")}.bmp"));
                             }
-                            else
+                            else // invalid pts value (NO_PTS)
                             {
                                 image.Save(Path.Combine(outputdir, $"{frame.Pts}.bmp"));
                             }
