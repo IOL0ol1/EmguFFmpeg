@@ -56,7 +56,7 @@ namespace EmguFFmpeg
         #region get managed data
 
         /// <summary>
-        /// Get managed copy of <see cref="AVFrame.data"/>
+        /// Get managed copy of <see cref="AVFrame.data"/> exclude align data
         /// <para>
         /// reference <see cref="ffmpeg.av_frame_copy(AVFrame*, AVFrame*)"/>
         /// </para>
@@ -249,7 +249,4 @@ namespace EmguFFmpeg
 
         #endregion
     }
-
-
-
 }
