@@ -28,15 +28,7 @@ namespace EmguFFmpeg.Example
                     {
                         using (var image = frame.ToMat())
                         {
-                            // convert pts to timespan string
-                            if (reader[videoIndex].TryToTimeSpan(frame.Pts, out TimeSpan ts))
-                            {
-                                image.Save(Path.Combine(outputdir, $"{ts.ToString().Replace(":", ".")}.bmp"));
-                            }
-                            else // invalid pts value (NO_PTS)
-                            {
-                                image.Save(Path.Combine(outputdir, $"{frame.Pts}.bmp"));
-                            }
+                            image.Save(Path.Combine(outputdir, $"{frame.Pts}.bmp"));
                         }
                     }
                 }

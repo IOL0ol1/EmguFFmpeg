@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FFmpeg.AutoGen;
+using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -31,27 +32,27 @@ namespace EmguFFmpeg.Example.Example
 
         public Mp4VideoWriter AddVideo(int width, int height, int fps)
         {
-            if (writer.Where(_ => _.Codec.Type == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO).Count() == 0)
+            if (writer.Where(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_VIDEO).Count() == 0)
             {
                 Height = height;
                 Width = width;
                 FPS = fps;
                 writer.AddStream(MediaEncode.CreateVideoEncode(writer.Format, width, height, fps));
                 videoIndex = writer.Count() - 1;
-                videoFrame = new VideoFrame(FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24, width, height);
+                videoFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGR24, width, height);
             }
             return this;
         }
 
         public Mp4VideoWriter AddAudio(int channels, int sampleRate)
         {
-            if (writer.Where(_ => _.Codec.Type == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_AUDIO).Count() == 0)
+            if (writer.Where(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_AUDIO).Count() == 0)
             {
                 Channels = channels;
                 SampleRate = sampleRate;
                 var stream = writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, channels, sampleRate));
                 audioIndex = writer.Count - 1;
-                audioFrame = new AudioFrame(FFmpeg.AutoGen.AVSampleFormat.AV_SAMPLE_FMT_S16, channels, stream.Codec.AVCodecContext.frame_size, sampleRate);
+                audioFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_S16, channels, stream.Codec.AVCodecContext.frame_size, sampleRate);
             }
             return this;
         }
