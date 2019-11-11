@@ -12,11 +12,20 @@ namespace EmguFFmpeg
         {
             if (codec.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException(FFmpegException.CodecTypeError);
-            return new AudioFrame(codec.AVCodecContext.sample_fmt, codec.AVCodecContext.channel_layout, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
+            AudioFrame audioFrame = new AudioFrame(codec.AVCodecContext.sample_fmt, codec.AVCodecContext.channels, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
+            if (codec.AVCodecContext.channel_layout > 0)
+                audioFrame.pFrame->channel_layout = codec.AVCodecContext.channel_layout;
+            return audioFrame;
         }
 
         public AudioFrame() : base()
         { }
+
+        public AudioFrame(AVSampleFormat format, int channels, int nbSamples, int sampleRate = 0, int align = 0) : base()
+        {
+            AllocBuffer(format, channels, nbSamples, sampleRate, align);
+            pFrame->channel_layout = (ulong)ffmpeg.av_get_default_channel_layout(channels);
+        }
 
         /// <summary>
         /// </summary>
@@ -28,22 +37,18 @@ namespace EmguFFmpeg
         /// Required buffer size alignment. If equal to 0, alignment will be chosen automatically for
         /// the current CPU. It is highly recommended to pass 0 here unless you know what you are doing.
         /// </param>
-        public AudioFrame(AVSampleFormat format, ulong channelLayout, int nbSamples, int sampleRate = 0, int align = 0) : base()
+        public AudioFrame(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
+            : this(format, ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout), nbSamples, sampleRate, align)
         {
-            AllocBuffer(format, channelLayout, nbSamples, sampleRate, align);
+            pFrame->channel_layout = (ulong)channelLayout;
         }
 
-        public AudioFrame(AVSampleFormat format, int channels, int nbSamples, int sampleRate = 0, int align = 0) : base()
-        {
-            AllocBuffer(format, (ulong)ffmpeg.av_get_default_channel_layout(channels), nbSamples, sampleRate, align);
-        }
-
-        private void AllocBuffer(AVSampleFormat format, ulong channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
+        private void AllocBuffer(AVSampleFormat format, int channels, int nbSamples, int sampleRate = 0, int align = 0)
         {
             if (ffmpeg.av_frame_is_writable(pFrame) != 0)
                 return;
             pFrame->format = (int)format;
-            pFrame->channel_layout = channelLayout;
+            pFrame->channels = channels;
             pFrame->nb_samples = nbSamples;
             pFrame->sample_rate = sampleRate;
             ffmpeg.av_frame_get_buffer(pFrame, align);
@@ -52,13 +57,14 @@ namespace EmguFFmpeg
         public void Init(AVSampleFormat format, int channels, int nbSamples, int sampleRate = 0, int align = 0)
         {
             Clear();
-            AllocBuffer(format, (ulong)ffmpeg.av_get_default_channel_layout(channels), nbSamples, sampleRate, align);
+            AllocBuffer(format, channels, nbSamples, sampleRate, align);
         }
 
-        public void Init(AVSampleFormat format, ulong channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
+        public void Init(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
         {
             Clear();
-            AllocBuffer(format, channelLayout, nbSamples, sampleRate, align);
+            AllocBuffer(format, ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout), nbSamples, sampleRate, align);
+            pFrame->channel_layout = (ulong)channelLayout;
         }
 
         /// <summary>
@@ -127,7 +133,8 @@ namespace EmguFFmpeg
                     outFormat = AVSampleFormat.AV_SAMPLE_FMT_S64P;
                     break;
             }
-            AudioFrame outFrame = new AudioFrame(outFormat, pFrame->channel_layout, pFrame->nb_samples, pFrame->sample_rate);
+            AudioFrame outFrame = new AudioFrame(outFormat, pFrame->channels, pFrame->nb_samples, pFrame->sample_rate);
+            outFrame.pFrame->channel_layout = pFrame->channel_layout;
             using (SampleConverter converter = new SampleConverter(outFrame))
             {
                 return converter.ConvertFrame(this, out int _, out int __);
@@ -167,12 +174,12 @@ namespace EmguFFmpeg
                     outFormat = AVSampleFormat.AV_SAMPLE_FMT_S64;
                     break;
             }
-            AudioFrame outFrame = new AudioFrame(outFormat, pFrame->channel_layout, pFrame->nb_samples, pFrame->sample_rate);
+            AudioFrame outFrame = new AudioFrame(outFormat, pFrame->channels, pFrame->nb_samples, pFrame->sample_rate);
+            outFrame.pFrame->channel_layout = pFrame->channel_layout;
             using (SampleConverter converter = new SampleConverter(outFrame))
             {
                 return converter.ConvertFrame(this, out int _, out int __);
             }
         }
     }
-
 }
