@@ -8,9 +8,6 @@ namespace EmguFFmpeg
     {
         private AVAudioFifo* pAudioFifo;
 
-        public AudioFifo(AVSampleFormat format, ulong channelLayout, int nbSamples = 1) : this(format, ffmpeg.av_get_channel_layout_nb_channels(channelLayout), nbSamples)
-        { }
-
         public AudioFifo(AVSampleFormat format, int channels, int nbSamples = 1)
         {
             pAudioFifo = ffmpeg.av_audio_fifo_alloc(format, channels, nbSamples <= 0 ? 1 : nbSamples);
