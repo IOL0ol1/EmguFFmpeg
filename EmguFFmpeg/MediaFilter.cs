@@ -9,13 +9,8 @@ namespace EmguFFmpeg
     {
         protected AVFilter* pFilter;
         protected AVFilterContext* pFilterContext;
-        //protected AVFilterContext* pFilterContext2;
-        //protected AVFilterInOut* pFilterOutputs;
-        //protected AVFilterInOut* pFilterInputs;
-        //protected AVFilterGraph* pFilterGraph;
-        //protected AVFilterGraph* pFilterGraph;
 
-        public MediaFilter(AVFilter* filter)
+        internal MediaFilter(AVFilter* filter)
         {
             pFilter = filter;
         }
@@ -30,47 +25,96 @@ namespace EmguFFmpeg
             return value.pFilter;
         }
 
-        public static implicit operator AVFilterContext**(MediaFilter value)
+        public static implicit operator AVFilterContext*(MediaFilter value)
         {
             if (value == null) return null;
-            fixed (AVFilterContext** result = &value.pFilterContext)
-                return result;
+            return value.pFilterContext;
         }
 
-        //public void Initialize(string name)
-        //{
-        //    pFilterInputs = ffmpeg.avfilter_inout_alloc();
-        //    pFilterGraph = ffmpeg.avfilter_graph_alloc();
-        //    fixed (AVFilterContext** ppFilterContext = &pFilterContext)
-        //        ffmpeg.avfilter_graph_create_filter(ppFilterContext, pFilter, name, null, null, pFilterGraph);
-
-        //    pFilterInputs->name = (byte*)Marshal.StringToHGlobalAnsi(name);
-        //    pFilterInputs->filter_ctx = pFilterContext;
-        //    pFilterInputs->pad_idx = 0;
-        //    pFilterInputs->next = null;
-        //    ffmpeg.avfilter_graph_config(pFilterGraph, null).ThrowExceptionIfError();
-        //}
-
-        public void SetFilter<T>(string key, T value) where T : struct
+        public void Initialize(MediaFilterGraph filterGraph, string name, MediaDictionary options)
         {
-            ffmpeg.av_opt_set(pFilterContext, key, value.ToString(), ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
+            pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
+            ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
         }
 
-        public static IReadOnlyList<MediaFilter> GetFilters(string name = null)
+        public void Initialize(MediaFilterGraph filterGraph, string name, string options)
         {
-            List<MediaFilter> result = new List<MediaFilter>();
-            void* p = null;
-            AVFilter* pFilter;
-            while ((pFilter = ffmpeg.av_filter_iterate(&p)) != null)
+            pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
+            ffmpeg.avfilter_init_str(pFilterContext, options).ThrowExceptionIfError();
+        }
+
+        public void Initialize(MediaFilterGraph filterGraph, string name, Action<MediaFilter> option)
+        {
+            pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
+            if (option != null)
+                option.Invoke(this);
+            ffmpeg.avfilter_init_str(pFilterContext, null).ThrowExceptionIfError();
+        }
+
+        #region Set filter
+
+        public void SetFilter(string key, string value)
+        {
+            ffmpeg.av_opt_set(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
+        }
+
+        public void SetFilter(string key, long value)
+        {
+            ffmpeg.av_opt_set_int(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
+        }
+
+        public void SetFilter(string key, AVRational value)
+        {
+            ffmpeg.av_opt_set_q(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
+        }
+
+        #endregion
+
+        public void Link(MediaFilter dstFilter, uint dstPad, uint srcPad)
+        {
+            ffmpeg.avfilter_link(pFilterContext, srcPad, dstFilter, dstPad).ThrowExceptionIfError();
+        }
+
+        public static IReadOnlyList<MediaFilter> Filters
+        {
+            get
             {
-                MediaFilter filter = new MediaFilter(pFilter);
-                if (string.IsNullOrEmpty(name) || filter.Name == name.ToLower())
-                    result.Add(filter);
+                List<MediaFilter> result = new List<MediaFilter>();
+                void* p = null;
+                AVFilter* pFilter;
+                while ((pFilter = ffmpeg.av_filter_iterate(&p)) != null)
+                {
+                    result.Add(new MediaFilter(pFilter));
+                }
+                return result;
             }
-            return result;
         }
 
-        public AVFilter Filter => *pFilter;
+        public void WriteFrame(MediaFrame frame, int flags = ffmpeg.AV_BUFFERSINK_FLAG_PEEK)
+        {
+            ffmpeg.av_buffersrc_add_frame_flags(pFilterContext, frame, flags).ThrowExceptionIfError();
+        }
+
+        public int GetFrame(MediaFrame frame)
+        {
+            return ffmpeg.av_buffersink_get_frame(pFilterContext, frame);
+        }
+
+        public IEnumerable<MediaFrame> ReadFrame(MediaFrame frame)
+        {
+            while (true)
+            {
+                int ret = GetFrame(frame);
+                if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
+                    break;
+                ret.ThrowExceptionIfError();
+                yield return frame;
+                frame.Clear();
+            }
+        }
+
+        public AVFilter AVFilter => *pFilter;
+        public AVFilterContext AVFilterContext => *pFilterContext;
 
         public string Name => ((IntPtr)pFilter->name).PtrToStringUTF8();
         public string Description => ((IntPtr)pFilter->description).PtrToStringUTF8();
@@ -112,29 +156,5 @@ namespace EmguFFmpeg
         }
 
         #endregion
-    }
-
-    public unsafe class MediaFilterGraph
-    {
-        private MediaFilter buffer;
-        private MediaFilter buffersink;
-
-        private AVFilterInOut* outputs;
-        private AVFilterInOut* inputs;
-        private AVFilterGraph* filterGraph;
-
-        public MediaFilterGraph()
-        {
-            buffer = new MediaFilter("buffer");
-            buffersink = new MediaFilter("buffersink");
-            outputs = ffmpeg.avfilter_inout_alloc();
-            inputs = ffmpeg.avfilter_inout_alloc();
-            filterGraph = ffmpeg.avfilter_graph_alloc();
-        }
-
-        public void AddFilter(string name, string args)
-        {
-            ffmpeg.avfilter_graph_create_filter(buffer, buffer, name, args, null, filterGraph);
-        }
     }
 }
