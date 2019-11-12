@@ -48,7 +48,6 @@ namespace EmguFFmpeg
             pCodec = ffmpeg.avcodec_find_decoder_by_name(codecName);
             if (pCodec == null)
                 throw new FFmpegException(ffmpeg.AVERROR_DECODER_NOT_FOUND);
-
         }
 
         internal MediaDecode(AVCodec* codec)
@@ -73,7 +72,6 @@ namespace EmguFFmpeg
                 ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
             }
         }
-
 
         /// <summary>
         /// decode packet to get frame.
@@ -133,7 +131,7 @@ namespace EmguFFmpeg
         /// <summary>
         /// get all decodes
         /// </summary>
-        public static List<MediaDecode> Decodes
+        public static IReadOnlyList<MediaDecode> Decodes
         {
             get
             {

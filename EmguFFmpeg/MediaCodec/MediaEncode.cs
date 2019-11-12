@@ -224,7 +224,7 @@ namespace EmguFFmpeg
             return ffmpeg.avcodec_receive_packet(pCodecContext, packet);
         }
 
-        public static List<MediaEncode> Encodes
+        public static IReadOnlyList<MediaEncode> Encodes
         {
             get
             {
