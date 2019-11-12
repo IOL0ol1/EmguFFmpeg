@@ -6,8 +6,10 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Description>A FFmpeg.AutoGen Warpper Library. (net45, netstandard2.0)
-This is NOT a command-line warpper library. It's based on the ffmpeg function interface.</Description>
+    <Description>
+      A FFmpeg.AutoGen Warpper Library. (net45, netstandard2.0)
+      This is NOT a command-line warpper library. It's based on the ffmpeg function interface.
+    </Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>FFmpeg</Authors>
     <PackageProjectUrl>https://github.com/IOL0ol1/EmguFFmpeg</PackageProjectUrl>
@@ -15,9 +17,10 @@ This is NOT a command-line warpper library. It's based on the ffmpeg function in
     <RepositoryUrl>https://github.com/IOL0ol1/EmguFFmpeg</RepositoryUrl>
     <Company>EmguFFmpeg</Company>
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet emgu</PackageTags>
-    <PackageReleaseNotes>A FFmpeg.AutoGen Warpper Library. (net45, netstandard2.0)
-This is NOT a command-line warpper library. It's based on the ffmpeg function interface.
-</PackageReleaseNotes>
+    <PackageReleaseNotes>
+      A FFmpeg.AutoGen Warpper Library. (net45, netstandard2.0)
+      This is NOT a command-line warpper library. It's based on the ffmpeg function interface.
+    </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <Version>1.0.7</Version>
   </PropertyGroup>
@@ -81,6 +84,10 @@ This is NOT a command-line warpper library. It's based on the ffmpeg function in
     <NoWarn>1701;1702;1591</NoWarn>
     <DocumentationFile>bin/EmguFFmpeg.xml</DocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="README.md" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="../icon.png" Pack="true" Visible="false" PackagePath="" />

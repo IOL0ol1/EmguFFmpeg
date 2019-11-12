@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\EmguFFmpeg.EmguCV\EmguFFmpeg.EmguCV.csproj" />
   </ItemGroup>
 </Project>

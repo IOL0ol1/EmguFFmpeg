@@ -49,6 +49,10 @@ MediaFrame and Mat convert to each other</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="../icon.png" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
 
