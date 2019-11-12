@@ -108,7 +108,7 @@ namespace EmguFFmpeg.EmguCV
             int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)frame.AVFrame.format) * (planar != 0 ? 1 : frame.AVFrame.channels);
             int stride = frame.AVFrame.nb_samples * block_align;
 
-            Mat mat = new Mat(frame.AVFrame.nb_samples, planes, dstType, (planar != 0 ? 1 : frame.AVFrame.channels));
+            Mat mat = new Mat(planes, frame.AVFrame.nb_samples, dstType, (planar != 0 ? 1 : frame.AVFrame.channels));
             for (int i = 0; i < planes; i++)
             {
                 FFmpeg.CopyMemory(mat.DataPointer + i * stride, frame.Data[i], (uint)stride);
@@ -271,36 +271,5 @@ namespace EmguFFmpeg.EmguCV
                 return frame;
             }
         }
-
-        //public static Mat[] ToWaveform(this AudioFrame frame, int height)
-        //{
-        //    if ((AVSampleFormat)frame.AVFrame.format != AVSampleFormat.AV_SAMPLE_FMT_DBLP)
-        //    {
-        //        AudioFrame dstFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_DBLP, frame.Channels, frame.NbSamples, frame.SampleRate);
-        //        using (SampleConverter converter = new SampleConverter(dstFrame))
-        //        {
-        //            frame = converter.Convert(frame).First();
-        //        }
-        //    }
-        //    using (Mat mat = frame.ToMat())
-        //    {
-        //        mat.MinMax(out double[] min, out double[] max, out System.Drawing.Point[] _1, out System.Drawing.Point[] _2);
-        //        var bb = mat * height;
-        //        Mat output = new Mat(mat.Rows, height, DepthType.Cv8U, 1);
-        //        int zero = height / 2;
-
-        //        for (int i = 0; i < mat.Rows; i++)
-        //        {
-        //            System.Drawing.Point p = new System.Drawing.Point(i, zero);
-        //            //System.Drawing.Size s = new System.Drawing.Size(0,  mat.DataPointer);
-        //            //var a = p1 + p2;
-        //            //CvInvoke.Line(output,mat.Get)
-        //        }
-
-        //    }
-        //    return null;
-        //}
-
-
     }
 }
