@@ -17,6 +17,8 @@ namespace EmguFFmpeg
 
         public MediaFilter(string name) : this(ffmpeg.avfilter_get_by_name(name))
         {
+            if (pFilter == null)
+                throw new FFmpegException(ffmpeg.AVERROR_FILTER_NOT_FOUND);
         }
 
         public static implicit operator AVFilter*(MediaFilter value)
@@ -69,6 +71,18 @@ namespace EmguFFmpeg
         }
 
         #endregion
+
+        public List<AVFilterLink> Outputs()
+        {
+            List<AVFilterLink> pads = new List<AVFilterLink>();
+            for (int i = 0; i < pFilterContext->nb_outputs; i++)
+            {
+                var a = *pFilterContext->outputs;
+                //(*pFilterContext->outputs)->dstpad
+                //pads.Add(pFilterContext->outputs[i]);
+            }
+            return pads;
+        }
 
         public void Link(MediaFilter dstFilter, uint dstPad, uint srcPad)
         {

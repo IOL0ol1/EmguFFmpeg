@@ -20,12 +20,15 @@ namespace EmguFFmpeg.Example
             options.Add("time_base", "1");
             options.Add("sample_rate", "48000");
             MediaFilterGraph mediaFilterGraph = new MediaFilterGraph();
-            MediaFilter mediaFilter = new MediaFilter("abuffer");
+            MediaFilter mediaFilter = new MediaFilter("overlay");
             mediaFilter.Initialize(mediaFilterGraph, "in", options);
+            mediaFilter.Outputs();
 
-            DecodeAudioToMat decodeAudio = new DecodeAudioToMat(@"C:\Users\IOL0ol1\Desktop\input.mp3");
+            MediaFilterGraph.CreateMediaFilterGraph("[0:v][1:v]overlay[out]");
+
+            DecodeAudioToMat decodeAudio = new DecodeAudioToMat(@"C:\Users\Admin\Desktop\input.mp3");
             BitmapConverter bitmap = new BitmapConverter();
-            EncodeVideoByMat video = new EncodeVideoByMat("output.mp4", 800, 600, 30);
+            EncodeVideoByMat video = new EncodeVideoByMat("output.mp4", 800, 600, 1);
             //DecodeVideoToImage videoToImage = new DecodeVideoToImage(@"C:\Users\Admin\Videos\Desktop\input.mp4", "image");
 
             Process.Start(Environment.CurrentDirectory);

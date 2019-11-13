@@ -9,11 +9,24 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaFilterGraph : IDisposable
     {
-        private AVFilterGraph* pFilterGraph = null;
+        private AVFilterGraph* pFilterGraph;
+        private AVFilterInOut* pFilterInput;
+        private AVFilterInOut* pFilterOutput;
 
         public MediaFilterGraph()
         {
             pFilterGraph = ffmpeg.avfilter_graph_alloc();
+        }
+
+        public static MediaFilterGraph CreateMediaFilterGraph(string graphDesc)
+        {
+            MediaFilterGraph filterGraph = new MediaFilterGraph();
+            fixed (AVFilterInOut** pIn = &filterGraph.pFilterInput)
+            fixed (AVFilterInOut** pOut = &filterGraph.pFilterOutput)
+            {
+                ffmpeg.avfilter_graph_parse2(filterGraph, graphDesc, pIn, pOut).ThrowExceptionIfError();
+            }
+            return filterGraph;
         }
 
         public void Initialize()
