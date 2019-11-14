@@ -21,8 +21,6 @@ namespace EmguFFmpeg.Example
             options.Add("sample_rate", "48000");
             MediaFilterGraph mediaFilterGraph = new MediaFilterGraph();
             MediaFilter mediaFilter = new MediaFilter("overlay");
-            mediaFilter.Initialize(mediaFilterGraph, "in", options);
-            mediaFilter.Outputs();
 
             MediaFilterGraph.CreateMediaFilterGraph("[0:v][1:v]overlay[out]");
 

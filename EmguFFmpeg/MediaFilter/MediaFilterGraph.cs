@@ -1,5 +1,6 @@
 ﻿using FFmpeg.AutoGen;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,15 +8,26 @@ using System.Threading.Tasks;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaFilterGraph : IDisposable
+    public unsafe class MediaFilterGraph : IDisposable, IReadOnlyList<MediaFilter>
     {
         private AVFilterGraph* pFilterGraph;
         private AVFilterInOut* pFilterInput;
         private AVFilterInOut* pFilterOutput;
 
+        private List<MediaFilter> filters = new List<MediaFilter>();
+
+        public int Count => filters.Count;
+
+        public MediaFilter this[int index] => filters[index];
+
         public MediaFilterGraph()
         {
             pFilterGraph = ffmpeg.avfilter_graph_alloc();
+        }
+
+        public void Initialize()
+        {
+            ffmpeg.avfilter_graph_config(pFilterGraph, null).ThrowExceptionIfError();
         }
 
         public static MediaFilterGraph CreateMediaFilterGraph(string graphDesc)
@@ -29,9 +41,24 @@ namespace EmguFFmpeg
             return filterGraph;
         }
 
-        public void Initialize()
+        public void AddAndInitFilter(MediaFilter filter, MediaDictionary options, string contextName = null)
         {
-            ffmpeg.avfilter_graph_config(pFilterGraph, null).ThrowExceptionIfError();
+            AVFilterContext* pFilterContext = filter;
+            if (pFilterContext != null)
+                throw new FFmpegException(FFmpegException.FilterHasInit);
+            pFilterContext = ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName);
+            ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
+            filters.Add(filter);
+        }
+
+        public IEnumerator<MediaFilter> GetEnumerator()
+        {
+            return filters.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return filters.GetEnumerator();
         }
 
         public static implicit operator AVFilterGraph*(MediaFilterGraph value)

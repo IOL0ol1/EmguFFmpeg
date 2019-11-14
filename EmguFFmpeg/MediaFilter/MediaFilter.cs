@@ -1,6 +1,7 @@
 ﻿using FFmpeg.AutoGen;
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace EmguFFmpeg
@@ -8,6 +9,7 @@ namespace EmguFFmpeg
     public unsafe class MediaFilter : IDisposable
     {
         protected AVFilter* pFilter;
+        protected AVFilterGraph* pFilterGraph;
         protected AVFilterContext* pFilterContext;
 
         internal MediaFilter(AVFilter* filter)
@@ -33,61 +35,49 @@ namespace EmguFFmpeg
             return value.pFilterContext;
         }
 
-        public void Initialize(MediaFilterGraph filterGraph, string name, MediaDictionary options)
-        {
-            pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
-            ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
-        }
+        //public void Initialize(MediaFilterGraph filterGraph, MediaDictionary options, string name = null)
+        //{
+        //    pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
+        //    ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
+        //}
 
-        public void Initialize(MediaFilterGraph filterGraph, string name, string options)
-        {
-            pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
-            ffmpeg.avfilter_init_str(pFilterContext, options).ThrowExceptionIfError();
-        }
+        //public void Initialize(MediaFilterGraph filterGraph, string options, string name = null)
+        //{
+        //    pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
+        //    ffmpeg.avfilter_init_str(pFilterContext, options).ThrowExceptionIfError();
+        //}
 
-        public void Initialize(MediaFilterGraph filterGraph, string name, Action<MediaFilter> option)
-        {
-            pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
-            if (option != null)
-                option.Invoke(this);
-            ffmpeg.avfilter_init_str(pFilterContext, null).ThrowExceptionIfError();
-        }
+        //public void Initialize(MediaFilterGraph filterGraph, Action<MediaFilter> option, string name = null)
+        //{
+        //    pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
+        //    if (option != null)
+        //        option.Invoke(this);
+        //    ffmpeg.avfilter_init_str(pFilterContext, null).ThrowExceptionIfError();
+        //}
 
-        #region Set filter
+        //#region Set filter
 
-        public void SetFilter(string key, string value)
-        {
-            ffmpeg.av_opt_set(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
-        }
+        //public void SetFilter(string key, string value)
+        //{
+        //    ffmpeg.av_opt_set(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
+        //}
 
-        public void SetFilter(string key, long value)
-        {
-            ffmpeg.av_opt_set_int(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
-        }
+        //public void SetFilter(string key, long value)
+        //{
+        //    ffmpeg.av_opt_set_int(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
+        //}
 
-        public void SetFilter(string key, AVRational value)
-        {
-            ffmpeg.av_opt_set_q(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
-        }
+        //public void SetFilter(string key, AVRational value)
+        //{
+        //    ffmpeg.av_opt_set_q(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
+        //}
 
-        #endregion
+        //#endregion
 
-        public List<AVFilterLink> Outputs()
-        {
-            List<AVFilterLink> pads = new List<AVFilterLink>();
-            for (int i = 0; i < pFilterContext->nb_outputs; i++)
-            {
-                var a = *pFilterContext->outputs;
-                //(*pFilterContext->outputs)->dstpad
-                //pads.Add(pFilterContext->outputs[i]);
-            }
-            return pads;
-        }
-
-        public void Link(MediaFilter dstFilter, uint dstPad, uint srcPad)
-        {
-            ffmpeg.avfilter_link(pFilterContext, srcPad, dstFilter, dstPad).ThrowExceptionIfError();
-        }
+        //public void Link(uint srcPad, MediaFilter dstFilter, uint dstPad)
+        //{
+        //    ffmpeg.avfilter_link(pFilterContext, srcPad, dstFilter, dstPad).ThrowExceptionIfError();
+        //}
 
         public static IReadOnlyList<MediaFilter> Filters
         {
@@ -135,7 +125,7 @@ namespace EmguFFmpeg
 
         #region IDisposable Support
 
-        private bool disposedValue = false; // To detect redundant calls
+        private bool disposedValue = false;
 
         protected virtual void Dispose(bool disposing)
         {
@@ -153,19 +143,14 @@ namespace EmguFFmpeg
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
         ~MediaFilter()
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(false);
         }
 
-        // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
             GC.SuppressFinalize(this);
         }
 
