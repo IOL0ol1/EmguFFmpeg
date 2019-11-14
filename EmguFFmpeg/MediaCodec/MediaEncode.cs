@@ -127,10 +127,9 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecId">codec id</param>
-        public MediaEncode(AVCodecID codecId)
+        public MediaEncode(AVCodecID codecId) : this(ffmpeg.avcodec_find_encoder(codecId))
         {
-            pCodec = ffmpeg.avcodec_find_encoder(codecId);
-            if (codecId != AVCodecID.AV_CODEC_ID_NONE && pCodec == null)
+            if (pCodec == null && codecId != AVCodecID.AV_CODEC_ID_NONE)
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
         }
 
@@ -141,9 +140,8 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecName">codec name</param>
-        public MediaEncode(string codecName)
+        public MediaEncode(string codecName) : this(ffmpeg.avcodec_find_encoder_by_name(codecName))
         {
-            pCodec = ffmpeg.avcodec_find_encoder_by_name(codecName);
             if (pCodec == null)
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
         }

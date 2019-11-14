@@ -29,10 +29,9 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecId">codec id</param>
-        public MediaDecode(AVCodecID codecId)
+        public MediaDecode(AVCodecID codecId) : this(ffmpeg.avcodec_find_decoder(codecId))
         {
-            pCodec = ffmpeg.avcodec_find_decoder(codecId);
-            if (codecId != AVCodecID.AV_CODEC_ID_NONE && pCodec == null)
+            if (pCodec == null && codecId != AVCodecID.AV_CODEC_ID_NONE)
                 throw new FFmpegException(ffmpeg.AVERROR_DECODER_NOT_FOUND);
         }
 
@@ -43,9 +42,8 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecName">codec name</param>
-        public MediaDecode(string codecName)
+        public MediaDecode(string codecName) : this(ffmpeg.avcodec_find_decoder_by_name(codecName))
         {
-            pCodec = ffmpeg.avcodec_find_decoder_by_name(codecName);
             if (pCodec == null)
                 throw new FFmpegException(ffmpeg.AVERROR_DECODER_NOT_FOUND);
         }
