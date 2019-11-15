@@ -14,7 +14,27 @@ namespace EmguFFmpeg
         private AVFilterInOut* pFilterInput;
         private AVFilterInOut* pFilterOutput;
 
-        private List<MediaFilter> filters = new List<MediaFilter>();
+        private List<MediaFilter> filters
+        {
+            get
+            {
+                List<MediaFilter> results = new List<MediaFilter>();
+                if (pFilterGraph != null)
+                {
+                    for (int i = 0; i < pFilterGraph->nb_filters; i++)
+                    {
+                        results.Add(new MediaFilter(pFilterGraph->filters[i]));
+                    }
+                }
+                return results;
+            }
+        }
+
+        private List<MediaFilterInOut> outputs = new List<MediaFilterInOut>();
+        private List<MediaFilterInOut> inputs = new List<MediaFilterInOut>();
+
+        public IReadOnlyList<MediaFilterInOut> Outputs => outputs;
+        public IReadOnlyList<MediaFilterInOut> Inputs => inputs;
 
         public int Count => filters.Count;
 
@@ -38,17 +58,32 @@ namespace EmguFFmpeg
             {
                 ffmpeg.avfilter_graph_parse2(filterGraph, graphDesc, pIn, pOut).ThrowExceptionIfError();
             }
+            for (int i = 0; i < filterGraph.pFilterGraph->nb_filters; i++)
+            {
+                filterGraph.filters.Add(new MediaFilter(filterGraph.pFilterGraph->filters[i]));
+            }
+            AVFilterInOut* pInOut = filterGraph.pFilterInput;
+            while (pInOut != null)
+            {
+                filterGraph.inputs.Add(new MediaFilterInOut(pInOut));
+                pInOut = pInOut->next;
+            }
+            pInOut = filterGraph.pFilterOutput;
+            while (pInOut != null)
+            {
+                filterGraph.outputs.Add(new MediaFilterInOut(pInOut));
+                pInOut = pInOut->next;
+            }
             return filterGraph;
         }
 
-        public void AddAndInitFilter(MediaFilter filter, MediaDictionary options, string contextName = null)
+        public void AddFilter(MediaFilter filter, MediaDictionary options, string contextName = null)
         {
             AVFilterContext* pFilterContext = filter;
-            if (pFilterContext != null)
+            if (pFilterContext != null && pFilterContext->graph != pFilterGraph)
                 throw new FFmpegException(FFmpegException.FilterHasInit);
-            pFilterContext = ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName);
-            ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
-            filters.Add(filter);
+            else if (pFilterGraph == null)
+                filter.Initialize(this, options, contextName);
         }
 
         public IEnumerator<MediaFilter> GetEnumerator()

@@ -55,6 +55,6 @@ namespace EmguFFmpeg
         public const string InvalidFrame = "invalid frame";
         public const string NotInitCodecContext = "not init codec context";
         public const string TooManyChannels = "too many channels";
-        public const string FilterHasInit = "filter has init";
+        public const string FilterHasInit = "filter has init by other graph";
     }
 }

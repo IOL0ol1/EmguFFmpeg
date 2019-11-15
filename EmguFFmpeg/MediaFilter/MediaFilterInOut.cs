@@ -14,16 +14,33 @@ namespace EmguFFmpeg
         internal MediaFilterInOut(AVFilterInOut* p)
         {
             pFilterInOut = p;
+            Filter = new MediaFilter(p->filter_ctx);
         }
+
+        public MediaFilter Filter { get; }
 
         public string Name => ((IntPtr)pFilterInOut->name).PtrToStringUTF8();
 
-        public int PadIdx
+        public int PadIdx => pFilterInOut->pad_idx;
+
+        //public MediaFilterInOut Next => pFilterInOut->next == null ? null : new MediaFilterInOut(pFilterInOut->next);
+
+        public void WriteFrame(MediaFrame frame, int flags = ffmpeg.AV_BUFFERSINK_FLAG_PEEK)
         {
-            get => pFilterInOut->pad_idx;
-            set => pFilterInOut->pad_idx = value;
+            Filter.AddFrame(frame, flags).ThrowExceptionIfError();
         }
 
-        public MediaFilterInOut Next => pFilterInOut->next == null ? null : new MediaFilterInOut(pFilterInOut->next);
+        public IEnumerable<MediaFrame> ReadFrame(MediaFrame frame)
+        {
+            while (true)
+            {
+                int ret = Filter.GetFrame(frame);
+                if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
+                    break;
+                ret.ThrowExceptionIfError();
+                yield return frame;
+                frame.Clear();
+            }
+        }
     }
 }

@@ -21,8 +21,8 @@ namespace EmguFFmpeg.Example
             options.Add("sample_rate", "48000");
             MediaFilterGraph mediaFilterGraph = new MediaFilterGraph();
             MediaFilter mediaFilter = new MediaFilter("overlay");
-
-            MediaFilterGraph.CreateMediaFilterGraph("[0:v][1:v]overlay[out]");
+            mediaFilter.Initialize(mediaFilterGraph, (MediaDictionary)null);
+            MediaFilterGraph.CreateMediaFilterGraph("[in] split [main][tmp]; [tmp] crop=iw:ih/2:0:0, vflip [flip]; [main][flip] overlay=0:H/2 [out]");
 
             DecodeAudioToMat decodeAudio = new DecodeAudioToMat(@"C:\Users\Admin\Desktop\input.mp3");
             BitmapConverter bitmap = new BitmapConverter();
