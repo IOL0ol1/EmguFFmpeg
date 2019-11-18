@@ -198,7 +198,7 @@ namespace EmguFFmpeg
         public virtual IEnumerable<MediaPacket> EncodeFrame(MediaFrame frame)
         {
             PreProcessFrame(frame);
-            SendFrame(frame);
+            SendFrame(frame).ThrowExceptionIfError();
             using (MediaPacket packet = new MediaPacket())
             {
                 while (true)
