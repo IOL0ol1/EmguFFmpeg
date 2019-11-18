@@ -10,26 +10,26 @@ namespace EmguFFmpeg.Example
     {
         private unsafe static void Main(string[] args)
         {
+            Process.Start(Environment.CurrentDirectory);
             FFmpeg.RegisterBinaries();
             FFmpeg.SetupLogging(logWrite: _ => Trace.Write(_));
             Console.WriteLine("Hello FFmpeg!");
 
-            MediaDictionary options = new MediaDictionary();
-            options.Add("channel_layout", "1");
-            options.Add("sample_fmt", "s64");
-            options.Add("time_base", "1");
-            options.Add("sample_rate", "48000");
-            MediaFilterGraph mediaFilterGraph = new MediaFilterGraph();
-            MediaFilter mediaFilter = new MediaFilter("overlay");
-            mediaFilter.Initialize(mediaFilterGraph, (MediaDictionary)null);
-            MediaFilterGraph.CreateMediaFilterGraph("[in] split [main][tmp]; [tmp] crop=iw:ih/2:0:0, vflip [flip]; [main][flip] overlay=0:H/2 [out]");
+            //MediaFilterGraph filterGraph = new MediaFilterGraph();
+            //MediaFilter mediaFilter = new MediaFilter("setpts");
+            //string opts = "0.5*PTS";
+            //mediaFilter.Initialize(filterGraph, opts, null);
+            //filterGraph.Initialize();
 
-            DecodeAudioToMat decodeAudio = new DecodeAudioToMat(@"C:\Users\Admin\Desktop\input.mp3");
-            BitmapConverter bitmap = new BitmapConverter();
-            EncodeVideoByMat video = new EncodeVideoByMat("output.mp4", 800, 600, 1);
+            //MediaFilterGraph.CreateMediaFilterGraph("[in] split [main][tmp]; [tmp] crop=iw:ih/2:0:0, vflip [flip]; [main][flip] overlay=0:H/2 [out]");
+            //Filter filter = new Filter(@"C:\Users\Admin\Videos\Desktop\input.mp4", @"output.mp4");
+            //Filter filter = new Filter(@"C:\Users\Admin\Desktop\input.mp3", @"output.mp3");
+            Remuxing filter = new Remuxing(@"C:\Users\Admin\Videos\Desktop\input.mp4");
+            //DecodeAudioToMat decodeAudio = new DecodeAudioToMat(@"C:\Users\Admin\Desktop\input.mp3");
+            //BitmapConverter bitmap = new BitmapConverter();
+            //EncodeVideoByMat video = new EncodeVideoByMat("output.mp4", 800, 600, 1);
             //DecodeVideoToImage videoToImage = new DecodeVideoToImage(@"C:\Users\Admin\Videos\Desktop\input.mp4", "image");
 
-            Process.Start(Environment.CurrentDirectory);
             Console.ReadKey();
         }
     }
