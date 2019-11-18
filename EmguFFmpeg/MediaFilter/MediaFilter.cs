@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaFilter : IDisposable
+    public unsafe class MediaFilter
     {
         protected AVFilter* pFilter;
         protected AVFilterContext* pFilterContext;
@@ -16,30 +16,30 @@ namespace EmguFFmpeg
             pFilter = filter;
         }
 
-        internal MediaFilter(AVFilterContext* filterContext)
+        public static MediaFilter CreateBufferFilter()
         {
-            if (filterContext == null)
-                throw new FFmpegException(FFmpegException.NullReference);
-            pFilter = filterContext->filter;
-            pFilterContext = filterContext;
+            return new MediaFilter("buffer");
+        }
+
+        public static MediaFilter CreateBufferSinkFilter()
+        {
+            return new MediaFilter("buffersink");
+        }
+
+        public static MediaFilter CreateAbufferFilter()
+        {
+            return new MediaFilter("abuffer");
+        }
+
+        public static MediaFilter CreateAbufferSinkFilter()
+        {
+            return new MediaFilter("abuffersink");
         }
 
         public MediaFilter(string name) : this(ffmpeg.avfilter_get_by_name(name))
         {
             if (pFilter == null)
                 throw new FFmpegException(ffmpeg.AVERROR_FILTER_NOT_FOUND);
-        }
-
-        public static implicit operator AVFilter*(MediaFilter value)
-        {
-            if (value == null) return null;
-            return value.pFilter;
-        }
-
-        public static implicit operator AVFilterContext*(MediaFilter value)
-        {
-            if (value == null) return null;
-            return value.pFilterContext;
         }
 
         public void Initialize(MediaFilterGraph filterGraph, MediaDictionary options, string name = null)
@@ -54,36 +54,56 @@ namespace EmguFFmpeg
             ffmpeg.avfilter_init_str(pFilterContext, options).ThrowExceptionIfError();
         }
 
-        public void Initialize(MediaFilterGraph filterGraph, Action<MediaFilter> option, string name = null)
+        public void Initialize(MediaFilterGraph filterGraph, AVBufferSrcParameters parameters, string name = null)
         {
             pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
-            if (option != null)
-                option.Invoke(this);
-            ffmpeg.avfilter_init_str(pFilterContext, null).ThrowExceptionIfError();
+            ffmpeg.av_buffersrc_parameters_set(pFilterContext, &parameters).ThrowExceptionIfError();
         }
 
-        #region Set filter
-
-        public void SetFilter(string key, string value)
+        public void LinkTo(uint srcPad, MediaFilter dstFilter, uint dstPad)
         {
-            ffmpeg.av_opt_set(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
-        }
-
-        public void SetFilter(string key, long value)
-        {
-            ffmpeg.av_opt_set_int(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
-        }
-
-        public void SetFilter(string key, AVRational value)
-        {
-            ffmpeg.av_opt_set_q(pFilterContext, key, value, ffmpeg.AV_OPT_SEARCH_CHILDREN).ThrowExceptionIfError();
-        }
-
-        #endregion
-
-        public void Link(uint srcPad, MediaFilter dstFilter, uint dstPad)
-        {
+            if (pFilterContext == null)
+                throw new FFmpegException(FFmpegException.NeedAddToGraph);
             ffmpeg.avfilter_link(pFilterContext, srcPad, dstFilter, dstPad).ThrowExceptionIfError();
+        }
+
+        public uint NbOutputs => pFilterContext != null ? pFilterContext->nb_outputs : throw new FFmpegException(FFmpegException.NullReference);
+        public uint NbInputs => pFilterContext != null ? pFilterContext->nb_inputs : throw new FFmpegException(FFmpegException.NullReference);
+
+        public int WriteFrame(MediaFrame frame, int flags = ffmpeg.AV_BUFFERSINK_FLAG_PEEK)
+        {
+            return ffmpeg.av_buffersrc_add_frame_flags(pFilterContext, frame, flags);
+        }
+
+        public int GetFrame(MediaFrame frame)
+        {
+            return ffmpeg.av_buffersink_get_frame(pFilterContext, frame);
+        }
+
+        public IEnumerable<MediaFrame> ReadFrame(MediaFrame frame)
+        {
+            while (true)
+            {
+                int ret = GetFrame(frame);
+                if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
+                    break;
+                ret.ThrowExceptionIfError();
+                yield return frame;
+                frame.Clear();
+            }
+        }
+
+        public AVFilter AVFilter => *pFilter;
+
+        public AVFilterContext AVFilterContext => pFilterContext != null ? *pFilterContext : throw new FFmpegException(FFmpegException.NullReference);
+
+        public string Name => ((IntPtr)pFilter->name).PtrToStringUTF8();
+
+        public string Description => ((IntPtr)pFilter->description).PtrToStringUTF8();
+
+        public override string ToString()
+        {
+            return Name;
         }
 
         public static IReadOnlyList<MediaFilter> Filters
@@ -101,52 +121,16 @@ namespace EmguFFmpeg
             }
         }
 
-        public int AddFrame(MediaFrame frame, int flags = ffmpeg.AV_BUFFERSINK_FLAG_PEEK)
+        public static implicit operator AVFilter*(MediaFilter value)
         {
-            return ffmpeg.av_buffersrc_add_frame_flags(pFilterContext, frame, flags);
+            if (value == null) return null;
+            return value.pFilter;
         }
 
-        public int GetFrame(MediaFrame frame)
+        public static implicit operator AVFilterContext*(MediaFilter value)
         {
-            return ffmpeg.av_buffersink_get_frame(pFilterContext, frame);
+            if (value == null) return null;
+            return value.pFilterContext;
         }
-
-        public AVFilter AVFilter => *pFilter;
-        public AVFilterContext AVFilterContext => *pFilterContext;
-        public string Name => ((IntPtr)pFilter->name).PtrToStringUTF8();
-        public string Description => ((IntPtr)pFilter->description).PtrToStringUTF8();
-
-        #region IDisposable Support
-
-        private bool disposedValue = false;
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                //fixed (AVFilterInOut** ppFilterInOut = &pFilterInputs)
-                //    ffmpeg.avfilter_inout_free(ppFilterInOut);
-
-                disposedValue = true;
-            }
-        }
-
-        ~MediaFilter()
-        {
-            Dispose(false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        #endregion
     }
 }
