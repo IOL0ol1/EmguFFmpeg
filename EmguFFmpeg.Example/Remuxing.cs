@@ -14,12 +14,7 @@ namespace EmguFFmpeg.Example
             {
                 // add stream with reader's codec_id
                 for (int i = 0; i < reader.Count; i++)
-                {
-                    writer.AddStream(MediaEncode.CreateEncode(reader[i].Codec.Id, writer.Format.Flags));
-                    // TODO: remove unsafe code
-                    ffmpeg.avcodec_parameters_copy(writer[i].Stream.codecpar, reader[i].Stream.codecpar);
-                    writer[i].Stream.codecpar->codec_tag = 0;
-                }
+                    writer.AddStream(reader[i], writer.Format.Flags);
                 writer.Initialize();
 
                 // read and write packet
