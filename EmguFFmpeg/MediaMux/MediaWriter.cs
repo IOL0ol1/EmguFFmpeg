@@ -83,6 +83,35 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
+        /// Add stream by copy <see cref="ffmpeg.avcodec_parameters_copy(AVCodecParameters*, AVCodecParameters*)"/>,
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="flags"></param>
+        /// <returns></returns>
+        public MediaStream AddStream(MediaStream stream, int flags = 0)
+        {
+            AVStream* pstream = ffmpeg.avformat_new_stream(pFormatContext, null);
+            pstream->id = (int)(pFormatContext->nb_streams - 1);
+            ffmpeg.avcodec_parameters_copy(pstream->codecpar, stream.Stream.codecpar);
+            pstream->codecpar->codec_tag = 0;
+            MediaCodec mediaCodec = null;
+            if (stream.Codec != null)
+            {
+                mediaCodec = MediaEncode.CreateEncode(stream.Codec.AVCodecContext.codec_id, flags, _ =>
+                {
+                    AVCodecContext* pContext = _;
+                    AVCodecParameters* pParameters = ffmpeg.avcodec_parameters_alloc();
+                    ffmpeg.avcodec_parameters_from_context(pParameters, stream.Codec).ThrowExceptionIfError();
+                    ffmpeg.avcodec_parameters_to_context(pContext, pParameters);
+                    ffmpeg.avcodec_parameters_free(&pParameters);
+                    pContext->time_base = stream.Stream.r_frame_rate.ToTranspose();
+                });
+            }
+            streams.Add(new MediaStream(pstream) { TimeBase = stream.Stream.r_frame_rate.ToTranspose(), Codec = mediaCodec });
+            return streams.Last();
+        }
+
+        /// <summary>
         /// <see cref="ffmpeg.avformat_write_header(AVFormatContext*, AVDictionary**)"/>
         /// </summary>
         /// <param name="options"></param>
