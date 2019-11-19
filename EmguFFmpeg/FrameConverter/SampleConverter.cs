@@ -36,7 +36,7 @@ namespace EmguFFmpeg
         {
             DstFormat = dstFormat;
             DstChannels = dstChannels;
-            DstChannelLayout = FFmpeg.ChannelsToChannelLayout(dstChannels);
+            DstChannelLayout = FFmpeg.GetChannelLayout(dstChannels);
             DstNbSamples = dstNbSamples;
             DstSampleRate = dstSampleRate;
             dstFrame = new AudioFrame(DstFormat, DstChannels, DstNbSamples, DstSampleRate);
@@ -51,7 +51,7 @@ namespace EmguFFmpeg
             DstChannels = dstCodec.AVCodecContext.channels;
             DstChannelLayout = dstCodec.AVCodecContext.channel_layout;
             if (DstChannelLayout == 0)
-                DstChannelLayout = FFmpeg.ChannelsToChannelLayout(DstChannels);
+                DstChannelLayout = FFmpeg.GetChannelLayout(DstChannels);
             DstNbSamples = dstCodec.AVCodecContext.frame_size;
             DstSampleRate = dstCodec.AVCodecContext.sample_rate;
             dstFrame = new AudioFrame(DstFormat, DstChannels, DstNbSamples, DstSampleRate);
@@ -65,7 +65,7 @@ namespace EmguFFmpeg
             DstChannels = dstFrame.AVFrame.channels;
             DstChannelLayout = dstFrame.AVFrame.channel_layout;
             if (DstChannelLayout == 0)
-                DstChannelLayout = FFmpeg.ChannelsToChannelLayout(DstChannels);
+                DstChannelLayout = FFmpeg.GetChannelLayout(DstChannels);
             DstNbSamples = dstFrame.AVFrame.nb_samples;
             DstSampleRate = dstFrame.AVFrame.sample_rate;
             base.dstFrame = dstFrame;
@@ -87,7 +87,7 @@ namespace EmguFFmpeg
                 AVFrame* dst = dstFrame;
                 ulong srcChannelLayout = src->channel_layout;
                 if (srcChannelLayout == 0)
-                    srcChannelLayout = FFmpeg.ChannelsToChannelLayout(src->channels);
+                    srcChannelLayout = FFmpeg.GetChannelLayout(src->channels);
 
                 pSwrContext = ffmpeg.swr_alloc_set_opts(null,
                     (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,

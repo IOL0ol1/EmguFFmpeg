@@ -104,10 +104,10 @@ namespace EmguFFmpeg
                     ffmpeg.avcodec_parameters_from_context(pParameters, stream.Codec).ThrowExceptionIfError();
                     ffmpeg.avcodec_parameters_to_context(pContext, pParameters);
                     ffmpeg.avcodec_parameters_free(&pParameters);
-                    pContext->time_base = stream.Stream.r_frame_rate.ToTranspose();
+                    pContext->time_base = stream.Stream.r_frame_rate.ToInvert();
                 });
             }
-            streams.Add(new MediaStream(pstream) { TimeBase = stream.Stream.r_frame_rate.ToTranspose(), Codec = mediaCodec });
+            streams.Add(new MediaStream(pstream) { TimeBase = stream.Stream.r_frame_rate.ToInvert(), Codec = mediaCodec });
             return streams.Last();
         }
 

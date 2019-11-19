@@ -69,14 +69,15 @@ namespace EmguFFmpeg
         {
             return error < 0 ? throw new FFmpegException(error) : error;
         }
+
         public static double ToDouble(this AVRational rational)
         {
             return ffmpeg.av_q2d(rational);
         }
 
-        public static AVRational ToTranspose(this AVRational rational)
+        public static AVRational ToInvert(this AVRational rational)
         {
-            return new AVRational() { den = rational.num, num = rational.den };
+            return ffmpeg.av_inv_q(rational);
         }
 
         public static int ToChannels(this AVChannelLayout channelLayout)
@@ -86,7 +87,7 @@ namespace EmguFFmpeg
 
         #endregion
 
-        public static ulong ChannelsToChannelLayout(int channels)
+        public static ulong GetChannelLayout(int channels)
         {
             if (channels > 64)
                 throw new FFmpegException(FFmpegException.TooManyChannels);

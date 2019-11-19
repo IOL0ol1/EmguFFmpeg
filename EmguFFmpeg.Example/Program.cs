@@ -22,9 +22,9 @@ namespace EmguFFmpeg.Example
             //filterGraph.Initialize();
 
             //MediaFilterGraph.CreateMediaFilterGraph("[in] split [main][tmp]; [tmp] crop=iw:ih/2:0:0, vflip [flip]; [main][flip] overlay=0:H/2 [out]");
-            //Filter filter = new Filter(@"C:\Users\Admin\Videos\Desktop\input.mp4", @"output.mp4");
+            Filter filter = new Filter(@"C:\Users\Admin\Videos\Desktop\input.mp4", @"output.mp4");
             //Filter filter = new Filter(@"C:\Users\Admin\Desktop\input.mp3", @"output.mp3");
-            Remuxing filter = new Remuxing(@"C:\Users\Admin\Videos\Desktop\input.mp4");
+            //Remuxing filter = new Remuxing(@"C:\Users\Admin\Videos\Desktop\input.mp4");
             //DecodeAudioToMat decodeAudio = new DecodeAudioToMat(@"C:\Users\Admin\Desktop\input.mp3");
             //BitmapConverter bitmap = new BitmapConverter();
             //EncodeVideoByMat video = new EncodeVideoByMat("output.mp4", 800, 600, 1);

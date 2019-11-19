@@ -48,6 +48,13 @@ namespace EmguFFmpeg
             ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
         }
 
+        public void Initialize(MediaFilterGraph filterGraph, Action<MediaFilter> options, string name = null)
+        {
+            pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
+            if (options != null)
+                options.Invoke(this);
+        }
+
         public void Initialize(MediaFilterGraph filterGraph, string options, string name = null)
         {
             pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
@@ -58,6 +65,7 @@ namespace EmguFFmpeg
         {
             pFilterContext = ffmpeg.avfilter_graph_alloc_filter(filterGraph, pFilter, name);
             ffmpeg.av_buffersrc_parameters_set(pFilterContext, &parameters).ThrowExceptionIfError();
+            ffmpeg.avfilter_init_str(pFilterContext, null);
         }
 
         public void LinkTo(uint srcPad, MediaFilter dstFilter, uint dstPad)
@@ -80,16 +88,19 @@ namespace EmguFFmpeg
             return ffmpeg.av_buffersink_get_frame(pFilterContext, frame);
         }
 
-        public IEnumerable<MediaFrame> ReadFrame(MediaFrame frame)
+        public IEnumerable<MediaFrame> ReadFrame()
         {
-            while (true)
+            using (MediaFrame frame = new VideoFrame())
             {
-                int ret = GetFrame(frame);
-                if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
-                    break;
-                ret.ThrowExceptionIfError();
-                yield return frame;
-                frame.Clear();
+                while (true)
+                {
+                    int ret = GetFrame(frame);
+                    if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
+                        break;
+                    ret.ThrowExceptionIfError();
+                    yield return frame;
+                    frame.Clear();
+                }
             }
         }
 
