@@ -149,6 +149,32 @@ namespace EmguFFmpeg
     }
 
     [Flags]
+    public enum BufferSrcFlags : int
+    {
+        /// <summary>
+        /// takes ownership of the reference passed to it.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT, Do not check for format changes.
+        /// </summary>
+        NoCheckFormat = 1,
+
+        /// <summary>
+        /// AV_BUFFERSRC_FLAG_PUSH, Immediately push the frame to the output.
+        /// </summary>
+        Push = 4,
+
+        /// <summary>
+        /// AV_BUFFERSRC_FLAG_KEEP_REF, Keep a reference to the frame.
+        /// If the frame if reference-counted, create a new reference; otherwise
+        /// copy the frame data.
+        /// </summary>
+        KeepRef = 8,
+    }
+
+    [Flags]
     public enum AVChannelLayout : ulong
     {
         AV_CH_FRONT_LEFT = 0x00000001UL,
