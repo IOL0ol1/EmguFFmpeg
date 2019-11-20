@@ -71,8 +71,13 @@ namespace EmguFFmpeg
         /// refance <see cref="ffmpeg.av_samples_set_silence(byte**, int, int, int, AVSampleFormat)"/>
         /// </summary>
         /// <param name="offset">sample offset</param>
-        /// <param name="fill">default is 0x00</param>
-        public void SetSilence(int offset, params byte[] fill)
+        /// <param name="fill">
+        /// default is new byte[] { 0x00 }
+        /// <para>
+        /// if fill is {0x01, 0x02}, loop fill data by {0x01, 0x02, 0x01, 0x02 ...}, all channels are the same.
+        /// </para>
+        /// </param>
+        public void SetSilence(int offset = 0, params byte[] fill)
         {
             fill = (fill == null || fill.Length < 1) ? new byte[] { 0x00 } : fill;
             AVSampleFormat sample_fmt = (AVSampleFormat)pFrame->format;
@@ -180,6 +185,24 @@ namespace EmguFFmpeg
             {
                 return converter.ConvertFrame(this, out int _, out int __);
             }
+        }
+
+        public override MediaFrame Copy()
+        {
+            AudioFrame dstFrame = new AudioFrame();
+            AVFrame* dst = dstFrame;
+            dst->format = pFrame->format;
+            dst->channel_layout = pFrame->channel_layout;
+            dst->channels = pFrame->channels;
+            dst->nb_samples = pFrame->nb_samples;
+            dst->sample_rate = pFrame->sample_rate;
+            if (ffmpeg.av_frame_is_writable(pFrame) != 0)
+            {
+                ffmpeg.av_frame_get_buffer(dst, 0).ThrowExceptionIfError();
+                ffmpeg.av_frame_copy(dst, pFrame).ThrowExceptionIfError();
+            }
+            ffmpeg.av_frame_copy_props(dst, pFrame).ThrowExceptionIfError();
+            return dstFrame;
         }
     }
 }

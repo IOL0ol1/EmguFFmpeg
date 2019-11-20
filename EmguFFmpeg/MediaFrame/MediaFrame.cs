@@ -8,7 +8,7 @@ using System.Text;
 
 namespace EmguFFmpeg
 {
-    public unsafe abstract class MediaFrame : IDisposable
+    public abstract unsafe class MediaFrame : IDisposable
     {
         protected AVFrame* pFrame;
 
@@ -17,46 +17,14 @@ namespace EmguFFmpeg
             pFrame = ffmpeg.av_frame_alloc();
         }
 
-        public AVFrame AVFrame => *pFrame;
-
-        //public T Clone<T>() where T : MediaFrame, new()
-        //{
-        //    T dstFrame = new T();
-        //    AVFrame* dst = dstFrame;
-        //    dst->format = pFrame->format;
-        //    dst->width = pFrame->width;
-        //    dst->height = pFrame->height;
-        //    dst->channel_layout = pFrame->channel_layout;
-        //    dst->channels = pFrame->channels;
-        //    dst->nb_samples = pFrame->nb_samples;
-        //    dst->sample_rate = pFrame->sample_rate;
-        //    if (ffmpeg.av_frame_is_writable(pFrame) != 0)
-        //    {
-        //        ffmpeg.av_frame_get_buffer(dst, 0).ThrowExceptionIfError();
-        //        ffmpeg.av_frame_copy(dst, pFrame).ThrowExceptionIfError();
-        //    }
-        //    ffmpeg.av_frame_copy_props(dst, pFrame).ThrowExceptionIfError();
-        //    return dstFrame;
-        //}
-
-        //object ICloneable.Clone()
-        //{
-        //    return Clone();
-        //}
-
-        public void Clear()
-        {
-            ffmpeg.av_frame_unref(pFrame);
-        }
-
         public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->channels > 0;
 
         public bool IsVideoFrame => pFrame->width > 0 && pFrame->height > 0;
 
-        #region get managed data
+        #region Get Managed Copy Of Data
 
         /// <summary>
-        /// Get managed copy of <see cref="AVFrame.data"/> exclude align data
+        /// Get managed copy of <see cref="AVFrame.data"/>
         /// <para>
         /// reference <see cref="ffmpeg.av_frame_copy(AVFrame*, AVFrame*)"/>
         /// </para>
@@ -155,9 +123,9 @@ namespace EmguFFmpeg
             }
         }
 
-        public int[] Linesize
+        public IReadOnlyList<int> Linesize
         {
-            get => pFrame->linesize;
+            get => pFrame->linesize.ToArray();
         }
 
         public int Width
@@ -208,12 +176,6 @@ namespace EmguFFmpeg
             set => pFrame->channels = value;
         }
 
-        public static implicit operator AVFrame*(MediaFrame value)
-        {
-            if (value == null) return null;
-            return value.pFrame;
-        }
-
         #region IDisposable Support
 
         private bool disposedValue = false; // To detect redundant calls
@@ -248,5 +210,20 @@ namespace EmguFFmpeg
         }
 
         #endregion
+
+        public void Clear()
+        {
+            ffmpeg.av_frame_unref(pFrame);
+        }
+
+        public abstract MediaFrame Copy();
+
+        public AVFrame AVFrame => *pFrame;
+
+        public static implicit operator AVFrame*(MediaFrame value)
+        {
+            if (value == null) return null;
+            return value.pFrame;
+        }
     }
 }
