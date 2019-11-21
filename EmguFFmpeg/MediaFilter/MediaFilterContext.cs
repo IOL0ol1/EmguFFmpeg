@@ -37,11 +37,9 @@ namespace EmguFFmpeg
             ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
         }
 
-        public MediaFilterContext LinkTo(uint srcPad, MediaFilterContext dstFilterContext, uint dstPad)
+        public MediaFilterContext LinkTo(uint outPad, MediaFilterContext dstFilterContext, uint inPad = 0)
         {
-            if (pFilterContext == null)
-                throw new FFmpegException(FFmpegException.NeedAddToGraph);
-            ffmpeg.avfilter_link(pFilterContext, srcPad, dstFilterContext, dstPad).ThrowExceptionIfError();
+            ffmpeg.avfilter_link(pFilterContext, outPad, dstFilterContext, inPad).ThrowExceptionIfError();
             return dstFilterContext;
         }
 
@@ -51,7 +49,12 @@ namespace EmguFFmpeg
 
         public string Name => ((IntPtr)pFilterContext->name).PtrToStringUTF8();
 
-        public int WriteFrame(MediaFrame frame, BufferSrcFlags flags = BufferSrcFlags.KeepRef)
+        public void WriteFrame(MediaFrame frame, BufferSrcFlags flags = BufferSrcFlags.KeepRef)
+        {
+            AddFrame(frame, flags).ThrowExceptionIfError();
+        }
+
+        public int AddFrame(MediaFrame frame, BufferSrcFlags flags = BufferSrcFlags.KeepRef)
         {
             return ffmpeg.av_buffersrc_add_frame_flags(pFilterContext, frame, (int)flags);
         }

@@ -57,5 +57,8 @@ namespace EmguFFmpeg
         public const string TooManyChannels = "too many channels";
         public const string FilterHasInit = "filter has init by other graph";
         public const string NeedAddToGraph = "filter need add to graph";
+        public const string FilterTypeError = "filter type error";
+        public const string NotSourcesFilter = "not sources filter";
+        public const string NotSinksFilter = "not sinks filter";
     }
 }

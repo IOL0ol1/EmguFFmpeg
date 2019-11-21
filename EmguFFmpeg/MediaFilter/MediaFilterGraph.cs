@@ -1,10 +1,10 @@
 ﻿using FFmpeg.AutoGen;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
@@ -15,6 +15,99 @@ namespace EmguFFmpeg
         public MediaFilterGraph()
         {
             pFilterGraph = ffmpeg.avfilter_graph_alloc();
+        }
+
+        /// <summary>
+        /// $"width={width}:height={height}:pix_fmt={format}:time_base={timebase.num}/{timebase.den}:pixel_aspect={aspect.num}/{aspect.den}:frame_rate={framerate.num}/{framerate.den}:sws_param={swsparam}";
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="format"></param>
+        /// <param name="timebase"></param>
+        /// <param name="aspect"></param>
+        /// <param name="framerate"></param>
+        /// <param name="swsparam"></param>
+        /// <param name="contextName"></param>
+        /// <returns></returns>
+        public MediaFilterContext AddVideoSrcFilter(MediaFilter filter, int width, int height, AVPixelFormat format, AVRational timebase, AVRational aspect, AVRational framerate = default, string swsparam = null, string contextName = null)
+        {
+            MediaFilterContext filterContext = AddFilter(filter, _ =>
+             {
+                 ffmpeg.av_opt_set_int(_, "width", width, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                 ffmpeg.av_opt_set_int(_, "height", height, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                 ffmpeg.av_opt_set(_, "pix_fmt", ffmpeg.av_get_pix_fmt_name(format), ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                 ffmpeg.av_opt_set_q(_, "pixel_aspect", aspect, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                 ffmpeg.av_opt_set_q(_, "time_base", timebase, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                 if (framerate.den != 0) // if is default value(0/0), not set frame_rate.
+                     ffmpeg.av_opt_set_q(_, "frame_rate", framerate, ffmpeg.AV_OPT_SEARCH_CHILDREN); // not set is 0/1
+                 if (swsparam != null)
+                     ffmpeg.av_opt_set(_, "sws_param", swsparam, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+             }, contextName);
+            if (filterContext.NbInputs > 0)
+                throw new FFmpegException(FFmpegException.NotSourcesFilter);
+            if (ffmpeg.avfilter_pad_get_type(filterContext.AVFilterContext.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
+                throw new FFmpegException(FFmpegException.FilterTypeError);
+            return filterContext;
+        }
+
+        public MediaFilterContext AddVideoSinkFilter(MediaFilter filter, AVPixelFormat[] formats = null, string contextName = null)
+        {
+            MediaFilterContext filterContext = AddFilter(filter, _ =>
+            {
+                fixed (void* pixelFmts = formats)
+                {
+                    ffmpeg.av_opt_set_bin(_, "pixel_fmts", (byte*)pixelFmts, sizeof(AVPixelFormat) * formats.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                }
+            }, contextName);
+            if (filterContext.NbOutputs > 0)
+                throw new FFmpegException(FFmpegException.NotSinksFilter);
+            if (ffmpeg.avfilter_pad_get_type(filterContext.AVFilterContext.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
+                throw new FFmpegException(FFmpegException.FilterTypeError);
+            return filterContext;
+        }
+
+        public MediaFilterContext AddAudioSrcFilter(MediaFilter filter, ulong channelLayout, int samplerate, AVSampleFormat format, string contextName = null)
+        {
+            MediaFilterContext filterContext = AddFilter(filter, _ =>
+            {
+                fixed (byte* p = new byte[64])
+                {
+                    ffmpeg.av_get_channel_layout_string(p, 64, 0, channelLayout);
+                    ffmpeg.av_opt_set(_, "channel_layout", ((IntPtr)p).PtrToStringUTF8(), ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    ffmpeg.av_opt_set(_, "sample_fmt", ffmpeg.av_get_sample_fmt_name(format), ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    ffmpeg.av_opt_set_q(_, "time_base", new AVRational() { num = 1, den = samplerate }, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    ffmpeg.av_opt_set_int(_, "sample_rate", samplerate, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                }
+            }, contextName);
+            if (filterContext.NbOutputs > 0)
+                throw new FFmpegException(FFmpegException.NotSourcesFilter);
+            if (ffmpeg.avfilter_pad_get_type(filterContext.AVFilterContext.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
+                throw new FFmpegException(FFmpegException.FilterTypeError);
+            return filterContext;
+        }
+
+        public MediaFilterContext AddAudioSinkFilter(MediaFilter filter, AVSampleFormat[] formats = null, int[] sampleRates = null, ulong[] channelLayouts = null, int[] channelCounts = null, int allChannelCounts = 0, string contextName = null)
+        {
+            MediaFilterContext filterContext = AddFilter(filter, _ =>
+            {
+                fixed (void* pfmts = formats)
+                fixed (void* pSampleRates = sampleRates)
+                fixed (void* pChLayouts = channelLayouts)
+                fixed (void* pChCounts = channelCounts)
+                {
+                    ffmpeg.av_opt_set_bin(_, "sample_fmts", (byte*)pfmts, sizeof(AVSampleFormat) * formats.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    ffmpeg.av_opt_set_bin(_, "sample_rates", (byte*)pSampleRates, sizeof(int) * sampleRates.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    ffmpeg.av_opt_set_bin(_, "channel_layouts", (byte*)pChLayouts, sizeof(ulong) * channelLayouts.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    ffmpeg.av_opt_set_bin(_, "channel_counts", (byte*)pChCounts, sizeof(int) * channelCounts.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    ffmpeg.av_opt_set_int(_, "all_channel_counts", allChannelCounts, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                }
+            }, contextName);
+            if (filterContext.NbOutputs > 0)
+                throw new FFmpegException(FFmpegException.NotSinksFilter);
+            if (ffmpeg.avfilter_pad_get_type(filterContext.AVFilterContext.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
+                throw new FFmpegException(FFmpegException.FilterTypeError);
+            return filterContext;
         }
 
         public MediaFilterContext AddFilter(MediaFilter filter, string options = null, string contextName = null)
@@ -98,14 +191,29 @@ namespace EmguFFmpeg
             AVFilterInOut* cur = inputs;
             for (cur = inputs; cur != null; cur = cur->next)
             {
+                Trace.TraceInformation($"{((IntPtr)cur->name).PtrToStringUTF8()}");
                 filterGraph.inputs.Add(new MediaFilterContext(cur->filter_ctx));
             }
             for (cur = outputs; cur != null; cur = cur->next)
             {
+                Trace.TraceInformation($"{((IntPtr)cur->name).PtrToStringUTF8()}");
                 filterGraph.outputs.Add(new MediaFilterContext(cur->filter_ctx));
             }
-            var a = filterGraph[3].AVFilterContext.input_pads;
-            string bb = ffmpeg.avfilter_pad_get_name(a, 1);
+
+            foreach (var item in filterGraph)
+            {
+                Trace.TraceInformation($"{item.Name}");
+                for (int i = 0; i < item.NbInputs; i++)
+                {
+                    Trace.TraceInformation(ffmpeg.avfilter_pad_get_name(item.AVFilterContext.input_pads, i));
+                }
+                Trace.TraceInformation("++++");
+                for (int i = 0; i < item.NbOutputs; i++)
+                {
+                    Trace.TraceInformation(ffmpeg.avfilter_pad_get_name(item.AVFilterContext.output_pads, i));
+                }
+                Trace.TraceInformation("---------");
+            }
             // TODO: Link
             filterGraph.Initialize();
             ffmpeg.avfilter_inout_free(&inputs);
