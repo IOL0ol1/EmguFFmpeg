@@ -87,6 +87,7 @@ namespace EmguFFmpeg
                 // if codoc type is video, create new video frame
                 // else if codoc type is audio, create new audio frame
                 // else throw a exception (e.g. codec type is subtitle)
+                // TODO: add subtitle supported
                 using (MediaFrame frame =
                     Type == AVMediaType.AVMEDIA_TYPE_VIDEO ?
                         new VideoFrame() :
