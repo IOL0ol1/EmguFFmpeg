@@ -56,16 +56,10 @@ namespace EmguFFmpeg
 
         /// <summary>
         /// Add stream by encode
-        /// <para><see cref="ffmpeg.avformat_new_stream(AVFormatContext*, AVCodec*)"/></para>
-        /// <para>set <see cref="AVStream.id"/></para>
-        /// <para><see cref="ffmpeg.avcodec_parameters_from_context(AVCodecParameters*, AVCodecContext*)"/></para>
-        /// <para>set <see cref="AVStream.time_base"/> from <see cref="AVCodecContext.time_base"/></para>
         /// </summary>
         /// <param name="encode">Used to codec stream.
-        /// <para>
         /// set null to add a data stream but no encoder,
         /// then use <see cref="WritePacket(MediaPacket)"/> write data directly.
-        /// </para>
         /// </param>
         /// <returns></returns>
         public MediaStream AddStream(MediaEncode encode)

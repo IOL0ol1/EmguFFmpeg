@@ -46,7 +46,7 @@ namespace EmguFFmpeg
             return CreateEncode(videoCodec, flags, _ =>
             {
                 AVCodecContext* pCodecContext = _;
-                if (width <= 0 || height <= 0 || fps <= 0)
+                if (width <= 0 || height <= 0 || fps <= 0 || bitRate < 0)
                     throw new FFmpegException(FFmpegException.NonNegative);
                 if (_.SupportedPixelFmts.Count() <= 0)
                     throw new FFmpegException(FFmpegException.NotSupportCodecId);
@@ -58,10 +58,7 @@ namespace EmguFFmpeg
                 pCodecContext->height = height;
                 pCodecContext->time_base = new AVRational { num = 1, den = fps };
                 pCodecContext->pix_fmt = format;
-                if (bitRate < 0)
-                    pCodecContext->bit_rate = CalcVideoBitRate(width, height, fps, pCodecContext->pix_fmt);
-                else
-                    pCodecContext->bit_rate = bitRate;
+                pCodecContext->bit_rate = bitRate;
             });
         }
 
@@ -95,7 +92,7 @@ namespace EmguFFmpeg
             return CreateEncode(audioCodec, flags, _ =>
             {
                 AVCodecContext* pCodecContext = _;
-                if (channelLayout <= 0 || sampleRate <= 0)
+                if (channelLayout <= 0 || sampleRate <= 0 || bitRate < 0)
                     throw new FFmpegException(FFmpegException.NonNegative);
                 if (_.SupportedSampelFmts.Count() <= 0 || _.SupportedSampleRates.Count <= 0)
                     throw new FFmpegException(FFmpegException.NotSupportCodecId);
@@ -117,30 +114,11 @@ namespace EmguFFmpeg
                 pCodecContext->channel_layout = channelLayout;
                 pCodecContext->sample_fmt = format;
                 pCodecContext->channels = ffmpeg.av_get_channel_layout_nb_channels(pCodecContext->channel_layout);
-                if (bitRate < 0)
-                    pCodecContext->bit_rate = CalcAudioBitRate(ffmpeg.av_get_channel_layout_nb_channels(channelLayout), sampleRate, pCodecContext->sample_fmt);
-                else
-                    pCodecContext->bit_rate = bitRate;
+                pCodecContext->bit_rate = bitRate;
             });
         }
 
         #endregion
-
-        public static long CalcVideoBitRate(int width, int height, int fps, AVPixelFormat format)
-        {
-            if (format == AVPixelFormat.AV_PIX_FMT_NONE)
-                throw new FFmpegException(FFmpegException.NotSupportFormat);
-            long bitsPerPixel = ffmpeg.av_get_bits_per_pixel(ffmpeg.av_pix_fmt_desc_get(format));
-            return width * height * fps * bitsPerPixel;
-        }
-
-        public static long CalcAudioBitRate(int channels, int sampleRate, AVSampleFormat format)
-        {
-            if (format == AVSampleFormat.AV_SAMPLE_FMT_NONE)
-                throw new FFmpegException(FFmpegException.NotSupportFormat);
-            long bitsPerSample = ffmpeg.av_get_bytes_per_sample(format) * 8;
-            return channels * sampleRate * bitsPerSample;
-        }
 
         /// <summary>
         /// Find encoder by id
