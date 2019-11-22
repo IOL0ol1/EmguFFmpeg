@@ -6,13 +6,24 @@ using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg.Example.Example
 {
+    public class Mp4VideoWriterExample
+    {
+        public Mp4VideoWriterExample()
+        {
+            using (Mp4VideoWriter mp4VideoWriter = new Mp4VideoWriter("output.mp4").AddVideo(800, 600, 30).AddAudio(2, 44100).Init())
+            {
+                // TODO
+            }
+        }
+    }
+
     public class Mp4VideoWriter : IDisposable
     {
         private MediaWriter writer;
-        private VideoFrame videoFrame;
-        private AudioFrame audioFrame;
         private int videoIndex = 0;
         private int audioIndex = 0;
+        private PixelConverter pixelConverter;
+        private SampleConverter sampleConverter;
 
         public int Height { get; private set; }
         public int Width { get; private set; }
@@ -37,22 +48,22 @@ namespace EmguFFmpeg.Example.Example
                 Height = height;
                 Width = width;
                 FPS = fps;
-                writer.AddStream(MediaEncode.CreateVideoEncode(writer.Format, width, height, fps));
+                var st = writer.AddStream(MediaEncode.CreateVideoEncode(writer.Format, width, height, fps));
                 videoIndex = writer.Count() - 1;
-                videoFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGR24, width, height);
+                pixelConverter = new PixelConverter(st.Codec);
             }
             return this;
         }
 
-        public Mp4VideoWriter AddAudio(int channels, int sampleRate)
+        public Mp4VideoWriter AddAudio(int dstChannels, int dstSampleRate)
         {
             if (writer.Where(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_AUDIO).Count() == 0)
             {
-                Channels = channels;
-                SampleRate = sampleRate;
-                var stream = writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, channels, sampleRate));
+                Channels = dstChannels;
+                SampleRate = dstSampleRate;
+                var stream = writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, dstChannels, dstSampleRate));
                 audioIndex = writer.Count - 1;
-                audioFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_S16, channels, stream.Codec.AVCodecContext.frame_size, sampleRate);
+                sampleConverter = new SampleConverter(stream.Codec);
             }
             return this;
         }
@@ -63,40 +74,76 @@ namespace EmguFFmpeg.Example.Example
             return this;
         }
 
-        private long lastpts = -1;
-
-        public void WriteVideoFrame(byte[] data, TimeSpan timeSpan)
+        public void WriteVideoFrame(VideoFrame videoFrame)
         {
             if (videoIndex < 0)
                 throw new NotSupportedException();
-
-            Marshal.Copy(data, 0, videoFrame.Data[0], data.Length);
-
-            long curpts = (long)timeSpan.TotalSeconds * FPS;
-            if (curpts > lastpts)
+            foreach (var dstframe in pixelConverter.Convert(videoFrame))
             {
-                lastpts = curpts;
-                videoFrame.Pts = lastpts;
-                foreach (var packet in writer[videoIndex].WriteFrame(videoFrame))
+                dstframe.Pts = videoFrame.Pts;
+                foreach (var packet in writer[videoIndex].WriteFrame(dstframe))
                 {
                     writer.WritePacket(packet);
                 }
             }
         }
 
-        private long lastSamples = 0;
+        private long lastVideoPts = 0;
 
-        public void WriteAudioFrame(byte[] data)
+        public void WriteBGR24(byte[] data, int stride, TimeSpan timeSpan)
+        {
+            long curPts = (long)timeSpan.TotalSeconds * FPS;
+            if (curPts > lastVideoPts)
+            {
+                VideoFrame videoFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGR24, Width, Height);
+                if (data.Length == videoFrame.Linesize[0] * Height)
+                    Marshal.Copy(data, 0, videoFrame.Data[0], data.Length);
+                else
+                {
+                    int line = Math.Min(stride, videoFrame.Linesize[0]);
+                    for (int i = 0; i < Height; i++)
+                    {
+                        Marshal.Copy(data, i * stride, videoFrame.Data[0] + i * videoFrame.Linesize[0], line);
+                    }
+                }
+                videoFrame.Pts = curPts;
+                WriteVideoFrame(videoFrame);
+                lastVideoPts = curPts;
+            }
+        }
+
+        public void WriteS16(byte[] data)
+        {
+            AudioFrame audioFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_S16, Channels, data.Length / Channels / 2, SampleRate);
+            Marshal.Copy(data, 0, audioFrame.Data[0], data.Length);
+            WriteAudioFrame(audioFrame);
+        }
+
+        public void WriteFLTP(byte[][] data)
+        {
+            AudioFrame audioFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_FLTP, Channels, data[0].Length / 4, SampleRate);
+            for (int i = 0; i < data.Length; i++)
+            {
+                Marshal.Copy(data[i], 0, audioFrame.Data[i], data.Length);
+            }
+            WriteAudioFrame(audioFrame);
+        }
+
+        private long lastAudioPts = 0;
+
+        public void WriteAudioFrame(AudioFrame audioFrame)
         {
             if (audioIndex < 0)
                 throw new NotSupportedException();
 
-            Marshal.Copy(data, 0, audioFrame.Data[0], data.Length);
-            lastSamples += audioFrame.AVFrame.nb_samples;
-            audioFrame.Pts = lastSamples;
-            foreach (var packet in writer[videoIndex].WriteFrame(audioFrame))
+            foreach (var dstframe in sampleConverter.Convert(audioFrame))
             {
-                writer.WritePacket(packet);
+                lastAudioPts += audioFrame.NbSamples;
+                dstframe.Pts = lastAudioPts;
+                foreach (var packet in writer[videoIndex].WriteFrame(dstframe))
+                {
+                    writer.WritePacket(packet);
+                }
             }
         }
 
