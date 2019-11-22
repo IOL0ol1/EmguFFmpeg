@@ -201,11 +201,10 @@ namespace EmguFFmpeg
         /// pre process frame
         /// </summary>
         /// <param name="frame"></param>
-        private void PreProcessFrame(MediaFrame frame)
+        private void RemoveSideData(MediaFrame frame)
         {
             if (frame != null)
             {
-                ffmpeg.av_frame_make_writable(frame).ThrowExceptionIfError();
                 // Make sure Closed Captions will not be duplicated
                 if (AVCodecContext.codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
                     ffmpeg.av_frame_remove_side_data(frame, AVFrameSideDataType.AV_FRAME_DATA_A53_CC);
@@ -219,8 +218,8 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public virtual IEnumerable<MediaPacket> EncodeFrame(MediaFrame frame)
         {
-            PreProcessFrame(frame);
             SendFrame(frame).ThrowExceptionIfError();
+            RemoveSideData(frame);
             using (MediaPacket packet = new MediaPacket())
             {
                 while (true)
