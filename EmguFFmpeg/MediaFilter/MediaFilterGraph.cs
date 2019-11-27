@@ -55,9 +55,12 @@ namespace EmguFFmpeg
         {
             MediaFilterContext filterContext = AddFilter(filter, _ =>
             {
-                fixed (void* pixelFmts = formats)
+                if (formats != null)
                 {
-                    ffmpeg.av_opt_set_bin(_, "pixel_fmts", (byte*)pixelFmts, sizeof(AVPixelFormat) * formats.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    fixed (void* pixelFmts = formats)
+                    {
+                        ffmpeg.av_opt_set_bin(_, "pixel_fmts", (byte*)pixelFmts, sizeof(AVPixelFormat) * formats.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    }
                 }
             }, contextName);
             if (filterContext.NbOutputs > 0)
