@@ -16,7 +16,7 @@ namespace EmguFFmpeg.EmguCV
         /// <summary>
         /// Convert to Mat
         /// <para>
-        /// video frame: convert to AV_PIX_FMT_BGR24 and return new Mat(frame.Height, frame.Width, DepthType.Cv8U, 3)
+        /// video frame: convert to AV_PIX_FMT_BGRA and return new Mat(frame.Height, frame.Width, DepthType.Cv8U, 4)
         /// </para>
         /// <para>
         /// audio frame:
@@ -118,20 +118,20 @@ namespace EmguFFmpeg.EmguCV
 
         private static Mat VideoFrameToMat(VideoFrame frame)
         {
-            if ((AVPixelFormat)frame.AVFrame.format != AVPixelFormat.AV_PIX_FMT_BGR24)
+            if ((AVPixelFormat)frame.AVFrame.format != AVPixelFormat.AV_PIX_FMT_BGRA)
             {
-                using (VideoFrame dstFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGR24, frame.AVFrame.width, frame.AVFrame.height))
+                using (VideoFrame dstFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGRA, frame.AVFrame.width, frame.AVFrame.height))
                 using (PixelConverter converter = new PixelConverter(dstFrame))
                 {
-                    return Bgr24ToMat(converter.ConvertFrame(frame));
+                    return BgraToMat(converter.ConvertFrame(frame));
                 }
             }
-            return Bgr24ToMat(frame);
+            return BgraToMat(frame);
         }
 
-        private static Mat Bgr24ToMat(MediaFrame frame)
+        private static Mat BgraToMat(MediaFrame frame)
         {
-            Mat mat = new Mat(frame.AVFrame.height, frame.AVFrame.width, DepthType.Cv8U, 3);
+            Mat mat = new Mat(frame.AVFrame.height, frame.AVFrame.width, DepthType.Cv8U, 4);
             int stride = mat.Step;
             for (int i = 0; i < frame.AVFrame.height; i++)
             {

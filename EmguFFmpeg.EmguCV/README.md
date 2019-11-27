@@ -40,7 +40,7 @@ using (Mat mat = new Mat(1, 1024, DepthType.Cv32S, 2)) // if mat channels > 1 fr
 **VideoFrame to Mat**
 ```csharp
 VideoFrame videoFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_YUV420P, 800, 600);
-Mat bgrc3 = videoFrame.ToMat(); // Bgr, channels 3, width 800, height 600
+Mat bgra = videoFrame.ToMat(); // Bgra, channels 4, width 800, height 600
 ```
 **AudioFrame to Mat**
 ```csharp
