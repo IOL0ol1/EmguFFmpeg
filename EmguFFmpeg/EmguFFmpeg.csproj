@@ -22,7 +22,7 @@
       This is NOT a command-line warpper library. It's based on the ffmpeg function interface.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|x64'">
