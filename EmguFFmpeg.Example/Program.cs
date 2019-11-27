@@ -16,8 +16,7 @@ namespace EmguFFmpeg.Example
             FFmpeg.SetupLogging(logWrite: _ => Trace.Write(_));
             Console.WriteLine("Hello FFmpeg!");
 
-            //Filter filter = new Filter(@"C:\Users\Admin\Videos\Desktop\input.mp4", @"output.mp4");
-            //Filter filter = new Filter(@"C:\Users\Admin\Desktop\input.mp3", @"output.mp3");
+            //PngChromekeyFilter filter = new PngChromekeyFilter(@"C:\Users\IOL0ol1\Desktop\input.png", @"output.png");
             //Remuxing filter = new Remuxing(@"C:\Users\Admin\Videos\Desktop\input.mp4");
             //DecodeAudioToMat decodeAudio = new DecodeAudioToMat(@"C:\Users\Admin\Desktop\input.mp3");
             //BitmapConverter bitmap = new BitmapConverter();
