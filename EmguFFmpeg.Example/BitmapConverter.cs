@@ -43,7 +43,7 @@ namespace EmguFFmpeg.Example
             int stride = Math.Min(bitmapData.Stride, frame.Linesize[0]);
             for (int i = 0; i < height; i++)
             {
-                FFmpeg.CopyMemory(bitmapData.Scan0 + i * bitmapData.Stride, frame.Data[0] + i * frame.Linesize[0], (uint)stride);
+                FFmpegHelper.CopyMemory(bitmapData.Scan0 + i * bitmapData.Stride, frame.Data[0] + i * frame.Linesize[0], (uint)stride);
             }
             bitmap.UnlockBits(bitmapData);
             return frame;

@@ -74,7 +74,7 @@ namespace EmguFFmpeg
 
         public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, int channels, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
-            return CreateAudioEncode(audioCodec, flags, FFmpeg.GetChannelLayout(channels), sampleRate, bitRate, format);
+            return CreateAudioEncode(audioCodec, flags, FFmpegHelper.GetChannelLayout(channels), sampleRate, bitRate, format);
         }
 
         /// <summary>

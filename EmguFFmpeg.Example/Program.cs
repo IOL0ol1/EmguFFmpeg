@@ -12,8 +12,8 @@ namespace EmguFFmpeg.Example
         private unsafe static void Main(string[] args)
         {
             Process.Start(Environment.CurrentDirectory);
-            FFmpeg.RegisterBinaries();
-            FFmpeg.SetupLogging(logWrite: _ => Trace.Write(_));
+            FFmpegHelper.RegisterBinaries();
+            FFmpegHelper.SetupLogging(logWrite: _ => Trace.Write(_));
             Console.WriteLine("Hello FFmpeg!");
 
             //PngChromekeyFilter filter = new PngChromekeyFilter(@"C:\Users\IOL0ol1\Desktop\input.png", @"output.png");

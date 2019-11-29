@@ -14,4 +14,8 @@
   <ItemGroup>
     <ProjectReference Include="..\EmguFFmpeg.EmguCV\EmguFFmpeg.EmguCV.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="PresentationFramework" />
+  </ItemGroup>
 </Project>

@@ -111,7 +111,7 @@ namespace EmguFFmpeg.EmguCV
             Mat mat = new Mat(planes, frame.AVFrame.nb_samples, dstType, (planar != 0 ? 1 : frame.AVFrame.channels));
             for (int i = 0; i < planes; i++)
             {
-                FFmpeg.CopyMemory(mat.DataPointer + i * stride, frame.Data[i], (uint)stride);
+                FFmpegHelper.CopyMemory(mat.DataPointer + i * stride, frame.Data[i], (uint)stride);
             }
             return mat;
         }
@@ -135,7 +135,7 @@ namespace EmguFFmpeg.EmguCV
             int stride = mat.Step;
             for (int i = 0; i < frame.AVFrame.height; i++)
             {
-                FFmpeg.CopyMemory(mat.DataPointer + i * stride, frame.Data[0] + i * frame.AVFrame.linesize[0], (uint)stride);
+                FFmpegHelper.CopyMemory(mat.DataPointer + i * stride, frame.Data[0] + i * frame.AVFrame.linesize[0], (uint)stride);
             }
             return mat;
         }
@@ -253,7 +253,7 @@ namespace EmguFFmpeg.EmguCV
             int stride = mat.Step;
             for (int i = 0; i < (isPlanar ? channels : 1); i++)
             {
-                FFmpeg.CopyMemory(frame.Data[i], mat.DataPointer + i * stride, (uint)stride);
+                FFmpegHelper.CopyMemory(frame.Data[i], mat.DataPointer + i * stride, (uint)stride);
             }
             return frame;
         }
@@ -266,7 +266,7 @@ namespace EmguFFmpeg.EmguCV
                 int stride = image.Width * image.NumberOfChannels;
                 for (int i = 0; i < frame.AVFrame.height; i++)
                 {
-                    FFmpeg.CopyMemory(frame.Data[0] + i * frame.AVFrame.linesize[0], image.Mat.DataPointer + i * stride, (uint)stride);
+                    FFmpegHelper.CopyMemory(frame.Data[0] + i * frame.AVFrame.linesize[0], image.Mat.DataPointer + i * stride, (uint)stride);
                 }
                 return frame;
             }

@@ -8,7 +8,7 @@ using System.Text;
 
 namespace EmguFFmpeg
 {
-    public static class FFmpeg
+    public static class FFmpegHelper
     {
         /// <summary>
         /// Set ffmpeg root path
