@@ -17,15 +17,19 @@ A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.
 2. [EmguFFmpeg.EmguCV](/EmguFFmpeg.EmguCV)    
 	Some extension methods for data exchange between EmguFFmpeg and **EmguCV**.    
 	Only net45 and later are supported, because EmguCV dependent net45.    
-	It's dependent on EmguFFmpeg.    
-3. [EmguFFmpeg.Example](/EmguFFmpeg.Example)    
-	Some EmguFFmpeg example.    
+	It's dependent on EmguFFmpeg and EmguCV.    
+3. [EmguFFmpeg.OpenCvSharp](/EmguFFmpeg.OpenCvSharp)    
+	Some extension methods for data exchange between EmguFFmpeg and [**OpenCvSharp**](https://github.com/shimat/opencvsharp).    
+	using **netstandard2.0** for cross platform.    
+	please read [**here**](https://github.com/shimat/opencvsharp) before use.    
+	It's dependent on EmguFFmpeg and OpenCvSharp.    
+4. [EmguFFmpeg.Example](/EmguFFmpeg.Example)    
+	EmguFFmpeg example with EmguCV (exclude OpenCvSharp*).    
 	It's dependent on EmguFFmpeg.EmguCV.    
-
 
 ## TODO
    
 - [x] Convert MediaFrame data easy with EmguCV etc.
-- [ ] Add MedaiFilter support.
+- [x] Add MedaiFilter support.
 - [ ] Add Subtitle support.
 - [ ] Data exchange with NAudio and SharpAVI.

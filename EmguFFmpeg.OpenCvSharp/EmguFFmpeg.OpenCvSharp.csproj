@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net4.5</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenCvSharp4" Version="4.2.0.20191223" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EmguFFmpeg\EmguFFmpeg.csproj" />
+  </ItemGroup>
+
+</Project>
