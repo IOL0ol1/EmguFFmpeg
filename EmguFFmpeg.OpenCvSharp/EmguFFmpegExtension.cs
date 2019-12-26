@@ -37,7 +37,7 @@ namespace EmguFFmpeg.OpenCvSharp
         /// </item>
         /// <item>
         /// <term><see cref="AVSampleFormat.AV_SAMPLE_FMT_DBL"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_DBLP"/></term>
-        /// <description><see cref="DepthType.CV_64F"/></description>
+        /// <description><see cref="MatType.CV_64F"/></description>
         /// </item>
         /// <item>
         /// <term><see cref="AVSampleFormat.AV_SAMPLE_FMT_S64"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S64P"/></term>
@@ -158,31 +158,31 @@ namespace EmguFFmpeg.OpenCvSharp
 
         /// <summary>
         /// Convert to audio frame to <paramref name="dstFotmat"/>
-        /// <para><see cref="DepthType"/> to <see cref="AVSampleFormat"/> mapping table.
-        /// if <see cref="Mat.NumberOfChannels"/> > 1, use packet format, otherwise planar</para>
+        /// <para><see cref="MatType"/> to <see cref="AVSampleFormat"/> mapping table.
+        /// if <see cref="Mat.Channels()"/> > 1, use packet format, otherwise planar</para>
         /// <list type="table" >
         /// <item>
-        /// <term><see cref="DepthType.Cv8U"/></term>
+        /// <term><see cref="MatType.CV_8U"/></term>
         /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_U8"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_U8P"/></description1>
         /// </item>
         /// <item>
-        /// <term><see cref="DepthType.Cv16S"/></term>
+        /// <term><see cref="MatType.CV_16S"/></term>
         /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_S16"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S16P"/></description1>
         /// </item>
         /// <item>
-        /// <term><see cref="DepthType.Cv32S"/></term>
+        /// <term><see cref="MatType.CV_32S"/></term>
         /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_S32"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S32P"/></description1>
         /// </item>
         /// <item>
-        /// <term><see cref="DepthType.Cv32F"/></term>
+        /// <term><see cref="MatType.CV_32F"/></term>
         /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_FLT"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_FLTP"/></description1>
         /// </item>
         /// <item>
-        /// <term><see cref="DepthType.Cv64F"/></term>
+        /// <term><see cref="MatType.CV_64F"/></term>
         /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_DBL"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_DBLP"/></description1>
         /// </item>
         /// <item>
-        /// <term><see cref="DepthType.Cv64F"/></term>
+        /// <term><see cref="MatType.CV_64F"/></term>
         /// <description1><see cref="AVSampleFormat.AV_SAMPLE_FMT_S64"/>/<see cref="AVSampleFormat.AV_SAMPLE_FMT_S64P"/></description1>
         /// </item>
         /// <item>NOTE: Emgucv not supported int64, mapping Cv64F to int64,
@@ -191,7 +191,7 @@ namespace EmguFFmpeg.OpenCvSharp
         /// </list>
         /// </summary>
         /// <param name="mat"></param>
-        /// <param name="dstFotmat">Default is auto format by <see cref="Mat.Depth"/> and <see cref="Mat.NumberOfChannels"/> use mapping table</param>
+        /// <param name="dstFotmat">Default is auto format by <see cref="Mat.Depth"/> and <see cref="Mat.Channels()"/> use mapping table</param>
         /// <param name="dstSampleRate">Mat not have sample rate, set value here or later</param>
         /// <returns></returns>
         public static AudioFrame ToAudioFrame(this Mat mat, AVSampleFormat dstFotmat = AVSampleFormat.AV_SAMPLE_FMT_NONE, int dstSampleRate = 0)

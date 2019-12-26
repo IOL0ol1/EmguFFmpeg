@@ -18,14 +18,17 @@
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet opencvsharp image</PackageTags>
     <Version>1.0.9</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageIconUrl />
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
-    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg.OpenCvSharp\bin\EmguFFmpeg.OpenCvSharp.xml</DocumentationFile>
+    <DocumentationFile>bin\EmguFFmpeg.OpenCvSharp.xml</DocumentationFile>
+    <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
-    <DocumentationFile>E:\Projects\EmguFFmpeg\EmguFFmpeg.OpenCvSharp\bin\EmguFFmpeg.OpenCvSharp.xml</DocumentationFile>
+    <DocumentationFile>bin\EmguFFmpeg.OpenCvSharp.xml</DocumentationFile>
+    <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,6 +37,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EmguFFmpeg\EmguFFmpeg.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\icon.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
