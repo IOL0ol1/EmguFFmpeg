@@ -61,6 +61,7 @@ writer.Initialize();
 // create video frame
 VideoFrame videoFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_YUV420P, width, height);
 
+// write frame by timespan see EmguFFmpeg.Example/Mp4VideoWriter.cs#L95
 // write 60s duration video
 long lastpts = -1;
 Stopwatch timer = Stopwatch.StartNew();
