@@ -11,13 +11,13 @@ namespace EmguFFmpeg
     public static class FFmpegHelper
     {
         /// <summary>
-        /// Set ffmpeg root path
+        /// Set ffmpeg root path, return <see cref="ffmpeg.av_version_info"/>
         /// </summary>
         /// <param name="path"></param>
-        public static void RegisterBinaries(string path = "")
+        public static string RegisterBinaries(string path = "")
         {
             ffmpeg.RootPath = path;
-            Trace.TraceInformation($"{nameof(ffmpeg.av_version_info)} : {ffmpeg.av_version_info()}");
+            return ffmpeg.av_version_info();
         }
 
         /// <summary>
@@ -54,15 +54,18 @@ namespace EmguFFmpeg
 
         #region Extension
 
-        public unsafe static string PtrToStringUTF8(this IntPtr ptr)
+        public static string PtrToStringUTF8(this IntPtr ptr)
         {
-            if (IntPtr.Zero == ptr)
-                return null;
-            int length = 0;
-            sbyte* psbyte = (sbyte*)ptr;
-            while (psbyte[length] != 0)
-                length++;
-            return new string(psbyte, 0, length, Encoding.UTF8);
+            unsafe
+            {
+                if (IntPtr.Zero == ptr)
+                    return null;
+                int length = 0;
+                sbyte* psbyte = (sbyte*)ptr;
+                while (psbyte[length] != 0)
+                    length++;
+                return new string(psbyte, 0, length, Encoding.UTF8);
+            }
         }
 
         internal static int ThrowExceptionIfError(this int error)
@@ -105,7 +108,7 @@ namespace EmguFFmpeg
         private static extern void CopyMemoryInternal(IntPtr dest, IntPtr src, uint count);
 
         /// <summary>
-        /// Copy memory use win32 api
+        /// Copy unmanaged memory use win32 api
         /// </summary>
         /// <param name="dest"></param>
         /// <param name="src"></param>
@@ -116,7 +119,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Copy memory use win32 api
+        /// Copy unmanaged memory use win32 api
         /// </summary>
         /// <param name="dest"></param>
         /// <param name="src"></param>
