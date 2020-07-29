@@ -4,13 +4,23 @@ using System.Linq;
 
 namespace EmguFFmpeg.Example
 {
-    public class RecordingAudio : IExample
+    public class RecordingAudio 
     {
         /// <summary>
-        /// recording audio
+        /// recording audio.
+        /// <para>
+        /// first set inputDeviceName = null, you will get inputDeviceName list in vs output, 
+        /// </para>
+        /// <para>
+        /// then set inputDeviceName to your real device name and run again,you will get a audio output.
+        /// </para>
+        /// <para>
+        /// if you want stop record, exit console;
+        /// </para>
+        /// <para>ffmpeg </para>
         /// </summary>
         /// <param name="outputFile"></param>
-        public RecordingAudio(string outputFile)
+        public RecordingAudio(string outputFile,string inputDeviceName = null)
         {
             // register all device
             MediaDevice.InitializeDevice();
@@ -18,14 +28,15 @@ namespace EmguFFmpeg.Example
             // list all "dshow" device at console output, ffmpeg does not support direct reading of device names
             MediaDevice.GetDeviceInfos(dshowInput, MediaDevice.ListDevicesOptions);
 
+            if (string.IsNullOrWhiteSpace(inputDeviceName)) return;
             // get your audio input device name from console output
             // NOTE: DO NOT delete "audio="
-            using (MediaReader reader = new MediaReader("audio=change to your audio input device name", dshowInput))
+            using (MediaReader reader = new MediaReader($"audio={inputDeviceName}", dshowInput))
             using (MediaWriter writer = new MediaWriter(outputFile))
             {
                 var stream = reader.Where(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_AUDIO).First();
 
-                writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, stream.Codec.AVCodecContext.channel_layout, stream.Codec.AVCodecContext.sample_rate));
+                writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, stream.Codec.AVCodecContext.channels, stream.Codec.AVCodecContext.sample_rate));
                 writer.Initialize();
 
                 AudioFrame dstFrame = AudioFrame.CreateFrameByCodec(writer[0].Codec);

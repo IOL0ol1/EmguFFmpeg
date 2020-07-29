@@ -1,4 +1,5 @@
 ﻿using FFmpeg.AutoGen;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +12,18 @@ namespace EmguFFmpeg.Example
     {
         /// <summary>
         /// Make the specified color of <paramref name="input0"/> transparent and overlay it on the <paramref name="input1"/> video to <paramref name="output"/>
+        /// <![CDATA[
+        /// filter graph in VideoChromekeyFilter like this:
+        /// ┌──────┐     ┌──────┐     ┌─────────┐     ┌─────────┐
+        /// │input0│---->│buffer│---->│chromakey│---->│         │
+        /// └──────┘     └──────┘     └─────────┘     │         │     ┌──────────┐     ┌──────┐
+        ///                                           │ overlay │---->│buffersink│---->│output│
+        /// ┌──────┐     ┌──────┐                     │         │     └──────────┘     └──────┘
+        /// │input1│-----│buffer│-------------------->│         │
+        /// └──────┘     └──────┘                     └─────────┘
+        /// ]]>
         /// <para>
-        /// NOTE: green R:0 G:128 B:0
+        /// NOTE: green [R:0 G:128 B:0]
         /// </para>
         /// <para>
         /// ffmpeg -i <paramref name="input0"/> -i <paramref name="input1"/> -filter_complex "[1:v]chromakey=green:0.1:0.0[ckout];[0:v][ckout]overlay[out]" -map "[out]" <paramref name="output"/>
@@ -21,7 +32,8 @@ namespace EmguFFmpeg.Example
         /// <param name="input0">foreground</param>
         /// <param name="input1">background</param>
         /// <param name="output">output</param>
-        public unsafe VideoChromekeyFilter(string input0, string input1, string output)
+        /// <param name="chromakeyOptions">rgb:similarity:blend, see <see cref="http://ffmpeg.org/ffmpeg-filters.html#chromakey"/> </param>
+        public VideoChromekeyFilter(string input0, string input1, string output,string chromakeyOptions = "0x466F46:0.1:0.0")
         {
             using (MediaReader reader0 = new MediaReader(input0))
             using (MediaReader reader1 = new MediaReader(input1))
@@ -46,7 +58,7 @@ namespace EmguFFmpeg.Example
                 MediaFilterGraph filterGraph = new MediaFilterGraph();
                 var in0 = filterGraph.AddVideoSrcFilter(new MediaFilter(MediaFilter.VideoSources.Buffer), width0, height0, (AVPixelFormat)format0, time_base0, sample_aspect_ratio0);
                 var in1 = filterGraph.AddVideoSrcFilter(new MediaFilter(MediaFilter.VideoSources.Buffer), width1, height1, (AVPixelFormat)format1, time_base1, sample_aspect_ratio1);
-                var chromakey = filterGraph.AddFilter(new MediaFilter("chromakey"), "green:0.1:0.0");
+                var chromakey = filterGraph.AddFilter(new MediaFilter("chromakey"), chromakeyOptions); 
                 var overlay = filterGraph.AddFilter(new MediaFilter("overlay"));
                 var out0 = filterGraph.AddVideoSinkFilter(new MediaFilter(MediaFilter.VideoSinks.Buffersink));
                 in0.LinkTo(0, chromakey, 0).LinkTo(0, overlay, 1).LinkTo(0, out0, 0);
@@ -70,10 +82,10 @@ namespace EmguFFmpeg.Example
                     {
                         foreach (var srcFrame in reader[index[i]].ReadFrame(srcPacket))
                         {
-                            filterGraph.Inputs[i].WriteFrame(srcFrame);
-                            foreach (var filterFrame in filterGraph.Outputs.First().ReadFrame())
+                            //filterGraph.Inputs[i].WriteFrame(srcFrame);
+                            //foreach (var filterFrame in filterGraph.Outputs.First().ReadFrame())
                             {
-                                foreach (var dstFrame in pixelConverter.Convert(filterFrame))
+                                foreach (var dstFrame in pixelConverter.Convert(srcFrame))
                                 {
                                     dstFrame.Pts = pts++;
                                     foreach (var dstPacket in writer[0].WriteFrame(dstFrame))

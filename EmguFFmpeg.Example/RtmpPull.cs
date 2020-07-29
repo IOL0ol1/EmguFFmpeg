@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace EmguFFmpeg.Example
 {
-    public class RtmpPull : IExample
+    public class RtmpPull 
     {
         public RtmpPull(string input)
         {

@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace EmguFFmpeg.Example
 {
-    public class DecodeAudioToMat : IExample
+    public class DecodeAudioToMat  
     {
         public DecodeAudioToMat(string inputFile)
         {

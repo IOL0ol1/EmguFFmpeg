@@ -16,7 +16,7 @@ namespace EmguFFmpeg.Example
         /// </summary>
         /// <param name="input"></param>
         /// <param name="output"></param>
-        public unsafe PngChromekeyFilter(string input, string output)
+        public PngChromekeyFilter(string input, string output)
         {
             using (MediaReader reader = new MediaReader(input))
             using (MediaWriter writer = new MediaWriter(output))

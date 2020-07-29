@@ -4,9 +4,9 @@ using System.IO;
 
 namespace EmguFFmpeg.Example
 {
-    public class Remuxing : IExample
+    public class Remuxing 
     {
-        public unsafe Remuxing(string inputFile)
+        public Remuxing(string inputFile)
         {
             string outputFile = Path.GetFileNameWithoutExtension(inputFile) + "_remuxing" + Path.GetExtension(inputFile);
             using (MediaReader reader = new MediaReader(inputFile))
