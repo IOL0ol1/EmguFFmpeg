@@ -194,28 +194,26 @@ namespace EmguFFmpeg
             AVFilterInOut* cur = inputs;
             for (cur = inputs; cur != null; cur = cur->next)
             {
-                Trace.TraceInformation($"{((IntPtr)cur->name).PtrToStringUTF8()}");
+                ffmpeg.av_log(null, (int)LogLevel.Debug, $"{((IntPtr)cur->name).PtrToStringUTF8()}{Environment.NewLine}");
                 filterGraph.inputs.Add(new MediaFilterContext(cur->filter_ctx));
             }
             for (cur = outputs; cur != null; cur = cur->next)
             {
-                Trace.TraceInformation($"{((IntPtr)cur->name).PtrToStringUTF8()}");
+                ffmpeg.av_log(null, (int)LogLevel.Debug, $"{((IntPtr)cur->name).PtrToStringUTF8()}{Environment.NewLine}");
                 filterGraph.outputs.Add(new MediaFilterContext(cur->filter_ctx));
             }
 
             foreach (var item in filterGraph)
             {
-                Trace.TraceInformation($"{item.Name}");
+                ffmpeg.av_log(null, (int)LogLevel.Debug, $"{item.Name}{Environment.NewLine}");
                 for (int i = 0; i < item.NbInputs; i++)
                 {
-                    Trace.TraceInformation(ffmpeg.avfilter_pad_get_name(item.AVFilterContext.input_pads, i));
+                    ffmpeg.av_log(null, (int)LogLevel.Debug, $"{ffmpeg.avfilter_pad_get_name(item.AVFilterContext.input_pads, i)}{Environment.NewLine}");
                 }
-                Trace.TraceInformation("++++");
                 for (int i = 0; i < item.NbOutputs; i++)
                 {
-                    Trace.TraceInformation(ffmpeg.avfilter_pad_get_name(item.AVFilterContext.output_pads, i));
+                    ffmpeg.av_log(null, (int)LogLevel.Debug, $"{ffmpeg.avfilter_pad_get_name(item.AVFilterContext.output_pads, i)}{Environment.NewLine}");
                 }
-                Trace.TraceInformation("---------");
             }
             // TODO: Link
             filterGraph.Initialize();

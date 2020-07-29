@@ -33,12 +33,12 @@ namespace EmguFFmpeg
         {
             string parame = "list";
             AVFormatContext* pFmtCtx = ffmpeg.avformat_alloc_context();
-            Trace.TraceInformation("--------------------------");
+            ffmpeg.av_log(null, (int)LogLevel.Verbose, "--------------------------");
             if (device is InFormat iformat)
                 ffmpeg.avformat_open_input(&pFmtCtx, parame, iformat, options);
             else if (device is OutFormat oformat)
                 ffmpeg.avformat_alloc_output_context2(&pFmtCtx, oformat, null, parame);
-            Trace.TraceInformation("--------------------------");
+            ffmpeg.av_log(null, (int)LogLevel.Verbose, "--------------------------");
             ffmpeg.avformat_free_context(pFmtCtx);
             return new List<List<MediaDevice>>();
         }
