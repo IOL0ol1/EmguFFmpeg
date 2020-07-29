@@ -26,11 +26,14 @@ namespace EmguFFmpeg
         public FFmpegException(string message, Exception innerException) : base($"{FFmpegError} {message}", innerException)
         { }
 
-        public static unsafe string GetErrorString(int errorCode)
+        public static string GetErrorString(int errorCode)
         {
-            byte* buffer = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE];
-            ffmpeg.av_strerror(errorCode, buffer, ffmpeg.AV_ERROR_MAX_STRING_SIZE);
-            return ((IntPtr)buffer).PtrToStringUTF8();
+            unsafe
+            {
+                byte* buffer = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE];
+                ffmpeg.av_strerror(errorCode, buffer, ffmpeg.AV_ERROR_MAX_STRING_SIZE);
+                return ((IntPtr)buffer).PtrToStringUTF8();
+            }
         }
 
         protected FFmpegException(SerializationInfo serializationInfo, StreamingContext streamingContext)

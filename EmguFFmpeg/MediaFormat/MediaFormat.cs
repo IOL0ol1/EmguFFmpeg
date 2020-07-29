@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
-    public unsafe abstract class MediaFormat
+    public abstract class MediaFormat
     {
         public abstract int Flags { get; }
         public abstract string Name { get; }

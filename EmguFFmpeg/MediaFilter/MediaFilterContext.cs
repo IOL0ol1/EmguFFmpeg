@@ -1,4 +1,5 @@
 ﻿using FFmpeg.AutoGen;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaFilterContext
+    public class MediaFilterContext
     {
-        protected AVFilterContext* pFilterContext;
+        protected unsafe AVFilterContext* pFilterContext;
 
-        internal MediaFilterContext(AVFilterContext* p)
+        internal unsafe MediaFilterContext(AVFilterContext* p)
         {
             if (p == null)
                 throw new FFmpegException(FFmpegException.NullReference);
@@ -19,7 +20,7 @@ namespace EmguFFmpeg
             Filter = new MediaFilter(p->filter);
         }
 
-        public static implicit operator AVFilterContext*(MediaFilterContext value)
+        public unsafe static implicit operator AVFilterContext*(MediaFilterContext value)
         {
             if (value == null) return null;
             return value.pFilterContext;
@@ -29,25 +30,34 @@ namespace EmguFFmpeg
 
         public void Init(string options)
         {
-            ffmpeg.avfilter_init_str(pFilterContext, options).ThrowExceptionIfError();
+            unsafe
+            {
+                ffmpeg.avfilter_init_str(pFilterContext, options).ThrowExceptionIfError();
+            }
         }
 
         public void Init(MediaDictionary options)
         {
-            ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
+            unsafe
+            {
+                ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
+            }
         }
 
         public MediaFilterContext LinkTo(uint outPad, MediaFilterContext dstFilterContext, uint inPad = 0)
         {
-            ffmpeg.avfilter_link(pFilterContext, outPad, dstFilterContext, inPad).ThrowExceptionIfError();
-            return dstFilterContext;
+            unsafe
+            {
+                ffmpeg.avfilter_link(pFilterContext, outPad, dstFilterContext, inPad).ThrowExceptionIfError();
+                return dstFilterContext;
+            }
         }
 
-        public uint NbOutputs => pFilterContext->nb_outputs;
+        public uint NbOutputs { get { unsafe { return pFilterContext->nb_outputs; } } }
 
-        public uint NbInputs => pFilterContext->nb_inputs;
+        public uint NbInputs { get { unsafe { return pFilterContext->nb_inputs; } } }
 
-        public string Name => ((IntPtr)pFilterContext->name).PtrToStringUTF8();
+        public string Name { get { unsafe { return ((IntPtr)pFilterContext->name).PtrToStringUTF8(); } } }
 
         public void WriteFrame(MediaFrame frame, BufferSrcFlags flags = BufferSrcFlags.KeepRef)
         {
@@ -56,12 +66,18 @@ namespace EmguFFmpeg
 
         public int AddFrame(MediaFrame frame, BufferSrcFlags flags = BufferSrcFlags.KeepRef)
         {
-            return ffmpeg.av_buffersrc_add_frame_flags(pFilterContext, frame, (int)flags);
+            unsafe
+            {
+                return ffmpeg.av_buffersrc_add_frame_flags(pFilterContext, frame, (int)flags);
+            }
         }
 
         public int GetFrame(MediaFrame frame)
         {
-            return ffmpeg.av_buffersink_get_frame(pFilterContext, frame);
+            unsafe
+            {
+                return ffmpeg.av_buffersink_get_frame(pFilterContext, frame);
+            }
         }
 
         public IEnumerable<MediaFrame> ReadFrame()
@@ -80,18 +96,24 @@ namespace EmguFFmpeg
             }
         }
 
-        public AVFilterContext AVFilterContext => *pFilterContext;
+        public AVFilterContext AVFilterContext { get { unsafe { return *pFilterContext; } } }
 
         public override bool Equals(object obj)
         {
-            if (obj is MediaFilterContext filterContext)
-                return filterContext.pFilterContext == pFilterContext;
-            return false;
+            unsafe
+            {
+                if (obj is MediaFilterContext filterContext)
+                    return filterContext.pFilterContext == pFilterContext;
+                return false;
+            }
         }
 
         public override int GetHashCode()
         {
-            return ((IntPtr)pFilterContext).ToInt32();
+            unsafe
+            {
+                return ((IntPtr)pFilterContext).ToInt32();
+            }
         }
 
         public override string ToString()

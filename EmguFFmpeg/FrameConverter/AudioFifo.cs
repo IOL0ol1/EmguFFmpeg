@@ -4,25 +4,28 @@ using System;
 
 namespace EmguFFmpeg
 {
-    public unsafe class AudioFifo : IDisposable
+    public class AudioFifo : IDisposable
     {
-        private AVAudioFifo* pAudioFifo;
+        private unsafe AVAudioFifo* pAudioFifo;
 
         public AudioFifo(AVSampleFormat format, int channels, int nbSamples = 1)
         {
-            pAudioFifo = ffmpeg.av_audio_fifo_alloc(format, channels, nbSamples <= 0 ? 1 : nbSamples);
+            unsafe
+            {
+                pAudioFifo = ffmpeg.av_audio_fifo_alloc(format, channels, nbSamples <= 0 ? 1 : nbSamples);
+            }
         }
 
-        public int Size => ffmpeg.av_audio_fifo_size(pAudioFifo);
+        public int Size { get { unsafe { return ffmpeg.av_audio_fifo_size(pAudioFifo); } } }
 
-        public int Space => ffmpeg.av_audio_fifo_space(pAudioFifo);
+        public int Space { get { unsafe { return ffmpeg.av_audio_fifo_space(pAudioFifo); } } }
 
-        public int Peek(void** data, int nbSamples)
+        public unsafe int Peek(void** data, int nbSamples)
         {
             return ffmpeg.av_audio_fifo_peek(pAudioFifo, data, nbSamples).ThrowExceptionIfError();
         }
 
-        public int PeekAt(void** data, int nbSamples, int Offset)
+        public unsafe int PeekAt(void** data, int nbSamples, int Offset)
         {
             return ffmpeg.av_audio_fifo_peek_at(pAudioFifo, data, nbSamples, Offset).ThrowExceptionIfError();
         }
@@ -33,7 +36,7 @@ namespace EmguFFmpeg
         /// <param name="data"></param>
         /// <param name="nbSamples"></param>
         /// <exception cref="FFmpegException"/>
-        public int Add(void** data, int nbSamples)
+        public unsafe int Add(void** data, int nbSamples)
         {
             if (Space < nbSamples)
                 ffmpeg.av_audio_fifo_realloc(pAudioFifo, Size + nbSamples).ThrowExceptionIfError();
@@ -47,7 +50,7 @@ namespace EmguFFmpeg
         /// <param name="nbSamples"></param>
         /// <exception cref="FFmpegException"/>
         /// <returns></returns>
-        public int Read(void** data, int nbSamples)
+        public unsafe int Read(void** data, int nbSamples)
         {
             return ffmpeg.av_audio_fifo_read(pAudioFifo, data, nbSamples).ThrowExceptionIfError();
         }
@@ -59,12 +62,18 @@ namespace EmguFFmpeg
         /// <exception cref="FFmpegException"/>
         public void Drain(int nbSamples)
         {
-            ffmpeg.av_audio_fifo_drain(pAudioFifo, nbSamples).ThrowExceptionIfError();
+            unsafe
+            {
+                ffmpeg.av_audio_fifo_drain(pAudioFifo, nbSamples).ThrowExceptionIfError();
+            }
         }
 
         public void Clear()
         {
-            ffmpeg.av_audio_fifo_reset(pAudioFifo);
+            unsafe
+            {
+                ffmpeg.av_audio_fifo_reset(pAudioFifo);
+            }
         }
 
         #region IDisposable Support
@@ -75,7 +84,10 @@ namespace EmguFFmpeg
         {
             if (!disposedValue)
             {
-                ffmpeg.av_audio_fifo_free(pAudioFifo);
+                unsafe
+                {
+                    ffmpeg.av_audio_fifo_free(pAudioFifo);
+                }
                 disposedValue = true;
             }
         }

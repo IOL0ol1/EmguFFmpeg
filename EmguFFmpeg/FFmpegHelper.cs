@@ -26,28 +26,31 @@ namespace EmguFFmpeg
         /// <param name="logLevel">log level</param>
         /// <param name="logFlags">log flags, support &amp; operator </param>
         /// <param name="logWrite">set <see langword="null"/> to use default log output</param>
-        public static unsafe void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string> logWrite = null)
+        public static void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string> logWrite = null)
         {
-            ffmpeg.av_log_set_level((int)logLevel);
-            ffmpeg.av_log_set_flags((int)logFlags);
+            unsafe
+            {
+                ffmpeg.av_log_set_level((int)logLevel);
+                ffmpeg.av_log_set_flags((int)logFlags);
 
-            if (logWrite == null)
-            {
-                logCallback = ffmpeg.av_log_default_callback;
-            }
-            else
-            {
-                logCallback = (p0, level, format, vl) =>
+                if (logWrite == null)
                 {
-                    if (level > ffmpeg.av_log_get_level()) return;
-                    var lineSize = 1024;
-                    var printPrefix = 1;
-                    var lineBuffer = stackalloc byte[lineSize];
-                    ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
-                    logWrite.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
-                };
+                    logCallback = ffmpeg.av_log_default_callback;
+                }
+                else
+                {
+                    logCallback = (p0, level, format, vl) =>
+                    {
+                        if (level > ffmpeg.av_log_get_level()) return;
+                        var lineSize = 1024;
+                        var printPrefix = 1;
+                        var lineBuffer = stackalloc byte[lineSize];
+                        ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
+                        logWrite.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
+                    };
+                }
+                ffmpeg.av_log_set_callback(logCallback);
             }
-            ffmpeg.av_log_set_callback(logCallback);
         }
 
         private static unsafe av_log_set_callback_callback logCallback;

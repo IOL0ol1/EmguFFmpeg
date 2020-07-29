@@ -1,7 +1,6 @@
 ﻿using FFmpeg.AutoGen;
 
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace EmguFFmpeg
 {
@@ -29,70 +28,85 @@ namespace EmguFFmpeg
             }
         }
 
-        public unsafe static IReadOnlyList<IReadOnlyList<MediaDevice>> GetDeviceInfos(MediaFormat device, MediaDictionary options = null)
+        public static IReadOnlyList<IReadOnlyList<MediaDevice>> GetDeviceInfos(MediaFormat device, MediaDictionary options = null)
         {
-            string parame = "list";
-            AVFormatContext* pFmtCtx = ffmpeg.avformat_alloc_context();
-            ffmpeg.av_log(null, (int)LogLevel.Verbose, "--------------------------");
-            if (device is InFormat iformat)
-                ffmpeg.avformat_open_input(&pFmtCtx, parame, iformat, options);
-            else if (device is OutFormat oformat)
-                ffmpeg.avformat_alloc_output_context2(&pFmtCtx, oformat, null, parame);
-            ffmpeg.av_log(null, (int)LogLevel.Verbose, "--------------------------");
-            ffmpeg.avformat_free_context(pFmtCtx);
-            return new List<List<MediaDevice>>();
+            unsafe
+            {
+                string parame = "list";
+                AVFormatContext* pFmtCtx = ffmpeg.avformat_alloc_context();
+                ffmpeg.av_log(null, (int)LogLevel.Verbose, "--------------------------");
+                if (device is InFormat iformat)
+                    ffmpeg.avformat_open_input(&pFmtCtx, parame, iformat, options);
+                else if (device is OutFormat oformat)
+                    ffmpeg.avformat_alloc_output_context2(&pFmtCtx, oformat, null, parame);
+                ffmpeg.av_log(null, (int)LogLevel.Verbose, "--------------------------");
+                ffmpeg.avformat_free_context(pFmtCtx);
+                return new List<List<MediaDevice>>();
+            }
         }
 
         /* ffmpeg not implemented
-        private unsafe static List<List<MediaDevice>> CopyAndFree(AVDeviceInfoList** ppDeviceInfoList, int deviceInfoListLength)
+        private static List<List<MediaDevice>> CopyAndFree(AVDeviceInfoList** ppDeviceInfoList, int deviceInfoListLength)
         {
-            List<List<MediaDevice>> result = new List<List<MediaDevice>>();
-            if (deviceInfoListLength > 0 && ppDeviceInfoList != null)
+            unsafe
             {
-                for (int i = 0; i < deviceInfoListLength; i++)
+                List<List<MediaDevice>> result = new List<List<MediaDevice>>();
+                if (deviceInfoListLength > 0 && ppDeviceInfoList != null)
                 {
-                    List<MediaDevice> infos = new List<MediaDevice>();
-                    for (int j = 0; j < ppDeviceInfoList[i]->nb_devices; j++)
+                    for (int i = 0; i < deviceInfoListLength; i++)
                     {
-                        AVDeviceInfo* deviceInfo = ppDeviceInfoList[i]->devices[j];
-                        MediaDevice info = new MediaDevice()
+                        List<MediaDevice> infos = new List<MediaDevice>();
+                        for (int j = 0; j < ppDeviceInfoList[i]->nb_devices; j++)
                         {
-                            DeviceName = Marshal.PtrToStringAnsi((IntPtr)deviceInfo->device_name),
-                            DeviceDescription = Marshal.PtrToStringAnsi((IntPtr)deviceInfo->device_description),
-                            IsDefaultDevice = j == ppDeviceInfoList[i]->default_device,
-                        };
-                        infos.Add(info);
+                            AVDeviceInfo* deviceInfo = ppDeviceInfoList[i]->devices[j];
+                            MediaDevice info = new MediaDevice()
+                            {
+                                DeviceName = System.Runtime.InteropServices.Marshal.PtrToStringAnsi((System.IntPtr)deviceInfo->device_name),
+                                DeviceDescription = System.Runtime.InteropServices.Marshal.PtrToStringAnsi((System.IntPtr)deviceInfo->device_description),
+                                IsDefaultDevice = j == ppDeviceInfoList[i]->default_device,
+                            };
+                            infos.Add(info);
+                        }
+                        result.Add(infos);
                     }
-                    result.Add(infos);
+                    ffmpeg.avdevice_free_list_devices(ppDeviceInfoList);
                 }
-                ffmpeg.avdevice_free_list_devices(ppDeviceInfoList);
+                return result;
             }
-            return result;
         }
 
-        public unsafe static IReadOnlyList<IReadOnlyList<MediaDevice>> GetDeviceInfos(MediaFormat device, MediaDictionary options = null)
+        public static IReadOnlyList<IReadOnlyList<MediaDevice>> GetDeviceInfos(MediaFormat device, MediaDictionary options = null)
         {
-            int deviceInfoListLength = 0;
-            AVDeviceInfoList* pDeviceInfoList = null;
-            if (device is InFormat iformat)
-                deviceInfoListLength = ffmpeg.avdevice_list_input_sources(iformat, null, options, &pDeviceInfoList);
-            else if (device is OutFormat oformat)
-                deviceInfoListLength = ffmpeg.avdevice_list_output_sinks(oformat, null, options, &pDeviceInfoList);
-            deviceInfoListLength.ThrowExceptionIfError();
-            return CopyAndFree(&pDeviceInfoList, deviceInfoListLength);
+            unsafe
+            {
+                int deviceInfoListLength = 0;
+                AVDeviceInfoList* pDeviceInfoList = null;
+                if (device is InFormat iformat)
+                    deviceInfoListLength = ffmpeg.avdevice_list_input_sources(iformat, null, options, &pDeviceInfoList);
+                else if (device is OutFormat oformat)
+                    deviceInfoListLength = ffmpeg.avdevice_list_output_sinks(oformat, null, options, &pDeviceInfoList);
+                deviceInfoListLength.ThrowExceptionIfError();
+                return CopyAndFree(&pDeviceInfoList, deviceInfoListLength);
+            }
         }
 
-        public unsafe static IReadOnlyList<IReadOnlyList<MediaDevice>> GetOutputDeviceInfos(string deviceName, MediaDictionary options = null)
+        public static IReadOnlyList<IReadOnlyList<MediaDevice>> GetOutputDeviceInfos(string deviceName, MediaDictionary options = null)
         {
-            AVDeviceInfoList* pDeviceInfoList = null;
-            int deviceInfoListLength = ffmpeg.avdevice_list_output_sinks(null, deviceName, options, &pDeviceInfoList);
-            return CopyAndFree(&pDeviceInfoList, deviceInfoListLength);
+            unsafe
+            {
+                AVDeviceInfoList* pDeviceInfoList = null;
+                int deviceInfoListLength = ffmpeg.avdevice_list_output_sinks(null, deviceName, options, &pDeviceInfoList);
+                return CopyAndFree(&pDeviceInfoList, deviceInfoListLength);
+            }
         }
-        public unsafe static IReadOnlyList<IReadOnlyList<MediaDevice>> GetInputDeviceInfos(string deviceName, MediaDictionary options = null)
+        public static IReadOnlyList<IReadOnlyList<MediaDevice>> GetInputDeviceInfos(string deviceName, MediaDictionary options = null)
         {
-            AVDeviceInfoList* pDeviceInfoList = null;
-            int deviceInfoListLength = ffmpeg.avdevice_list_input_sources(null, deviceName, options, &pDeviceInfoList);
-            return CopyAndFree(&pDeviceInfoList, deviceInfoListLength);
+            unsafe
+            {
+                AVDeviceInfoList* pDeviceInfoList = null;
+                int deviceInfoListLength = ffmpeg.avdevice_list_input_sources(null, deviceName, options, &pDeviceInfoList);
+                return CopyAndFree(&pDeviceInfoList, deviceInfoListLength);
+            }
         }
         */
     }

@@ -6,25 +6,28 @@ using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaFilter
+    public class MediaFilter
     {
-        protected AVFilter* pFilter;
+        protected unsafe AVFilter* pFilter;
 
-        internal MediaFilter(AVFilter* filter)
+        internal unsafe MediaFilter(AVFilter* filter)
         {
             pFilter = filter;
         }
 
-        public MediaFilter(string name) : this(ffmpeg.avfilter_get_by_name(name))
+        public MediaFilter(string name)
         {
-            if (pFilter == null)
-                throw new FFmpegException(ffmpeg.AVERROR_FILTER_NOT_FOUND);
+            unsafe
+            {
+                if ((pFilter = ffmpeg.avfilter_get_by_name(name)) == null)
+                    throw new FFmpegException(ffmpeg.AVERROR_FILTER_NOT_FOUND);
+            }
         }
 
-        public AVFilter AVFilter => *pFilter;
-        public string Name => ((IntPtr)pFilter->name).PtrToStringUTF8();
+        public AVFilter AVFilter { get { unsafe { return *pFilter; } } }
+        public string Name { get { unsafe { return ((IntPtr)pFilter->name).PtrToStringUTF8(); } } }
 
-        public string Description => ((IntPtr)pFilter->description).PtrToStringUTF8();
+        public string Description { get { unsafe { return ((IntPtr)pFilter->description).PtrToStringUTF8(); } } }
 
         public override string ToString()
         {
@@ -35,18 +38,21 @@ namespace EmguFFmpeg
         {
             get
             {
-                List<MediaFilter> result = new List<MediaFilter>();
-                void* p = null;
-                AVFilter* pFilter;
-                while ((pFilter = ffmpeg.av_filter_iterate(&p)) != null)
+                unsafe
                 {
-                    result.Add(new MediaFilter(pFilter));
+                    List<MediaFilter> result = new List<MediaFilter>();
+                    void* p = null;
+                    AVFilter* pFilter;
+                    while ((pFilter = ffmpeg.av_filter_iterate(&p)) != null)
+                    {
+                        result.Add(new MediaFilter(pFilter));
+                    }
+                    return result;
                 }
-                return result;
             }
         }
 
-        public static implicit operator AVFilter*(MediaFilter value)
+        public unsafe static implicit operator AVFilter*(MediaFilter value)
         {
             if (value == null) return null;
             return value.pFilter;
@@ -54,14 +60,20 @@ namespace EmguFFmpeg
 
         public override bool Equals(object obj)
         {
-            if (obj is MediaFilter filter)
-                return filter.pFilter == pFilter;
-            return false;
+            unsafe
+            {
+                if (obj is MediaFilter filter)
+                    return filter.pFilter == pFilter;
+                return false;
+            }
         }
 
         public override int GetHashCode()
         {
-            return ((IntPtr)pFilter).ToInt32();
+            unsafe
+            {
+                return ((IntPtr)pFilter).ToInt32();
+            }
         }
 
         public static class VideoSources

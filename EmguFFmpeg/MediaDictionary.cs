@@ -9,7 +9,7 @@ using System.Text;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaDictionary : IReadOnlyDictionary<string, string>, ICloneable, IDisposable
+    public class MediaDictionary : IReadOnlyDictionary<string, string>, ICloneable, IDisposable
     {
         public const DictFlags DefaultFlags = DictFlags.AV_DICT_MATCH_CASE | DictFlags.AV_DICT_DONT_OVERWRITE;
         public const DictFlags Zero = DictFlags.AV_DICT_NONE;
@@ -22,33 +22,36 @@ namespace EmguFFmpeg
         /// from <see cref="MediaDictionary"/> to <see cref="AVDictionary"/>*
         /// </para>
         /// </summary>
-        private AVDictionary* internalPointerPlaceHolder = null;
+        private unsafe AVDictionary* internalPointerPlaceHolder = null;
 
         /// <summary>
         /// NOTE: ffmpeg maybe change the value of *<see cref="ppDictionary"/>
         /// </summary>
-        private AVDictionary** ppDictionary = null;
+        private unsafe AVDictionary** ppDictionary = null;
 
         public MediaDictionary()
         {
-            fixed (AVDictionary** pInitPointer = &internalPointerPlaceHolder)
-                ppDictionary = pInitPointer;
+            unsafe
+            {
+                fixed (AVDictionary** pInitPointer = &internalPointerPlaceHolder)
+                    ppDictionary = pInitPointer;
+            }
         }
 
-        public static implicit operator AVDictionary*(MediaDictionary value)
+        public unsafe static implicit operator AVDictionary*(MediaDictionary value)
         {
             if (value == null)
                 return null;
             return *value.ppDictionary;
         }
 
-        public static implicit operator AVDictionary**(MediaDictionary value)
+        public unsafe static implicit operator AVDictionary**(MediaDictionary value)
         {
             if (value == null) return null;
             return value.ppDictionary;
         }
 
-        public static IReadOnlyList<KeyValuePair<string, string>> GetKeyValues(AVDictionary* dict)
+        public unsafe static IReadOnlyList<KeyValuePair<string, string>> GetKeyValues(AVDictionary* dict)
         {
             List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
             AVDictionaryEntry* t = null;
@@ -59,13 +62,19 @@ namespace EmguFFmpeg
             return keyValuePairs;
         }
 
-        public IReadOnlyList<KeyValuePair<string, string>> KeyValues => GetKeyValues(*ppDictionary);
+        public IReadOnlyList<KeyValuePair<string, string>> KeyValues
+        {
+            get { unsafe { return GetKeyValues(*ppDictionary); } }
+        }
 
-        public int Count => ffmpeg.av_dict_count(*ppDictionary);
+        public int Count { get { unsafe { return ffmpeg.av_dict_count(*ppDictionary); } } }
 
         public void Clear()
         {
-            ffmpeg.av_dict_free(ppDictionary);
+            unsafe
+            {
+                ffmpeg.av_dict_free(ppDictionary);
+            }
         }
 
         public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
@@ -80,35 +89,47 @@ namespace EmguFFmpeg
 
         public void Add(string key, string value, DictFlags flags = DefaultFlags)
         {
-            ffmpeg.av_dict_set(ppDictionary, key, value, (int)flags).ThrowExceptionIfError();
+            unsafe
+            {
+                ffmpeg.av_dict_set(ppDictionary, key, value, (int)flags).ThrowExceptionIfError();
+            }
         }
 
         public void Add(string key, long value, DictFlags flags = DefaultFlags)
         {
-            ffmpeg.av_dict_set_int(ppDictionary, key, value, (int)flags).ThrowExceptionIfError();
+            unsafe
+            {
+                ffmpeg.av_dict_set_int(ppDictionary, key, value, (int)flags).ThrowExceptionIfError();
+            }
         }
 
         public string[] GetValue(string key, DictFlags flags)
         {
-            List<string> output = new List<string>();
-            AVDictionaryEntry* t = null;
-            while ((t = ffmpeg.av_dict_get(*ppDictionary, key, t, (int)flags)) != null)
+            unsafe
             {
-                output.Add((*t).ToKeyValuePair().Value);
+                List<string> output = new List<string>();
+                AVDictionaryEntry* t = null;
+                while ((t = ffmpeg.av_dict_get(*ppDictionary, key, t, (int)flags)) != null)
+                {
+                    output.Add((*t).ToKeyValuePair().Value);
+                }
+                return output.ToArray();
             }
-            return output.ToArray();
         }
 
         public bool Remove(string key, DictFlags flags = DictFlags.AV_DICT_MATCH_CASE)
         {
-            int count = 0;
-            AVDictionaryEntry* t = null;
-            while ((t = ffmpeg.av_dict_get(*ppDictionary, key, t, (int)flags)) != null)
+            unsafe
             {
-                Add(key, null, 0);
-                count++;
+                int count = 0;
+                AVDictionaryEntry* t = null;
+                while ((t = ffmpeg.av_dict_get(*ppDictionary, key, t, (int)flags)) != null)
+                {
+                    Add(key, null, 0);
+                    count++;
+                }
+                return count != 0;
             }
-            return count != 0;
         }
 
         public string this[string key]
@@ -144,20 +165,23 @@ namespace EmguFFmpeg
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            unsafe
             {
-                if (disposing)
+                if (!disposedValue)
                 {
-                    // TODO: 释放托管状态(托管对象)。
+                    if (disposing)
+                    {
+                        // TODO: 释放托管状态(托管对象)。
+                    }
+
+                    // TODO: 释放未托管的资源(未托管的对象)并在以下内容中替代终结器。
+                    // TODO: 将大型字段设置为 null。
+                    ffmpeg.av_dict_free(ppDictionary);
+                    internalPointerPlaceHolder = null;
+                    ppDictionary = null;
+
+                    disposedValue = true;
                 }
-
-                // TODO: 释放未托管的资源(未托管的对象)并在以下内容中替代终结器。
-                // TODO: 将大型字段设置为 null。
-                ffmpeg.av_dict_free(ppDictionary);
-                internalPointerPlaceHolder = null;
-                ppDictionary = null;
-
-                disposedValue = true;
             }
         }
 
@@ -183,9 +207,12 @@ namespace EmguFFmpeg
 
         public MediaDictionary Clone()
         {
-            MediaDictionary keyValuePairs = new MediaDictionary();
-            ffmpeg.av_dict_copy(keyValuePairs, *ppDictionary, (int)DictFlags.AV_DICT_MULTIKEY);
-            return keyValuePairs;
+            unsafe
+            {
+                MediaDictionary keyValuePairs = new MediaDictionary();
+                ffmpeg.av_dict_copy(keyValuePairs, *ppDictionary, (int)DictFlags.AV_DICT_MULTIKEY);
+                return keyValuePairs;
+            }
         }
 
         object ICloneable.Clone()

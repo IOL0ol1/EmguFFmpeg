@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaDecode : MediaCodec
+    public class MediaDecode : MediaCodec
     {
         public static MediaDecode CreateDecode(AVCodecID codecId, Action<MediaCodec> setBeforeOpen = null, MediaDictionary opts = null)
         {
@@ -29,10 +29,13 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecId">codec id</param>
-        public MediaDecode(AVCodecID codecId) : this(ffmpeg.avcodec_find_decoder(codecId))
+        public MediaDecode(AVCodecID codecId)
         {
-            if (pCodec == null && codecId != AVCodecID.AV_CODEC_ID_NONE)
-                throw new FFmpegException(ffmpeg.AVERROR_DECODER_NOT_FOUND);
+            unsafe
+            {
+                if ((pCodec = ffmpeg.avcodec_find_decoder(codecId)) == null)
+                    throw new FFmpegException(ffmpeg.AVERROR_DECODER_NOT_FOUND);
+            }
         }
 
         /// <summary>
@@ -42,13 +45,16 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecName">codec name</param>
-        public MediaDecode(string codecName) : this(ffmpeg.avcodec_find_decoder_by_name(codecName))
+        public MediaDecode(string codecName)
         {
-            if (pCodec == null)
-                throw new FFmpegException(ffmpeg.AVERROR_DECODER_NOT_FOUND);
+            unsafe
+            {
+                if ((pCodec = ffmpeg.avcodec_find_decoder_by_name(codecName)) == null)
+                    throw new FFmpegException(ffmpeg.AVERROR_DECODER_NOT_FOUND);
+            }
         }
 
-        internal MediaDecode(AVCodec* codec)
+        internal unsafe MediaDecode(AVCodec* codec)
         {
             pCodec = codec;
         }
@@ -63,11 +69,14 @@ namespace EmguFFmpeg
         /// <param name="opts">options for "avcodec_open2"</param>
         public override void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null)
         {
-            pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
-            setBeforeOpen?.Invoke(this);
-            if (pCodec != null)
+            unsafe
             {
-                ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
+                pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
+                setBeforeOpen?.Invoke(this);
+                if (pCodec != null)
+                {
+                    ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
+                }
             }
         }
 
@@ -108,11 +117,14 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public int SendPacket([In]MediaPacket packet)
+        public int SendPacket([In] MediaPacket packet)
         {
-            if (pCodecContext == null)
-                throw new FFmpegException(FFmpegException.NotInitCodecContext);
-            return ffmpeg.avcodec_send_packet(pCodecContext, packet);
+            unsafe
+            {
+                if (pCodecContext == null)
+                    throw new FFmpegException(FFmpegException.NotInitCodecContext);
+                return ffmpeg.avcodec_send_packet(pCodecContext, packet);
+            }
         }
 
         /// <summary>
@@ -120,11 +132,14 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="frame"></param>
         /// <returns></returns>
-        public int ReceiveFrame([Out]MediaFrame frame)
+        public int ReceiveFrame([Out] MediaFrame frame)
         {
-            if (pCodecContext == null)
-                throw new FFmpegException(FFmpegException.NotInitCodecContext);
-            return ffmpeg.avcodec_receive_frame(pCodecContext, frame);
+            unsafe
+            {
+                if (pCodecContext == null)
+                    throw new FFmpegException(FFmpegException.NotInitCodecContext);
+                return ffmpeg.avcodec_receive_frame(pCodecContext, frame);
+            }
         }
 
         /// <summary>
@@ -134,16 +149,19 @@ namespace EmguFFmpeg
         {
             get
             {
-                List<MediaDecode> result = new List<MediaDecode>();
-                void* i = null;
-                AVCodec* p;
-                while ((p = ffmpeg.av_codec_iterate(&i)) != null)
+                unsafe
                 {
-                    if (ffmpeg.av_codec_is_decoder(p) != 0)
-                        result.Add(new MediaDecode(p));
-                }
+                    List<MediaDecode> result = new List<MediaDecode>();
+                    void* i = null;
+                    AVCodec* p;
+                    while ((p = ffmpeg.av_codec_iterate(&i)) != null)
+                    {
+                        if (ffmpeg.av_codec_is_decoder(p) != 0)
+                            result.Add(new MediaDecode(p));
+                    }
 
-                return result;
+                    return result;
+                }
             }
         }
     }

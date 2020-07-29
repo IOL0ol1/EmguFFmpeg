@@ -8,11 +8,11 @@ using System.Runtime.InteropServices;
 namespace EmguFFmpeg
 {
 
-    public unsafe abstract class MediaCodec : IDisposable
+    public abstract class MediaCodec : IDisposable
     {
-        protected AVCodec* pCodec = null;
+        protected unsafe AVCodec* pCodec = null;
 
-        protected AVCodecContext* pCodecContext = null;
+        protected unsafe AVCodecContext* pCodecContext = null;
 
         public abstract void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null);
 
@@ -20,20 +20,20 @@ namespace EmguFFmpeg
         /// Get value if <see cref="Id"/> is not <see cref="AVCodecID.AV_CODEC_ID_NONE"/>
         /// </summary>
         /// <exception cref="FFmpegException"/>
-        public AVCodec AVCodec => pCodec == null ? throw new FFmpegException(FFmpegException.NullReference) : *pCodec;
+        public AVCodec AVCodec { get { unsafe { return pCodec == null ? throw new FFmpegException(FFmpegException.NullReference) : *pCodec; } } }
 
         /// <summary>
         /// Get value after <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/>
         /// </summary>
         /// <exception cref="FFmpegException"/>
-        public AVCodecContext AVCodecContext => pCodecContext == null ? throw new FFmpegException(FFmpegException.NullReference) : *pCodecContext;
+        public AVCodecContext AVCodecContext { get { unsafe { return pCodecContext == null ? throw new FFmpegException(FFmpegException.NullReference) : *pCodecContext; } } }
 
-        public AVMediaType Type => pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type;
-        public AVCodecID Id => pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id;
-        public string Name => pCodec == null ? null : ((IntPtr)pCodec->name).PtrToStringUTF8();
-        public string LongName => pCodec == null ? null : ((IntPtr)pCodec->long_name).PtrToStringUTF8();
-        public bool IsDecoder => pCodec == null ? false : ffmpeg.av_codec_is_decoder(pCodec) > 0;
-        public bool IsEncoder => pCodec == null ? false : ffmpeg.av_codec_is_encoder(pCodec) > 0;
+        public AVMediaType Type { get { unsafe { return pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type; } } }
+        public AVCodecID Id { get { unsafe { return pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id; } } }
+        public string Name { get { unsafe { return pCodec == null ? null : ((IntPtr)pCodec->name).PtrToStringUTF8(); } } }
+        public string LongName { get { unsafe { return pCodec == null ? null : ((IntPtr)pCodec->long_name).PtrToStringUTF8(); } } }
+        public bool IsDecoder { get { unsafe { return pCodec == null ? false : ffmpeg.av_codec_is_decoder(pCodec) > 0; } } }
+        public bool IsEncoder { get { unsafe { return pCodec == null ? false : ffmpeg.av_codec_is_encoder(pCodec) > 0; } } }
 
         #region Supported
 
@@ -41,14 +41,17 @@ namespace EmguFFmpeg
         {
             get
             {
-                List<AVCodecHWConfig> result = new List<AVCodecHWConfig>();
-                if (pCodec == null) return result;
-                for (int i = 0; ; i++)
+                unsafe
                 {
-                    AVCodecHWConfig* config = ffmpeg.avcodec_get_hw_config(pCodec, i);
-                    if (config == null)
-                        return result;
-                    result.Add(*config);
+                    List<AVCodecHWConfig> result = new List<AVCodecHWConfig>();
+                    if (pCodec == null) return result;
+                    for (int i = 0; ; i++)
+                    {
+                        AVCodecHWConfig* config = ffmpeg.avcodec_get_hw_config(pCodec, i);
+                        if (config == null)
+                            return result;
+                        result.Add(*config);
+                    }
                 }
             }
         }
@@ -57,18 +60,21 @@ namespace EmguFFmpeg
         {
             get
             {
-                List<AVPixelFormat> result = new List<AVPixelFormat>();
-                if (pCodec == null) return result;
-                AVPixelFormat* p = pCodec->pix_fmts;
-                if (p != null)
+                unsafe
                 {
-                    while (*p != AVPixelFormat.AV_PIX_FMT_NONE)
+                    List<AVPixelFormat> result = new List<AVPixelFormat>();
+                    if (pCodec == null) return result;
+                    AVPixelFormat* p = pCodec->pix_fmts;
+                    if (p != null)
                     {
-                        result.Add(*p);
-                        p++;
+                        while (*p != AVPixelFormat.AV_PIX_FMT_NONE)
+                        {
+                            result.Add(*p);
+                            p++;
+                        }
                     }
+                    return result;
                 }
-                return result;
             }
         }
 
@@ -76,18 +82,21 @@ namespace EmguFFmpeg
         {
             get
             {
-                List<AVRational> result = new List<AVRational>();
-                if (pCodec == null) return result;
-                AVRational* p = pCodec->supported_framerates;
-                if (p != null)
+                unsafe
                 {
-                    while (p->num != 0)
+                    List<AVRational> result = new List<AVRational>();
+                    if (pCodec == null) return result;
+                    AVRational* p = pCodec->supported_framerates;
+                    if (p != null)
                     {
-                        result.Add(*p);
-                        p++;
+                        while (p->num != 0)
+                        {
+                            result.Add(*p);
+                            p++;
+                        }
                     }
+                    return result;
                 }
-                return result;
             }
         }
 
@@ -95,18 +104,21 @@ namespace EmguFFmpeg
         {
             get
             {
-                List<AVSampleFormat> result = new List<AVSampleFormat>();
-                if (pCodec == null) return result;
-                AVSampleFormat* p = pCodec->sample_fmts;
-                if (p != null)
+                unsafe
                 {
-                    while (*p != AVSampleFormat.AV_SAMPLE_FMT_NONE)
+                    List<AVSampleFormat> result = new List<AVSampleFormat>();
+                    if (pCodec == null) return result;
+                    AVSampleFormat* p = pCodec->sample_fmts;
+                    if (p != null)
                     {
-                        result.Add(*p);
-                        p++;
+                        while (*p != AVSampleFormat.AV_SAMPLE_FMT_NONE)
+                        {
+                            result.Add(*p);
+                            p++;
+                        }
                     }
+                    return result;
                 }
-                return result;
             }
         }
 
@@ -114,18 +126,21 @@ namespace EmguFFmpeg
         {
             get
             {
-                List<int> result = new List<int>();
-                if (pCodec == null) return result;
-                int* p = pCodec->supported_samplerates;
-                if (p != null)
+                unsafe
                 {
-                    while (*p != 0)
+                    List<int> result = new List<int>();
+                    if (pCodec == null) return result;
+                    int* p = pCodec->supported_samplerates;
+                    if (p != null)
                     {
-                        result.Add(*p);
-                        p++;
+                        while (*p != 0)
+                        {
+                            result.Add(*p);
+                            p++;
+                        }
                     }
+                    return result;
                 }
-                return result;
             }
         }
 
@@ -133,18 +148,21 @@ namespace EmguFFmpeg
         {
             get
             {
-                List<ulong> result = new List<ulong>();
-                if (pCodec == null) return result;
-                ulong* p = pCodec->channel_layouts;
-                if (p != null)
+                unsafe
                 {
-                    while (*p != 0)
+                    List<ulong> result = new List<ulong>();
+                    if (pCodec == null) return result;
+                    ulong* p = pCodec->channel_layouts;
+                    if (p != null)
                     {
-                        result.Add(*p);
-                        p++;
+                        while (*p != 0)
+                        {
+                            result.Add(*p);
+                            p++;
+                        }
                     }
+                    return result;
                 }
-                return result;
             }
         }
 
@@ -155,13 +173,13 @@ namespace EmguFFmpeg
             return Name;
         }
 
-        public static implicit operator AVCodec*(MediaCodec value)
+        public unsafe static implicit operator AVCodec*(MediaCodec value)
         {
             if (value == null) return null;
             return value.pCodec;
         }
 
-        public static implicit operator AVCodecContext*(MediaCodec value)
+        public unsafe static implicit operator AVCodecContext*(MediaCodec value)
         {
             if (value == null) return null;
             return value.pCodecContext;
@@ -184,13 +202,16 @@ namespace EmguFFmpeg
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            unsafe
             {
-                fixed (AVCodecContext** ppCodecContext = &pCodecContext)
+                if (!disposedValue)
                 {
-                    ffmpeg.avcodec_free_context(ppCodecContext);
+                    fixed (AVCodecContext** ppCodecContext = &pCodecContext)
+                    {
+                        ffmpeg.avcodec_free_context(ppCodecContext);
+                    }
+                    disposedValue = true;
                 }
-                disposedValue = true;
             }
         }
 

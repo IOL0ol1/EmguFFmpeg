@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaEncode : MediaCodec
+    public class MediaEncode : MediaCodec
     {
         #region static create
 
@@ -43,23 +43,26 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public static MediaEncode CreateVideoEncode(AVCodecID videoCodec, int flags, int width, int height, int fps, long bitRate = 0, AVPixelFormat format = AVPixelFormat.AV_PIX_FMT_NONE)
         {
-            return CreateEncode(videoCodec, flags, _ =>
+            unsafe
             {
-                AVCodecContext* pCodecContext = _;
-                if (width <= 0 || height <= 0 || fps <= 0 || bitRate < 0)
-                    throw new FFmpegException(FFmpegException.NonNegative);
-                if (_.SupportedPixelFmts.Count() <= 0)
-                    throw new FFmpegException(FFmpegException.NotSupportCodecId);
-                if (format == AVPixelFormat.AV_PIX_FMT_NONE)
-                    format = _.SupportedPixelFmts[0];
-                else if (_.SupportedPixelFmts.Where(__ => __ == format).Count() <= 0)
-                    throw new FFmpegException(FFmpegException.NotSupportFormat);
-                pCodecContext->width = width;
-                pCodecContext->height = height;
-                pCodecContext->time_base = new AVRational { num = 1, den = fps };
-                pCodecContext->pix_fmt = format;
-                pCodecContext->bit_rate = bitRate;
-            });
+                return CreateEncode(videoCodec, flags, _ =>
+                {
+                    AVCodecContext* pCodecContext = _;
+                    if (width <= 0 || height <= 0 || fps <= 0 || bitRate < 0)
+                        throw new FFmpegException(FFmpegException.NonNegative);
+                    if (_.SupportedPixelFmts.Count() <= 0)
+                        throw new FFmpegException(FFmpegException.NotSupportCodecId);
+                    if (format == AVPixelFormat.AV_PIX_FMT_NONE)
+                        format = _.SupportedPixelFmts[0];
+                    else if (_.SupportedPixelFmts.Where(__ => __ == format).Count() <= 0)
+                        throw new FFmpegException(FFmpegException.NotSupportFormat);
+                    pCodecContext->width = width;
+                    pCodecContext->height = height;
+                    pCodecContext->time_base = new AVRational { num = 1, den = fps };
+                    pCodecContext->pix_fmt = format;
+                    pCodecContext->bit_rate = bitRate;
+                });
+            }
         }
 
         public static MediaEncode CreateAudioEncode(OutFormat Oformat, ulong channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
@@ -89,33 +92,36 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, ulong channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
-            return CreateEncode(audioCodec, flags, _ =>
+            unsafe
             {
-                AVCodecContext* pCodecContext = _;
-                if (channelLayout <= 0 || sampleRate <= 0 || bitRate < 0)
-                    throw new FFmpegException(FFmpegException.NonNegative);
-                if (_.SupportedSampelFmts.Count() <= 0 || _.SupportedSampleRates.Count <= 0)
-                    throw new FFmpegException(FFmpegException.NotSupportCodecId);
-                // check or set sampleRate
-                if (sampleRate <= 0)
-                    sampleRate = _.SupportedSampleRates[0];
-                else if (_.SupportedSampleRates.Where(__ => __ == sampleRate).Count() <= 0)
-                    throw new FFmpegException(FFmpegException.NotSupportSampleRate);
-                // check or set format
-                if (format == AVSampleFormat.AV_SAMPLE_FMT_NONE)
-                    format = _.SupportedSampelFmts[0];
-                else if (_.SupportedSampelFmts.Where(__ => __ == format).Count() <= 0)
-                    throw new FFmpegException(FFmpegException.NotSupportFormat);
-                // check channelLayout when SupportedChannelLayout.Count() > 0
-                if (_.SupportedChannelLayout.Count() > 0
-                     && _.SupportedChannelLayout.Where(__ => __ == channelLayout).Count() <= 0)
-                    throw new FFmpegException(FFmpegException.NotSupportChLayout);
-                pCodecContext->sample_rate = sampleRate;
-                pCodecContext->channel_layout = channelLayout;
-                pCodecContext->sample_fmt = format;
-                pCodecContext->channels = ffmpeg.av_get_channel_layout_nb_channels(pCodecContext->channel_layout);
-                pCodecContext->bit_rate = bitRate;
-            });
+                return CreateEncode(audioCodec, flags, _ =>
+                {
+                    AVCodecContext* pCodecContext = _;
+                    if (channelLayout <= 0 || sampleRate <= 0 || bitRate < 0)
+                        throw new FFmpegException(FFmpegException.NonNegative);
+                    if (_.SupportedSampelFmts.Count() <= 0 || _.SupportedSampleRates.Count <= 0)
+                        throw new FFmpegException(FFmpegException.NotSupportCodecId);
+                    // check or set sampleRate
+                    if (sampleRate <= 0)
+                        sampleRate = _.SupportedSampleRates[0];
+                    else if (_.SupportedSampleRates.Where(__ => __ == sampleRate).Count() <= 0)
+                        throw new FFmpegException(FFmpegException.NotSupportSampleRate);
+                    // check or set format
+                    if (format == AVSampleFormat.AV_SAMPLE_FMT_NONE)
+                        format = _.SupportedSampelFmts[0];
+                    else if (_.SupportedSampelFmts.Where(__ => __ == format).Count() <= 0)
+                        throw new FFmpegException(FFmpegException.NotSupportFormat);
+                    // check channelLayout when SupportedChannelLayout.Count() > 0
+                    if (_.SupportedChannelLayout.Count() > 0
+                             && _.SupportedChannelLayout.Where(__ => __ == channelLayout).Count() <= 0)
+                        throw new FFmpegException(FFmpegException.NotSupportChLayout);
+                    pCodecContext->sample_rate = sampleRate;
+                    pCodecContext->channel_layout = channelLayout;
+                    pCodecContext->sample_fmt = format;
+                    pCodecContext->channels = ffmpeg.av_get_channel_layout_nb_channels(pCodecContext->channel_layout);
+                    pCodecContext->bit_rate = bitRate;
+                });
+            }
         }
 
         #endregion
@@ -127,10 +133,13 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecId">codec id</param>
-        public MediaEncode(AVCodecID codecId) : this(ffmpeg.avcodec_find_encoder(codecId))
+        public MediaEncode(AVCodecID codecId)
         {
-            if (pCodec == null && codecId != AVCodecID.AV_CODEC_ID_NONE)
-                throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
+            unsafe
+            {
+                if ((pCodec = ffmpeg.avcodec_find_encoder(codecId)) == null && codecId != AVCodecID.AV_CODEC_ID_NONE)
+                    throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
+            }
         }
 
         /// <summary>
@@ -140,13 +149,16 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecName">codec name</param>
-        public MediaEncode(string codecName) : this(ffmpeg.avcodec_find_encoder_by_name(codecName))
+        public MediaEncode(string codecName)
         {
-            if (pCodec == null)
-                throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
+            unsafe
+            {
+                if ((pCodec = ffmpeg.avcodec_find_encoder_by_name(codecName)) == null)
+                    throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
+            }
         }
 
-        internal MediaEncode(AVCodec* codec)
+        internal unsafe MediaEncode(AVCodec* codec)
         {
             pCodec = codec;
         }
@@ -163,15 +175,18 @@ namespace EmguFFmpeg
         /// <param name="opts">options for "avcodec_open2"</param>
         public override void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null)
         {
-            pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
-            setBeforeOpen?.Invoke(this);
-            if ((flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+            unsafe
             {
-                pCodecContext->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
-            }
-            if (pCodec != null)
-            {
-                ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
+                pCodecContext = ffmpeg.avcodec_alloc_context3(pCodec);
+                setBeforeOpen?.Invoke(this);
+                if ((flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+                {
+                    pCodecContext->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+                }
+                if (pCodec != null)
+                {
+                    ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
+                }
             }
         }
 
@@ -181,11 +196,14 @@ namespace EmguFFmpeg
         /// <param name="frame"></param>
         private void RemoveSideData(MediaFrame frame)
         {
-            if (frame != null)
+            unsafe
             {
-                // Make sure Closed Captions will not be duplicated
-                if (AVCodecContext.codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
-                    ffmpeg.av_frame_remove_side_data(frame, AVFrameSideDataType.AV_FRAME_DATA_A53_CC);
+                if (frame != null)
+                {
+                    // Make sure Closed Captions will not be duplicated
+                    if (AVCodecContext.codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
+                        ffmpeg.av_frame_remove_side_data(frame, AVFrameSideDataType.AV_FRAME_DATA_A53_CC);
+                }
             }
         }
 
@@ -211,30 +229,39 @@ namespace EmguFFmpeg
             }
         }
 
-        public int SendFrame([In]MediaFrame frame)
+        public int SendFrame([In] MediaFrame frame)
         {
-            return ffmpeg.avcodec_send_frame(pCodecContext, frame);
+            unsafe
+            {
+                return ffmpeg.avcodec_send_frame(pCodecContext, frame);
+            }
         }
 
-        public int ReceivePacket([Out]MediaPacket packet)
+        public int ReceivePacket([Out] MediaPacket packet)
         {
-            return ffmpeg.avcodec_receive_packet(pCodecContext, packet);
+            unsafe
+            {
+                return ffmpeg.avcodec_receive_packet(pCodecContext, packet);
+            }
         }
 
         public static IReadOnlyList<MediaEncode> Encodes
         {
             get
             {
-                List<MediaEncode> result = new List<MediaEncode>();
-                void* i = null;
-                AVCodec* p;
-                while ((p = ffmpeg.av_codec_iterate(&i)) != null)
+                unsafe
                 {
-                    if (ffmpeg.av_codec_is_encoder(p) != 0)
-                        result.Add(new MediaEncode(p));
-                }
+                    List<MediaEncode> result = new List<MediaEncode>();
+                    void* i = null;
+                    AVCodec* p;
+                    while ((p = ffmpeg.av_codec_iterate(&i)) != null)
+                    {
+                        if (ffmpeg.av_codec_is_encoder(p) != 0)
+                            result.Add(new MediaEncode(p));
+                    }
 
-                return result;
+                    return result;
+                }
             }
         }
     }

@@ -7,22 +7,25 @@ using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaWriter : MediaMux
+    public class MediaWriter : MediaMux
     {
         public new OutFormat Format => base.Format as OutFormat;
 
         public MediaWriter(Stream stream, OutFormat oformat, MediaDictionary options = null)
         {
-            baseStream = stream;
-            avio_Alloc_Context_Read_Packet = ReadFunc;
-            avio_Alloc_Context_Write_Packet = WriteFunc;
-            avio_Alloc_Context_Seek = SeekFunc;
-            pFormatContext = ffmpeg.avformat_alloc_context();
-            pFormatContext->oformat = oformat;
-            base.Format = oformat;
-            if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc(bufferLength), bufferLength, 1, null,
-                    avio_Alloc_Context_Read_Packet, avio_Alloc_Context_Write_Packet, avio_Alloc_Context_Seek);
+            unsafe
+            {
+                baseStream = stream;
+                avio_Alloc_Context_Read_Packet = ReadFunc;
+                avio_Alloc_Context_Write_Packet = WriteFunc;
+                avio_Alloc_Context_Seek = SeekFunc;
+                pFormatContext = ffmpeg.avformat_alloc_context();
+                pFormatContext->oformat = oformat;
+                base.Format = oformat;
+                if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
+                    pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc(bufferLength), bufferLength, 1, null,
+                        avio_Alloc_Context_Read_Packet, avio_Alloc_Context_Write_Packet, avio_Alloc_Context_Seek);
+            }
         }
 
         /// <summary>
@@ -34,13 +37,16 @@ namespace EmguFFmpeg
         /// <param name="options"></param>
         public MediaWriter(string file, OutFormat oformat = null, MediaDictionary options = null)
         {
-            fixed (AVFormatContext** ppFormatContext = &pFormatContext)
+            unsafe
             {
-                ffmpeg.avformat_alloc_output_context2(ppFormatContext, oformat, null, file).ThrowExceptionIfError();
+                fixed (AVFormatContext** ppFormatContext = &pFormatContext)
+                {
+                    ffmpeg.avformat_alloc_output_context2(ppFormatContext, oformat, null, file).ThrowExceptionIfError();
+                }
+                base.Format = oformat ?? new OutFormat(pFormatContext->oformat);
+                if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
+                    ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, options).ThrowExceptionIfError();
             }
-            base.Format = oformat ?? new OutFormat(pFormatContext->oformat);
-            if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, options).ThrowExceptionIfError();
         }
 
         /// <summary>
@@ -48,9 +54,12 @@ namespace EmguFFmpeg
         /// </summary>
         public override void DumpInfo()
         {
-            for (int i = 0; i < pFormatContext->nb_streams; i++)
+            unsafe
             {
-                ffmpeg.av_dump_format(pFormatContext, i, ((IntPtr)pFormatContext->url).PtrToStringUTF8(), 1);
+                for (int i = 0; i < pFormatContext->nb_streams; i++)
+                {
+                    ffmpeg.av_dump_format(pFormatContext, i, ((IntPtr)pFormatContext->url).PtrToStringUTF8(), 1);
+                }
             }
         }
 
@@ -64,16 +73,19 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public MediaStream AddStream(MediaEncode encode)
         {
-            AVStream* stream = ffmpeg.avformat_new_stream(pFormatContext, null);
-            stream->id = (int)(pFormatContext->nb_streams - 1);
-            // keep the order
-            if (encode != null)
+            unsafe
             {
-                ffmpeg.avcodec_parameters_from_context(stream->codecpar, encode);
-                stream->time_base = encode.AVCodecContext.time_base;
+                AVStream* stream = ffmpeg.avformat_new_stream(pFormatContext, null);
+                stream->id = (int)(pFormatContext->nb_streams - 1);
+                // keep the order
+                if (encode != null)
+                {
+                    ffmpeg.avcodec_parameters_from_context(stream->codecpar, encode);
+                    stream->time_base = encode.AVCodecContext.time_base;
+                }
+                streams.Add(new MediaStream(stream) { Codec = encode });
+                return streams.Last();
             }
-            streams.Add(new MediaStream(stream) { Codec = encode });
-            return streams.Last();
         }
 
         /// <summary>
@@ -84,25 +96,28 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public MediaStream AddStream(MediaStream stream, int flags = 0)
         {
-            AVStream* pstream = ffmpeg.avformat_new_stream(pFormatContext, null);
-            pstream->id = (int)(pFormatContext->nb_streams - 1);
-            ffmpeg.avcodec_parameters_copy(pstream->codecpar, stream.Stream.codecpar);
-            pstream->codecpar->codec_tag = 0;
-            MediaCodec mediaCodec = null;
-            if (stream.Codec != null)
+            unsafe
             {
-                mediaCodec = MediaEncode.CreateEncode(stream.Codec.AVCodecContext.codec_id, flags, _ =>
+                AVStream* pstream = ffmpeg.avformat_new_stream(pFormatContext, null);
+                pstream->id = (int)(pFormatContext->nb_streams - 1);
+                ffmpeg.avcodec_parameters_copy(pstream->codecpar, stream.Stream.codecpar);
+                pstream->codecpar->codec_tag = 0;
+                MediaCodec mediaCodec = null;
+                if (stream.Codec != null)
                 {
-                    AVCodecContext* pContext = _;
-                    AVCodecParameters* pParameters = ffmpeg.avcodec_parameters_alloc();
-                    ffmpeg.avcodec_parameters_from_context(pParameters, stream.Codec).ThrowExceptionIfError();
-                    ffmpeg.avcodec_parameters_to_context(pContext, pParameters);
-                    ffmpeg.avcodec_parameters_free(&pParameters);
-                    pContext->time_base = stream.Stream.r_frame_rate.ToInvert();
-                });
+                    mediaCodec = MediaEncode.CreateEncode(stream.Codec.AVCodecContext.codec_id, flags, _ =>
+                    {
+                        AVCodecContext* pContext = _;
+                        AVCodecParameters* pParameters = ffmpeg.avcodec_parameters_alloc();
+                        ffmpeg.avcodec_parameters_from_context(pParameters, stream.Codec).ThrowExceptionIfError();
+                        ffmpeg.avcodec_parameters_to_context(pContext, pParameters);
+                        ffmpeg.avcodec_parameters_free(&pParameters);
+                        pContext->time_base = stream.Stream.r_frame_rate.ToInvert();
+                    });
+                }
+                streams.Add(new MediaStream(pstream) { TimeBase = stream.Stream.r_frame_rate.ToInvert(), Codec = mediaCodec });
+                return streams.Last();
             }
-            streams.Add(new MediaStream(pstream) { TimeBase = stream.Stream.r_frame_rate.ToInvert(), Codec = mediaCodec });
-            return streams.Last();
         }
 
         /// <summary>
@@ -111,7 +126,10 @@ namespace EmguFFmpeg
         /// <param name="options"></param>
         public void Initialize(MediaDictionary options = null)
         {
-            ffmpeg.avformat_write_header(pFormatContext, options).ThrowExceptionIfError();
+            unsafe
+            {
+                ffmpeg.avformat_write_header(pFormatContext, options).ThrowExceptionIfError();
+            }
         }
 
         /// <summary>
@@ -120,11 +138,14 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public int WritePacket([In]MediaPacket packet)
+        public int WritePacket([In] MediaPacket packet)
         {
-            int ret = ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
-            packet.Clear();
-            return ret;
+            unsafe
+            {
+                int ret = ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
+                packet.Clear();
+                return ret;
+            }
         }
 
         /// <summary>
@@ -158,33 +179,36 @@ namespace EmguFFmpeg
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            if (pFormatContext != null)
+            unsafe
             {
-                try
+                if (pFormatContext != null)
                 {
-                    ffmpeg.av_write_trailer(pFormatContext);
-                    // Close the output file.
-                    if ((pFormatContext->flags & ffmpeg.AVFMT_NOFILE) == 0)
+                    try
                     {
-                        if (baseStream == null)
+                        ffmpeg.av_write_trailer(pFormatContext);
+                        // Close the output file.
+                        if ((pFormatContext->flags & ffmpeg.AVFMT_NOFILE) == 0)
                         {
-                            ffmpeg.avio_closep(&pFormatContext->pb);
-                        }
-                        else
-                        {
-                            baseStream.Dispose();
-                            ffmpeg.av_freep(&pFormatContext->pb->buffer);
-                            ffmpeg.avio_context_free(&pFormatContext->pb);
+                            if (baseStream == null)
+                            {
+                                ffmpeg.avio_closep(&pFormatContext->pb);
+                            }
+                            else
+                            {
+                                baseStream.Dispose();
+                                ffmpeg.av_freep(&pFormatContext->pb->buffer);
+                                ffmpeg.avio_context_free(&pFormatContext->pb);
+                            }
                         }
                     }
-                }
-                finally
-                {
-                    ffmpeg.avformat_free_context(pFormatContext);
-                    avio_Alloc_Context_Read_Packet = null;
-                    avio_Alloc_Context_Write_Packet = null;
-                    avio_Alloc_Context_Seek = null;
-                    pFormatContext = null;
+                    finally
+                    {
+                        ffmpeg.avformat_free_context(pFormatContext);
+                        avio_Alloc_Context_Read_Packet = null;
+                        avio_Alloc_Context_Write_Packet = null;
+                        avio_Alloc_Context_Seek = null;
+                        pFormatContext = null;
+                    }
                 }
             }
         }

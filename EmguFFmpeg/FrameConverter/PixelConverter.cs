@@ -1,11 +1,12 @@
 ﻿using FFmpeg.AutoGen;
+
 using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
-    public unsafe class PixelConverter : FrameConverter<VideoFrame>
+    public class PixelConverter : FrameConverter<VideoFrame>
     {
-        private SwsContext* pSwsContext = null;
+        private unsafe SwsContext* pSwsContext = null;
         public readonly AVPixelFormat DstFormat;
         public readonly int DstWidth;
         public readonly int DstHeight;
@@ -20,6 +21,11 @@ namespace EmguFFmpeg
             dstFrame = new VideoFrame(DstFormat, DstWidth, DstHeight);
         }
 
+        /// <summary>
+        /// create video frame conbverter by dst codec
+        /// </summary>
+        /// <param name="dstCodec"></param>
+        /// <param name="flag"></param>
         public PixelConverter(MediaCodec dstCodec, int flag = ffmpeg.SWS_BILINEAR)
         {
             if (dstCodec.Type != AVMediaType.AVMEDIA_TYPE_VIDEO)
@@ -33,15 +39,18 @@ namespace EmguFFmpeg
 
         public PixelConverter(VideoFrame dstFrame, int flag = ffmpeg.SWS_BILINEAR)
         {
-            ffmpeg.av_frame_make_writable(dstFrame).ThrowExceptionIfError();
-            DstWidth = dstFrame.AVFrame.width;
-            DstHeight = dstFrame.AVFrame.height;
-            DstFormat = (AVPixelFormat)dstFrame.AVFrame.format;
-            SwsFlag = flag;
-            base.dstFrame = dstFrame;
+            unsafe
+            {
+                ffmpeg.av_frame_make_writable(dstFrame).ThrowExceptionIfError();
+                DstWidth = dstFrame.AVFrame.width;
+                DstHeight = dstFrame.AVFrame.height;
+                DstFormat = (AVPixelFormat)dstFrame.AVFrame.format;
+                SwsFlag = flag;
+                base.dstFrame = dstFrame;
+            }
         }
 
-        public static implicit operator SwsContext*(PixelConverter value)
+        public unsafe static implicit operator SwsContext*(PixelConverter value)
         {
             return value.pSwsContext;
         }
@@ -53,16 +62,19 @@ namespace EmguFFmpeg
 
         public VideoFrame ConvertFrame(MediaFrame srcFrame)
         {
-            AVFrame* src = srcFrame;
-            AVFrame* dst = dstFrame;
-            if (pSwsContext == null && !isDisposing)
+            unsafe
             {
-                pSwsContext = ffmpeg.sws_getContext(
-                    src->width, src->height, (AVPixelFormat)src->format,
-                    DstWidth, DstHeight, DstFormat, SwsFlag, null, null, null);
+                AVFrame* src = srcFrame;
+                AVFrame* dst = dstFrame;
+                if (pSwsContext == null && !isDisposing)
+                {
+                    pSwsContext = ffmpeg.sws_getContext(
+                        src->width, src->height, (AVPixelFormat)src->format,
+                        DstWidth, DstHeight, DstFormat, SwsFlag, null, null, null);
+                }
+                ffmpeg.sws_scale(pSwsContext, src->data, src->linesize, 0, src->height, dst->data, dst->linesize).ThrowExceptionIfError();
+                return dstFrame as VideoFrame;
             }
-            ffmpeg.sws_scale(pSwsContext, src->data, src->linesize, 0, src->height, dst->data, dst->linesize).ThrowExceptionIfError();
-            return dstFrame as VideoFrame;
         }
 
         #region IDisposable Support
@@ -74,7 +86,10 @@ namespace EmguFFmpeg
             if (!disposedValue)
             {
                 isDisposing = true;
-                ffmpeg.sws_freeContext(pSwsContext);
+                unsafe
+                {
+                    ffmpeg.sws_freeContext(pSwsContext);
+                }
 
                 disposedValue = true;
             }

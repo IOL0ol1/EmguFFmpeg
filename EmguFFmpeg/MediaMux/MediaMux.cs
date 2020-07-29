@@ -8,17 +8,17 @@ using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
-    public unsafe abstract class MediaMux : IDisposable, IReadOnlyList<MediaStream>
+    public abstract class MediaMux : IDisposable, IReadOnlyList<MediaStream>
     {
-        protected AVFormatContext* pFormatContext;
+        protected unsafe AVFormatContext* pFormatContext;
 
-        public AVFormatContext AVFormatContext => *pFormatContext;
+        public AVFormatContext AVFormatContext { get { unsafe { return *pFormatContext; } } }
 
-        public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
+        public string Url { get { unsafe { return ((IntPtr)pFormatContext->url).PtrToStringUTF8(); } } }
 
         public MediaFormat Format { get; protected set; }
 
-        public static implicit operator AVFormatContext*(MediaMux value)
+        public unsafe static implicit operator AVFormatContext*(MediaMux value)
         {
             if (value == null) return null;
             return value.pFormatContext;
@@ -34,7 +34,7 @@ namespace EmguFFmpeg
         protected avio_alloc_context_seek avio_Alloc_Context_Seek;
 
         [AllowReversePInvokeCalls]
-        protected int WriteFunc(void* opaque, byte* buf, int buf_size)
+        protected unsafe int WriteFunc(void* opaque, byte* buf, int buf_size)
         {
             buf_size = Math.Min(buf_size, bufferLength);
             Marshal.Copy((IntPtr)buf, buffer, 0, buf_size);
@@ -43,7 +43,7 @@ namespace EmguFFmpeg
         }
 
         [AllowReversePInvokeCalls]
-        protected int ReadFunc(void* opaque, byte* buf, int buf_size)
+        protected unsafe int ReadFunc(void* opaque, byte* buf, int buf_size)
         {
             buf_size = Math.Min(buf_size, bufferLength);
             int length = baseStream.Read(buffer, 0, buf_size);
@@ -52,7 +52,7 @@ namespace EmguFFmpeg
         }
 
         [AllowReversePInvokeCalls]
-        protected long SeekFunc(void* opaque, long offset, int whence)
+        protected unsafe long SeekFunc(void* opaque, long offset, int whence)
         {
             if (whence == ffmpeg.AVSEEK_SIZE)
             {
