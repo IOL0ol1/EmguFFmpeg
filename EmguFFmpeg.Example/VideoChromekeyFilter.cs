@@ -82,10 +82,10 @@ namespace EmguFFmpeg.Example
                     {
                         foreach (var srcFrame in reader[index[i]].ReadFrame(srcPacket))
                         {
-                            //filterGraph.Inputs[i].WriteFrame(srcFrame);
-                            //foreach (var filterFrame in filterGraph.Outputs.First().ReadFrame())
+                            filterGraph.Inputs[i].WriteFrame(srcFrame);
+                            foreach (var filterFrame in filterGraph.Outputs.First().ReadFrame())
                             {
-                                foreach (var dstFrame in pixelConverter.Convert(srcFrame))
+                                foreach (var dstFrame in pixelConverter.Convert(filterFrame))
                                 {
                                     dstFrame.Pts = pts++;
                                     foreach (var dstPacket in writer[0].WriteFrame(dstFrame))
