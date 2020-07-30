@@ -25,7 +25,7 @@ namespace EmguFFmpeg
             }
             ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowExceptionIfError();
             base.Format = iformat ?? new InFormat(pFormatContext->iformat);
-
+            
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 AVStream* pStream = pFormatContext->streams[i];
@@ -37,7 +37,7 @@ namespace EmguFFmpeg
             }
         }
 
-        public MediaReader(string file, InFormat iformat = null, MediaDictionary options = null)
+        public MediaReader(string file, InFormat iformat = null, MediaDictionary options = null, string videoCodec = null, string audioCodec = null)
         {
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
@@ -49,10 +49,25 @@ namespace EmguFFmpeg
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 AVStream* pStream = pFormatContext->streams[i];
-                MediaDecode codec = MediaDecode.CreateDecode(pStream->codecpar->codec_id, _ =>
+
+                MediaDecode codec;
+
+                if (pStream->codec->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO && videoCodec != null ||
+                    pStream->codec->codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO && audioCodec != null)
                 {
-                    ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
-                });
+                    codec = MediaDecode.CreateDecode(
+                        pStream->codec->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO
+                            ? videoCodec
+                            : audioCodec, _ =>
+                        {
+                            ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
+                        });
+                }
+                else
+                    codec = MediaDecode.CreateDecode(pStream->codecpar->codec_id, _ =>
+                    {
+                        ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
+                    });
                 streams.Add(new MediaStream(pStream) { Codec = codec });
             }
         }
