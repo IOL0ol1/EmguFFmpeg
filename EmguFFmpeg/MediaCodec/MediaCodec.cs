@@ -7,7 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
-
+    /// <summary>
+    /// <see cref="AVCodec"/> and <see cref="AVCodecContext"/> wapper
+    /// </summary>
     public abstract class MediaCodec : IDisposable
     {
         protected unsafe AVCodec* pCodec = null;

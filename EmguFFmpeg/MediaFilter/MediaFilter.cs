@@ -40,7 +40,7 @@ namespace EmguFFmpeg
             {
                 unsafe
                 {
-                    List<MediaFilter> result = new List<MediaFilter>();
+                    FFList<MediaFilter> result = new FFList<MediaFilter>();
                     void* p = null;
                     AVFilter* pFilter;
                     while ((pFilter = ffmpeg.av_filter_iterate(&p)) != null)

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net40;net45;</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -18,11 +18,11 @@
     <Company>EmguFFmpeg</Company>
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet emgu</PackageTags>
     <PackageReleaseNotes>
-      A FFmpeg.AutoGen Warpper Library. (net45, netstandard2.0)
+      A FFmpeg.AutoGen Warpper Library.
       This is NOT a command-line warpper library. It's based on the ffmpeg function interface.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
-    <Version>1.0.10</Version>
+    <Version>1.0.11</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|x64'">
@@ -94,6 +94,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen" Version="4.2.0" />
+    <PackageReference Include="FFmpeg.AutoGen" Version="4.3.0.1" />
   </ItemGroup>
 </Project>

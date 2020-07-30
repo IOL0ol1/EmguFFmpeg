@@ -251,7 +251,7 @@ namespace EmguFFmpeg
             {
                 unsafe
                 {
-                    List<MediaEncode> result = new List<MediaEncode>();
+                    FFList<MediaEncode> result = new FFList<MediaEncode>();
                     void* i = null;
                     AVCodec* p;
                     while ((p = ffmpeg.av_codec_iterate(&i)) != null)

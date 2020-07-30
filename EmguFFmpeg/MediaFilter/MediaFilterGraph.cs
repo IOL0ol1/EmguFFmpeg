@@ -175,8 +175,8 @@ namespace EmguFFmpeg
             return filterContext;
         }
 
-        private List<MediaFilterContext> inputs = new List<MediaFilterContext>();
-        private List<MediaFilterContext> outputs = new List<MediaFilterContext>();
+        private FFList<MediaFilterContext> inputs = new FFList<MediaFilterContext>();
+        private FFList<MediaFilterContext> outputs = new FFList<MediaFilterContext>();
         public IReadOnlyList<MediaFilterContext> Outputs => outputs;
         public IReadOnlyList<MediaFilterContext> Inputs => inputs;
 

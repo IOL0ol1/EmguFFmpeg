@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// <see cref="AVFormatContext"/> wapper
+    /// </summary>
     public abstract class MediaMux : IDisposable, IReadOnlyList<MediaStream>
     {
         protected unsafe AVFormatContext* pFormatContext;

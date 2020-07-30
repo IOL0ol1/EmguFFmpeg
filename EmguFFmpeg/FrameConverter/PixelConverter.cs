@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// <see cref="SwsContext"/> wapper
+    /// </summary>
     public class PixelConverter : FrameConverter<VideoFrame>
     {
         private unsafe SwsContext* pSwsContext = null;

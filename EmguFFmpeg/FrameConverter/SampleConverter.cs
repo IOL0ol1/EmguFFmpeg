@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// <see cref="SwrContext"/> wapper, include <see cref="AVAudioFifo"/> cache
+    /// </summary>
     public class SampleConverter : FrameConverter<AudioFrame>
     {
         private AudioFifo audioFifo;

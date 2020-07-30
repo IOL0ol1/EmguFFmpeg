@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// <see cref="AVOutputFormat"/> wapper
+    /// </summary>
     public class OutFormat : MediaFormat
     {
         protected unsafe AVOutputFormat* pOutputFormat = null;
@@ -64,13 +67,16 @@ namespace EmguFFmpeg
             }
         }
 
+        /// <summary>
+        /// get all supported output formats
+        /// </summary>
         public static IReadOnlyList<OutFormat> Formats
         {
             get
             {
                 unsafe
                 {
-                    List<OutFormat> result = new List<OutFormat>();
+                    FFList<OutFormat> result = new FFList<OutFormat>();
                     void* ofmtOpaque = null;
                     AVOutputFormat* oformat;
                     while ((oformat = ffmpeg.av_muxer_iterate(&ofmtOpaque)) != null)

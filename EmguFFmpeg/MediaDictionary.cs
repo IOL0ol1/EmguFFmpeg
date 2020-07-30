@@ -4,7 +4,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace EmguFFmpeg
@@ -53,7 +52,7 @@ namespace EmguFFmpeg
 
         public unsafe static IReadOnlyList<KeyValuePair<string, string>> GetKeyValues(AVDictionary* dict)
         {
-            List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
+            FFList<KeyValuePair<string, string>> keyValuePairs = new FFList<KeyValuePair<string, string>>();
             AVDictionaryEntry* t = null;
             while ((t = ffmpeg.av_dict_get(dict, "", t, (int)(DictFlags.AV_DICT_IGNORE_SUFFIX))) != null)
             {
@@ -149,7 +148,7 @@ namespace EmguFFmpeg
 
         public bool TryGetValue(string key, out string value)
         {
-            var values = GetValue(key, DefaultFlags);
+            string[] values = GetValue(key, DefaultFlags);
             if (values.Length > 0)
             {
                 value = values[0];
@@ -159,7 +158,7 @@ namespace EmguFFmpeg
             return true;
         }
 
-        #region IDisposable Support
+#region IDisposable Support
 
         private bool disposedValue = false; // 要检测冗余调用
 
@@ -201,9 +200,9 @@ namespace EmguFFmpeg
             GC.SuppressFinalize(this);
         }
 
-        #endregion
+#endregion
 
-        #region ICloneable
+#region ICloneable
 
         public MediaDictionary Clone()
         {

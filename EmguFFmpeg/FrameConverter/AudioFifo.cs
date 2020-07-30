@@ -4,6 +4,9 @@ using System;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// <see cref="AVAudioFifo"/> wapper
+    /// </summary>
     public class AudioFifo : IDisposable
     {
         private unsafe AVAudioFifo* pAudioFifo;

@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// <see cref="AVInputFormat"/> wapper
+    /// </summary>
     public class InFormat : MediaFormat
     {
         protected unsafe AVInputFormat* pInputFormat = null;
@@ -15,6 +18,10 @@ namespace EmguFFmpeg
             pInputFormat = iformat;
         }
 
+        /// <summary>
+        /// init format demuxer by name
+        /// </summary>
+        /// <param name="name">e.g. mov,mp4 ...</param>
         public InFormat(string name)
         {
             unsafe
@@ -42,13 +49,16 @@ namespace EmguFFmpeg
             }
         }
 
+        /// <summary>
+        /// get all supported input formats.
+        /// </summary>
         public static IReadOnlyList<InFormat> Formats
         {
             get
             {
                 unsafe
                 {
-                    List<InFormat> result = new List<InFormat>();
+                    FFList<InFormat> result = new FFList<InFormat>();
                     void* ifmtOpaque = null;
                     AVInputFormat* iformat;
                     while ((iformat = ffmpeg.av_demuxer_iterate(&ifmtOpaque)) != null)

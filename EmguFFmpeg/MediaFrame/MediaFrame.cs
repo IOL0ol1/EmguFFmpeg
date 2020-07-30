@@ -129,7 +129,7 @@ namespace EmguFFmpeg
             {
                 unsafe
                 {
-                    List<IntPtr> result = new List<IntPtr>();
+                    FFList<IntPtr> result = new FFList<IntPtr>();
                     IntPtr intPtr;
                     for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero; i++)
                         result.Add(intPtr);
@@ -138,7 +138,7 @@ namespace EmguFFmpeg
             }
         }
 
-        public IReadOnlyList<int> Linesize { get { unsafe { return pFrame->linesize.ToArray(); } } }
+        public IReadOnlyList<int> Linesize { get { unsafe { return new FFList<int>(pFrame->linesize.ToArray()); } } }
 
         public int Width
         {
