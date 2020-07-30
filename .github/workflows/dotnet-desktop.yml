@@ -15,8 +15,9 @@ jobs:
 
     env:
       Solution_Name: EmguFFmpeg.sln                         # Replace with your solution name, i.e. MyWpfApp.sln. 
-      Configuration: Release|Any CPU
-
+      Configuration: Release
+      Platform: "Any CPU"
+      
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -33,7 +34,7 @@ jobs:
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
-      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
+      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration /p:Platform=$env:Platform
 
     - name: Create Draft Release
       id: create_release
