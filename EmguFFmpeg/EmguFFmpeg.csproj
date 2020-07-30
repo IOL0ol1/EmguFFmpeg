@@ -7,7 +7,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>
-      A FFmpeg.AutoGen Warpper Library. (net45, netstandard2.0)
+      A FFmpeg.AutoGen Warpper Library.
       This is NOT a command-line warpper library. It's based on the ffmpeg function interface.
     </Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -22,7 +22,7 @@
       This is NOT a command-line warpper library. It's based on the ffmpeg function interface.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
-    <Version>1.0.11</Version>
+    <Version>1.0.12</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|x64'">

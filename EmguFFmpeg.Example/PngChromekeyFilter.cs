@@ -1,5 +1,4 @@
-﻿using EmguFFmpeg.EmguCV;
-
+﻿
 using FFmpeg.AutoGen;
 
 using System.Linq;

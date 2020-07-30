@@ -1,5 +1,5 @@
 ﻿
-using EmguFFmpeg.EmguCV;
+using EmguFFmpeg.EmgucvEx;
 
 using FFmpeg.AutoGen;
 
@@ -10,6 +10,9 @@ using System.Linq;
 
 namespace EmguFFmpeg.Example
 {
+    /// <summary>
+    /// from <see cref="https://github.com/HEBOS"/>
+    /// </summary>
     internal class DecodeVideoWithCustomCodecScaledToMat
     {
         /// <summary>

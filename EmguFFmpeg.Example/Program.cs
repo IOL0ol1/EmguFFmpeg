@@ -1,10 +1,7 @@
-﻿using Emgu.CV;
+﻿using EmguFFmpeg.Example.Opencv4SharpSpace;
+
 using System;
 using System.Diagnostics;
-using EmguFFmpeg.EmguCV;
-using FFmpeg.AutoGen;
-using System.Runtime.InteropServices;
-using System.IO;
 
 namespace EmguFFmpeg.Example
 {

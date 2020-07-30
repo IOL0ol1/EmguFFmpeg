@@ -3,8 +3,9 @@
 using OpenCvSharp;
 
 using System;
+using System.Collections.Generic;
 
-namespace EmguFFmpeg.OpenCvSharp
+namespace EmguFFmpeg.OpenCvSharpEx
 {
     public static partial class EmguFFmpegExtension
     {
@@ -270,6 +271,49 @@ namespace EmguFFmpeg.OpenCvSharp
                 ffmpeg.av_image_copy_plane((byte*)frame.Data[0], frame.AVFrame.linesize[0], mat.DataPointer, stride, bytewidth, frame.AVFrame.height);
             }
             return frame;
+        }
+
+
+        /// <summary>
+        /// Convert to <see cref="long"/> array use <see cref="BitConverter.DoubleToInt64Bits(double)"/>
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <param name="length">length, -1 is auto get</param>
+        /// <returns></returns>
+
+        public static long[] ToInt64Bits(this IVec<double> vec, int length = -1)
+        {
+            var c = length < 0 ? vec.Count() : length;
+            long[] output = new long[c];
+            for (int i = 0; i < c; i++)
+            {
+                output[i] = BitConverter.DoubleToInt64Bits(vec[i]);
+            }
+            return output;
+        }
+
+        /// <summary>
+        /// DO NOT call frequently. get count by <see cref="ArgumentOutOfRangeException"/>
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <returns></returns>
+
+        public static int Count(this IVec<double> vec)
+        {
+            int i = 0;
+            try
+            {
+                double tmp = 0;
+                while (true)
+                {
+                    tmp = vec[i];
+                    i += 1;
+                }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return i;
+            }
         }
     }
 }

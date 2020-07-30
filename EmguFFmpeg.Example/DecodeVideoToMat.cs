@@ -1,8 +1,8 @@
-﻿using EmguFFmpeg.EmguCV;
+﻿
+using EmguFFmpeg.EmgucvEx;
 
 using FFmpeg.AutoGen;
 
-using System;
 using System.IO;
 using System.Linq;
 

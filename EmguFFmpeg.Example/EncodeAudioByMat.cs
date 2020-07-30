@@ -1,11 +1,9 @@
 ﻿using Emgu.CV;
+
+using EmguFFmpeg.EmgucvEx;
+
 using System;
-using EmguFFmpeg.EmguCV;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EmguFFmpeg.Example
 {

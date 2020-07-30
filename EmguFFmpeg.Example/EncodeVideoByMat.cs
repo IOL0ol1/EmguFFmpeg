@@ -1,8 +1,10 @@
 ﻿using Emgu.CV;
 using Emgu.CV.Structure;
 
-using EmguFFmpeg.EmguCV;
+using EmguFFmpeg.EmgucvEx;
+
 using FFmpeg.AutoGen;
+
 using System;
 
 namespace EmguFFmpeg.Example

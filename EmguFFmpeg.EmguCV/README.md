@@ -1,13 +1,19 @@
 EmguFFmpeg.EmguCV
 =====================
+[![NuGet version (EmguFFmpeg.EmugCV)](https://img.shields.io/nuget/v/EmguFFmpeg.EmguCV.svg)](https://www.nuget.org/packages/EmguFFmpeg.EmguCV/)
+[![NuGet downloads (EmguFFmpeg.EmguCV)](https://img.shields.io/nuget/dt/EmguFFmpeg.EmguCV.svg)](https://www.nuget.org/packages/EmguFFmpeg.EmguCV/)
+[![Build status](https://img.shields.io/appveyor/ci/IOL0ol1/emguffmpeg)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg)
 
 [EmguCV](https://github.com/emgucv/emgucv) Extension of [EmguFFmpeg](/../EmguFFmpeg)  
     
 Add some extension methods for data exchange between [EmguCV](https://github.com/emgucv/emgucv) and [EmguFFmpeg](../EmguFFmpeg/README.md)
 
-[![NuGet version (EmguFFmpeg.EmugCV)](https://img.shields.io/nuget/v/EmguFFmpeg.EmguCV.svg)](https://www.nuget.org/packages/EmguFFmpeg.EmguCV/)
-[![NuGet downloads (EmguFFmpeg.EmguCV)](https://img.shields.io/nuget/dt/EmguFFmpeg.EmguCV.svg)](https://www.nuget.org/packages/EmguFFmpeg.EmguCV/)    
-[![Build status](https://img.shields.io/appveyor/ci/IOL0ol1/emguffmpeg)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg)
+
+ 
+Platform related packages need to be installed before use. 
+```
+Emgu.CV.runtime.**
+```
 
 
 # Extension
@@ -54,26 +60,36 @@ Mat cv32fH3C1 = audioPlanarFrame.ToMat(); // Cv32F, width 1024, height 3, channe
 
 # Note
 1. Mat not hava Cv64S.    
-So we can't create a AV_SAMPLE_FMT_S64 or AV_SAMPLE_FMT_S64P AudioFrame directly from Mat.
+Create a AV_SAMPLE_FMT_S64 or AV_SAMPLE_FMT_S64P AudioFrame by memory copy from Cv64F Mat.
 
-2. S64 or S64P AudioFrame will convert to Cv64F Mat, but stored inside is long.    
-There is a example to get long type output.
+2. S64 or S64P AudioFrame will convert to Cv64F Mat by memory copy.    
+There is a example to get UInt64 type output.
 ```csharp
+// if is packet, output is long[1,frame nbsamples,frame channels];
+
 AudioFrame dblpPlanarFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_S64, 2, 1024, 44100);
-Mat cv64fH1C1 = dblpPlanarFrame.ToMat(); // Cv64F, width 1024, height 2, channels 1
+var cv64fH1C1 = dblpPlanarFrame.ToMat(); // Cv64F, width 1024, height 1, number of channel 2
 var data = cv64fH1C1.GetData();
 int[] lengths = new int[data.Rank];
 for (int i = 0; i < lengths.Length; i++)
     lengths[i] = data.GetLength(i);
 var output = Array.CreateInstance(typeof(long), lengths);
-Buffer.BlockCopy(data, 0, output, 0, data.Length); // output is long[2,1024] and fill by data now
-
+Buffer.BlockCopy(data, 0, output, 0, data.Length * sizeof(long)); // output is long[1,1024,2]
+```
+```csharp
 // if is planar, output is long[frame channels,frame nbsamples];
-// if is packet, output is long[1,frame nbsamples,frame channels];
+
+AudioFrame dblpPacketFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_S64P, 2, 1024, 44100);
+var cv64fH2C1 = dblpPacketFrame.ToMat(); // Cv64F, width 1024, height 2, number of channel 1
+var data = cv64fH2C1.GetData();
+int[] lengths = new int[data.Rank];
+for (int i = 0; i < lengths.Length; i++)
+    lengths[i] = data.GetLength(i);
+var output = Array.CreateInstance(typeof(long), lengths);
+Buffer.BlockCopy(data, 0, output, 0, data.Length * sizeof(long)); // output is long[2,1024]
 ```
 
-3. EmguFFmpeg's data is managed by GC, but EmguCV data needs to be manually destroyed.    
-**DO NOT** forget to call **Dispose()** for EmguCV data
+3. **DO NOT** forget to call **Dispose()** for EmguCV data
 
 4. If get pointers using implicit type conversions, please call GC.KeepAlive() at th end.    
 e.g.    

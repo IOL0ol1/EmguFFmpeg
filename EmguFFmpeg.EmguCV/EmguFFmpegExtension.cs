@@ -5,9 +5,8 @@ using Emgu.CV.Structure;
 using FFmpeg.AutoGen;
 
 using System;
-using System.Runtime.InteropServices;
 
-namespace EmguFFmpeg.EmguCV
+namespace EmguFFmpeg.EmgucvEx
 {
     public static partial class EmguFFmpegExtension
     {
