@@ -2,7 +2,9 @@ EmguFFmpeg
 =====================
 A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.    
     
-**This is **NOT** a ffmpeg command-line warpper library**    
+**NOTE** not recommended in production environments,
+api is unstable before add test.
+have memory leak issues.
     
 [![NuGet version (EmguFFmpeg)](https://img.shields.io/nuget/v/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)
 [![NuGet downloads (EmguFFmpeg)](https://img.shields.io/nuget/dt/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)    
@@ -12,15 +14,13 @@ A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.
 
 
 1. [EmguFFmpeg](/EmguFFmpeg)    
-	FFmpeg.AutoGen warpper, using **netstandard2.0** for cross platform.    
+	FFmpeg.AutoGen warpper
 	It's dependent on FFmpeg.AutoGen.    
 2. [EmguFFmpeg.EmguCV](/EmguFFmpeg.EmguCV)    
-	Some extension methods for data exchange between EmguFFmpeg and **EmguCV**.    
-	Only net45 and later are supported, because EmguCV dependent net45.    
+	Some extension methods for data exchange between EmguFFmpeg and **EmguCV**.     
 	It's dependent on EmguFFmpeg and EmguCV.    
 3. [EmguFFmpeg.OpenCvSharp](/EmguFFmpeg.OpenCvSharp)    
-	Some extension methods for data exchange between EmguFFmpeg and [**OpenCvSharp**](https://github.com/shimat/opencvsharp).    
-	using **netstandard2.0** for cross platform.    
+	Some extension methods for data exchange between EmguFFmpeg and [**OpenCvSharp**](https://github.com/shimat/opencvsharp).     
 	please read [**here**](https://github.com/shimat/opencvsharp) before use.    
 	It's dependent on EmguFFmpeg and OpenCvSharp.    
 4. [EmguFFmpeg.Example](/EmguFFmpeg.Example)    
@@ -31,5 +31,6 @@ A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.
    
 - [x] Convert MediaFrame data easy with EmguCV etc.
 - [x] Add MedaiFilter support.
+- [ ] Test
 - [ ] Add Subtitle support.
 - [ ] Data exchange with NAudio and SharpAVI.
