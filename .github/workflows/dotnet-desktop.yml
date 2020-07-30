@@ -3,7 +3,7 @@ name: dotnet-desktop
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master ] 
   pull_request:
     branches: [ master ]
 
@@ -20,8 +20,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
 
     # Install the .NET Core workload
     - name: Install .NET Core
@@ -37,5 +35,13 @@ jobs:
     - name: Restore the application
       run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
 
-
- 
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }} 
+          draft: false
+          prerelease: false
