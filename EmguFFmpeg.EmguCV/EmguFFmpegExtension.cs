@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using Emgu.CV;
+﻿using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
-using EmguFFmpeg;
+
 using FFmpeg.AutoGen;
+
+using System;
 
 namespace EmguFFmpeg.EmguCV
 {
