@@ -101,7 +101,7 @@ namespace EmguFFmpeg
             return result;
         }
 
-        [DllImport("kernel32.dll", EntryPoint = "CopyMemory", SetLastError = false)]
+        [DllImport("kernel32.dll", EntryPoint = "RtlCopyMemory", SetLastError = false)]
         private static extern void CopyMemoryInternal(IntPtr dest, IntPtr src, uint count);
 
         /// <summary>
