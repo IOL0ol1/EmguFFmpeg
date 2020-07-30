@@ -1,5 +1,7 @@
 ﻿using FFmpeg.AutoGen;
+
 using OpenCvSharp;
+
 using System;
 
 namespace EmguFFmpeg.OpenCvSharp
@@ -106,7 +108,7 @@ namespace EmguFFmpeg.OpenCvSharp
             Mat mat = new Mat(planes, frame.AVFrame.nb_samples, dstType);
             for (int i = 0; i < planes; i++)
             {
-                FFmpegHelper.CopyMemory(mat.Data + i * stride, frame.Data[i], (uint)stride);
+                FFmpegHelper.CopyMemory(mat.Data + i * stride, frame.Data[i], stride);
             }
             return mat;
         }
@@ -128,9 +130,10 @@ namespace EmguFFmpeg.OpenCvSharp
         {
             Mat mat = new Mat(frame.AVFrame.height, frame.AVFrame.width, MatType.CV_8UC4);
             int stride = (int)(uint)mat.Step();
-            for (int i = 0; i < frame.AVFrame.height; i++)
+            unsafe
             {
-                FFmpegHelper.CopyMemory(mat.Data + i * stride, frame.Data[0] + i * frame.AVFrame.linesize[0], (uint)stride);
+                var bytewidth = Math.Min(stride, frame.AVFrame.linesize[0]);
+                ffmpeg.av_image_copy_plane(mat.DataPointer, stride, (byte*)frame.Data[0], frame.AVFrame.linesize[0], bytewidth, frame.AVFrame.height);
             }
             return mat;
         }
@@ -250,7 +253,7 @@ namespace EmguFFmpeg.OpenCvSharp
             int stride = (int)mat.Step();
             for (int i = 0; i < (isPlanar ? channels : 1); i++)
             {
-                FFmpegHelper.CopyMemory(frame.Data[i], mat.Data + i * stride, (uint)stride);
+                FFmpegHelper.CopyMemory(frame.Data[i], mat.Data + i * stride, stride);
             }
             return frame;
         }
@@ -261,9 +264,10 @@ namespace EmguFFmpeg.OpenCvSharp
                 throw new FFmpegException(FFmpegException.NotSupportFormat);
             VideoFrame frame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGR24, mat.Width, mat.Height);
             int stride = (int)mat.Step();
-            for (int i = 0; i < frame.AVFrame.height; i++)
+            unsafe
             {
-                FFmpegHelper.CopyMemory(frame.Data[0] + i * frame.AVFrame.linesize[0], mat.Data + i * stride, (uint)stride);
+                var bytewidth = Math.Min(stride, frame.AVFrame.linesize[0]);
+                ffmpeg.av_image_copy_plane((byte*)frame.Data[0], frame.AVFrame.linesize[0], mat.DataPointer, stride, bytewidth, frame.AVFrame.height);
             }
             return frame;
         }

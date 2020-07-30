@@ -107,29 +107,29 @@ namespace EmguFFmpeg
             return result;
         }
 
-        [DllImport("kernel32.dll", EntryPoint = "CopyMemory", SetLastError = false)]
-        private static extern void CopyMemoryInternal(IntPtr dest, IntPtr src, uint count);
-
         /// <summary>
-        /// Copy unmanaged memory use win32 api
+        /// Copy unmanaged memory to unmanaged memory
         /// </summary>
         /// <param name="dest"></param>
         /// <param name="src"></param>
         /// <param name="count"></param>
-        public static void CopyMemory(IntPtr dest, IntPtr src, uint count)
+        public static void CopyMemory(IntPtr dest, IntPtr src, int count)
         {
-            CopyMemoryInternal(dest, src, count);
+            unsafe
+            {
+                CopyMemory((byte*)dest, (byte*)src, count);
+            }
         }
 
         /// <summary>
-        /// Copy unmanaged memory use win32 api
+        /// [unsafe] Copy unmanaged memory to unmanaged memory
         /// </summary>
         /// <param name="dest"></param>
         /// <param name="src"></param>
         /// <param name="count"></param>
-        public unsafe static void CopyMemory(void* dest, void* src, uint count)
+        public unsafe static void CopyMemory(void* dest, void* src, int count)
         {
-            CopyMemoryInternal((IntPtr)dest, (IntPtr)src, count);
+            ffmpeg.av_image_copy_plane((byte*)dest, count, (byte*)src, count, count, 1);
         }
     }
 

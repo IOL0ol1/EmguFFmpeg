@@ -40,11 +40,11 @@ namespace EmguFFmpeg.Example
             // do not use frame.Data[0] = bitmapData.Scan0
             // frame.Linesize[0] may not be equal bitmapData.Stride and both of them may not be equal to width * 3,
             // because of memory alignment
-            int stride = Math.Min(bitmapData.Stride, frame.Linesize[0]);
-            for (int i = 0; i < height; i++)
+            unsafe
             {
-                FFmpegHelper.CopyMemory(bitmapData.Scan0 + i * bitmapData.Stride, frame.Data[0] + i * frame.Linesize[0], (uint)stride);
-            }
+                var bytewidth = Math.Min(bitmapData.Stride, frame.Linesize[0]);
+                ffmpeg.av_image_copy_plane((byte*)bitmapData.Scan0, bitmapData.Stride, (byte*)frame.Data[0], frame.Linesize[0], bytewidth, height);
+            } 
             bitmap.UnlockBits(bitmapData);
             return frame;
         }

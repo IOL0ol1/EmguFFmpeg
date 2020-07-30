@@ -20,6 +20,7 @@ namespace EmguFFmpeg.Example
             new EncodeVideoByMat(output, 800, 600, 1);
             Process.Start(output);
 
+            new DecodeVideoToMat(output, "images");
             new DecodeVideoWithCustomCodecScaledToMat(output, "images");
 
             Console.WriteLine("--------------");
