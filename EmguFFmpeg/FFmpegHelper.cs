@@ -108,28 +108,49 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Copy unmanaged memory to unmanaged memory
+        /// Copy <paramref name="src"/> unmanaged memory to <paramref name="dst"/> unmanaged memory.
         /// </summary>
-        /// <param name="dest"></param>
+        /// <param name="dst"></param>
         /// <param name="src"></param>
         /// <param name="count"></param>
-        public static void CopyMemory(IntPtr dest, IntPtr src, int count)
+        public static void CopyMemory(IntPtr dst, IntPtr src, int count)
         {
             unsafe
             {
-                CopyMemory((byte*)dest, (byte*)src, count);
+                CopyMemory((byte*)dst, (byte*)src, count);
             }
         }
 
         /// <summary>
-        /// [unsafe] Copy unmanaged memory to unmanaged memory
+        /// [unsafe] Copy <paramref name="src"/> unmanaged memory to <paramref name="dst"/> unmanaged memory.
         /// </summary>
-        /// <param name="dest"></param>
+        /// <param name="dst"></param>
         /// <param name="src"></param>
         /// <param name="count"></param>
-        public unsafe static void CopyMemory(void* dest, void* src, int count)
+        public unsafe static void CopyMemory(void* dst, void* src, int count)
         {
-            ffmpeg.av_image_copy_plane((byte*)dest, count, (byte*)src, count, count, 1);
+            ffmpeg.av_image_copy_plane((byte*)dst, count, (byte*)src, count, count, 1);
+        }
+
+        /// <summary>
+        /// Copy <paramref name="src"/> unmanaged memory to <paramref name="dst"/> unmanaged memory.
+        /// That is, copy "<paramref name="height"/>" number of lines of "<paramref name="byteWidth"/>" bytes each. 
+        /// <para>
+        /// The first byte of each <paramref name="src"/> or <paramref name="dst"/> successive line is separated by <paramref name="srcLineSize"/> or <paramref name="dstLineSize"/> bytes.
+        /// </para>
+        /// </summary>
+        /// <param name="dst"></param>
+        /// <param name="dstLineSize">linesize for the image plane in dst</param>
+        /// <param name="src"></param>
+        /// <param name="srcLineSize">linesize for the image plane in src</param>
+        /// <param name="byteWidth"></param>
+        /// <param name="height"></param>
+        public static void CopyPlane(IntPtr dst,int dstLineSize ,IntPtr src, int srcLineSize, int byteWidth, int height)
+        {
+            unsafe
+            {
+                ffmpeg.av_image_copy_plane((byte*)dst, dstLineSize, (byte*)src, srcLineSize, byteWidth, height);
+            }
         }
     }
 
