@@ -21,7 +21,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// $"width={width}:height={height}:pix_fmt={format}:time_base={timebase.num}/{timebase.den}:pixel_aspect={aspect.num}/{aspect.den}:frame_rate={framerate.num}/{framerate.den}:sws_param={swsparam}";
+        /// command line: $"width={width}:height={height}:pix_fmt={format}:time_base={timebase.num}/{timebase.den}:pixel_aspect={aspect.num}/{aspect.den}:frame_rate={framerate.num}/{framerate.den}:sws_param={swsparam}";
         /// </summary>
         /// <param name="filter"></param>
         /// <param name="width"></param>
