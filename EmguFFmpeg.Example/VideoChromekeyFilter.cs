@@ -10,10 +10,16 @@ namespace EmguFFmpeg.Example
 {
     public class VideoChromekeyFilter
     {
+
         /// <summary>
         /// Make the specified color of <paramref name="input0"/> transparent and overlay it on the <paramref name="input1"/> video to <paramref name="output"/>
-        /// <![CDATA[
-        /// filter graph in VideoChromekeyFilter like this:
+        /// <para>
+        /// NOTE: green [R:0 G:128 B:0]
+        /// </para>
+        /// <para>
+        /// ffmpeg -i <paramref name="input0"/> -i <paramref name="input1"/> -filter_complex "[1:v]chromakey=green:0.1:0.0[ckout];[0:v][ckout]overlay[out]" -map "[out]" <paramref name="output"/>
+        /// </para>
+        /// filter graph:
         /// ┌──────┐     ┌──────┐     ┌─────────┐     ┌─────────┐
         /// │input0│---->│buffer│---->│chromakey│---->│         │
         /// └──────┘     └──────┘     └─────────┘     │         │     ┌──────────┐     ┌──────┐
@@ -21,19 +27,12 @@ namespace EmguFFmpeg.Example
         /// ┌──────┐     ┌──────┐                     │         │     └──────────┘     └──────┘
         /// │input1│-----│buffer│-------------------->│         │
         /// └──────┘     └──────┘                     └─────────┘
-        /// ]]>
-        /// <para>
-        /// NOTE: green [R:0 G:128 B:0]
-        /// </para>
-        /// <para>
-        /// ffmpeg -i <paramref name="input0"/> -i <paramref name="input1"/> -filter_complex "[1:v]chromakey=green:0.1:0.0[ckout];[0:v][ckout]overlay[out]" -map "[out]" <paramref name="output"/>
-        /// </para>
-        /// </summary>
+        /// </summary> 
         /// <param name="input0">foreground</param>
         /// <param name="input1">background</param>
         /// <param name="output">output</param>
-        /// <param name="chromakeyOptions">rgb:similarity:blend, see <see cref="http://ffmpeg.org/ffmpeg-filters.html#chromakey"/> </param>
-        public VideoChromekeyFilter(string input0, string input1, string output,string chromakeyOptions = "0x466F46:0.1:0.0")
+        /// <param name="chromakeyOptions">rgb(green or 0x008000):similarity:blend, see <see cref="http://ffmpeg.org/ffmpeg-filters.html#chromakey"/> </param>
+        public VideoChromekeyFilter(string input0, string input1, string output,string chromakeyOptions = "green:0.1:0.0")
         {
             using (MediaReader reader0 = new MediaReader(input0))
             using (MediaReader reader1 = new MediaReader(input1))

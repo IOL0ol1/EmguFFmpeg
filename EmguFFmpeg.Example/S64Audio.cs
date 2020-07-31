@@ -4,10 +4,10 @@ using System;
 
 namespace EmguFFmpeg.Example
 {
-    namespace EmgucvSpace
+    namespace EmgucvExtern
     {
 
-        using EmguFFmpeg.EmgucvEx;
+        using EmguFFmpeg.EmgucvExtern;
 
         class S64Audio
         {
@@ -44,9 +44,9 @@ namespace EmguFFmpeg.Example
     }
 
 
-    namespace Opencv4SharpSpace
+    namespace OpenCvSharpExtern
     {
-        using EmguFFmpeg.OpenCvSharpEx;
+        using EmguFFmpeg.OpenCvSharpExtern;
 
         using OpenCvSharp;
 

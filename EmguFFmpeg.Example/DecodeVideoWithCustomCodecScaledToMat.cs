@@ -1,5 +1,5 @@
 ﻿
-using EmguFFmpeg.EmgucvEx;
+using EmguFFmpeg.EmgucvExtern;
 
 using FFmpeg.AutoGen;
 
@@ -17,12 +17,16 @@ namespace EmguFFmpeg.Example
     {
         /// <summary>
         /// decode video to image
+        /// filter graph:
+        /// ┌──────┐     ┌──────┐     ┌─────┐     ┌──────────┐     ┌──────┐
+        /// │input0│---->│buffer│---->│scale│---->│buffersink│---->│output│
+        /// └──────┘     └──────┘     └─────┘     └──────────┘     └──────┘
         /// </summary>
         /// <param name="inputFile">input video file</param>
         /// <param name="outDirectory">folder for output image files</param>
-        public DecodeVideoWithCustomCodecScaledToMat(string inputFile, string outDirectory)
+        /// <param name="scaleOptions">scale options <see cref="http://ffmpeg.org/ffmpeg-filters.html#scale-1"/></param>
+        public DecodeVideoWithCustomCodecScaledToMat(string inputFile, string outDirectory, string scaleOptions = "512:288")
         {
-            // !!!  IMPORTANT NOTE: This sample won't work, if you haven't downloaded ffmpeg (GPL license, as it is more complete), and you don't have NVIDIA hardware (CUDA) !!!
 
             using (MediaReader reader = new MediaReader(inputFile, null, null))
             {
@@ -32,6 +36,7 @@ namespace EmguFFmpeg.Example
                 unsafe
                 {
                     // relpace the default vide decode
+                    // !!! IMPORTANT NOTE: This sample won't work, if you haven't downloaded ffmpeg (GPL license, as it is more complete), and you don't have NVIDIA hardware (CUDA) !!!
                     reader[videoIndex].Codec = MediaDecode.CreateDecode("h264_cuvid", _ => ffmpeg.avcodec_parameters_to_context(_, reader[videoIndex].Stream.codecpar));
                 }
 
@@ -48,12 +53,11 @@ namespace EmguFFmpeg.Example
                 */
                 MediaFilterGraph filterGraph = new MediaFilterGraph();
                 filterGraph.AddVideoSrcFilter(new MediaFilter(MediaFilter.VideoSources.Buffer), width, height, (AVPixelFormat)format, time_base, sample_aspect_ratio)
-                    .LinkTo(0, filterGraph.AddFilter(new MediaFilter("scale"), "512:288"))
+                    .LinkTo(0, filterGraph.AddFilter(new MediaFilter("scale"), scaleOptions))
                     .LinkTo(0, filterGraph.AddVideoSinkFilter(new MediaFilter(MediaFilter.VideoSinks.Buffersink)));
                 filterGraph.Initialize();
 
                 var sw = Stopwatch.StartNew();
-
                 foreach (var packet in reader.ReadPacket())
                 {
                     foreach (var frame in reader[videoIndex].ReadFrame(packet))
@@ -63,13 +67,12 @@ namespace EmguFFmpeg.Example
                         {
                             using (var image = filterFrame.ToMat())
                             {
-                                Console.WriteLine($"Converting to MAT [ processed in {sw.Elapsed.TotalMilliseconds:0} ms ]");
                                 image.Save(Path.Combine(Directory.CreateDirectory(outDirectory).FullName, $"{DateTime.Now.Ticks}.jpg"));
-                                sw.Restart();
                             }
                         }
                     }
                 }
+                Console.WriteLine($"Converting to MAT [ processed in {sw.Elapsed.TotalMilliseconds:0} ms ]");
             }
         }
     }

@@ -6,7 +6,7 @@ using FFmpeg.AutoGen;
 
 using System;
 
-namespace EmguFFmpeg.EmgucvEx
+namespace EmguFFmpeg.EmgucvExtern
 {
     public static partial class EmguFFmpegExtension
     {

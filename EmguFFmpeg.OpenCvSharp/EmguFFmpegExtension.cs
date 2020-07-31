@@ -3,9 +3,8 @@
 using OpenCvSharp;
 
 using System;
-using System.Collections.Generic;
 
-namespace EmguFFmpeg.OpenCvSharpEx
+namespace EmguFFmpeg.OpenCvSharpExtern
 {
     public static partial class EmguFFmpegExtension
     {

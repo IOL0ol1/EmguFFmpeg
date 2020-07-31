@@ -8,14 +8,19 @@ namespace EmguFFmpeg.Example
     public class PngChromekeyFilter
     {
         /// <summary>
-        /// a red cheomekey filter for .png image example.
+        /// a red cheomekey filter for video or image example.
         /// <para>
         /// ffmpeg -i <paramref name="input"/> -vf chromakey=red:0.1:0.0 <paramref name="output"/>
         /// </para>
+        /// filter graph:
+        /// ┌──────┐     ┌──────┐     ┌─────────┐     ┌──────────┐     ┌──────┐
+        /// │input0│---->│buffer│---->│chromakey│---->│buffersink│---->│output│
+        /// └──────┘     └──────┘     └─────────┘     └──────────┘     └──────┘
         /// </summary>
         /// <param name="input"></param>
         /// <param name="output"></param>
-        public PngChromekeyFilter(string input, string output)
+        /// <param name="chromakeyOptions">rgb(green or 0x008000):similarity:blend, see <see cref="http://ffmpeg.org/ffmpeg-filters.html#chromakey"/> </param>
+        public PngChromekeyFilter(string input, string output,string chromakeyOptions = "red:0.1:0.0")
         {
             using (MediaReader reader = new MediaReader(input))
             using (MediaWriter writer = new MediaWriter(output))
@@ -30,9 +35,9 @@ namespace EmguFFmpeg.Example
                 AVRational sample_aspect_ratio = reader[videoIndex].Codec.AVCodecContext.sample_aspect_ratio;
 
                 MediaFilterGraph filterGraph = new MediaFilterGraph();
-                filterGraph.AddVideoSrcFilter(new MediaFilter(MediaFilter.VideoSources.Buffer), width, height, (AVPixelFormat)format, time_base, sample_aspect_ratio).LinkTo(0,
-                    filterGraph.AddFilter(new MediaFilter("chromakey"), "red:0.1:0.0")).LinkTo(0,
-                    filterGraph.AddVideoSinkFilter(new MediaFilter(MediaFilter.VideoSinks.Buffersink)));
+                filterGraph.AddVideoSrcFilter(new MediaFilter(MediaFilter.VideoSources.Buffer), width, height, (AVPixelFormat)format, time_base, sample_aspect_ratio)
+                    .LinkTo(0, filterGraph.AddFilter(new MediaFilter("chromakey"), chromakeyOptions))
+                    .LinkTo(0, filterGraph.AddVideoSinkFilter(new MediaFilter(MediaFilter.VideoSinks.Buffersink)));
                 filterGraph.Initialize();
 
                 // add stream by reader and init writer

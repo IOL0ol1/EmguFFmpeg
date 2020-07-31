@@ -1,4 +1,5 @@
-﻿using EmguFFmpeg.Example.Opencv4SharpSpace;
+﻿
+using EmguFFmpeg.Example.OpenCvSharpExtern;
 
 using System;
 using System.Diagnostics;
@@ -12,6 +13,8 @@ namespace EmguFFmpeg.Example
             FFmpegHelper.RegisterBinaries();
             FFmpegHelper.SetupLogging(logWrite: _ => Trace.Write(_));
             Console.WriteLine("Hello FFmpeg!");
+
+            new S64Audio();
 
             var output = "output.mp4";
             new EncodeVideoByMat(output, 800, 600, 1);
