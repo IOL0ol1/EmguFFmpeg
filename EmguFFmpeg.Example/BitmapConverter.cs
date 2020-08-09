@@ -35,7 +35,7 @@ namespace EmguFFmpeg.Example
                 throw new Exception("only support Format24bppRgb format");
             int width = bitmap.Width;
             int height = bitmap.Height;
-            VideoFrame frame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGR24, width, height);
+            VideoFrame frame = new VideoFrame(width, height, AVPixelFormat.AV_PIX_FMT_BGR24);
             BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
             // do not use frame.Data[0] = bitmapData.Scan0
             // frame.Linesize[0] may not be equal bitmapData.Stride and both of them may not be equal to width * 3,

@@ -1,6 +1,4 @@
 ﻿
-using EmguFFmpeg.Example.OpenCvSharpExtern;
-
 using System;
 using System.Diagnostics;
 
@@ -14,14 +12,14 @@ namespace EmguFFmpeg.Example
             FFmpegHelper.SetupLogging(logWrite: _ => Trace.Write(_));
             Console.WriteLine("Hello FFmpeg!");
 
-            new S64Audio();
+            //new S64Audio();
 
             var output = "output.mp4";
             new EncodeVideoByMat(output, 800, 600, 1);
             Process.Start(output);
 
-            new DecodeVideoToMat(output, "images");
-            new DecodeVideoWithCustomCodecScaledToMat(output, "images");
+            //new DecodeVideoToMat(output, "images");
+            //new DecodeVideoWithCustomCodecScaledToMat(output, "images");
 
             Console.WriteLine("--------------");
             Console.ReadKey();

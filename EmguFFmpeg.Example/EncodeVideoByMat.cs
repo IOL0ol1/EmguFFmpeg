@@ -1,8 +1,6 @@
 ﻿using Emgu.CV;
 using Emgu.CV.Structure;
 
-using EmguFFmpeg.EmgucvExtern;
-
 using FFmpeg.AutoGen;
 
 using System;

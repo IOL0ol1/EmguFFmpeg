@@ -95,7 +95,7 @@ namespace EmguFFmpeg.Example.Example
             long curPts = (long)timeSpan.TotalSeconds * FPS;
             if (curPts > lastVideoPts)
             {
-                VideoFrame videoFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGR24, Width, Height);
+                VideoFrame videoFrame = new VideoFrame(Width, Height, AVPixelFormat.AV_PIX_FMT_BGR24);
                 if (data.Length == videoFrame.Linesize[0] * Height)
                     Marshal.Copy(data, 0, videoFrame.Data[0], data.Length);
                 else
@@ -114,14 +114,14 @@ namespace EmguFFmpeg.Example.Example
 
         public void WriteS16(byte[] data)
         {
-            AudioFrame audioFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_S16, Channels, data.Length / Channels / 2, SampleRate);
+            AudioFrame audioFrame = new AudioFrame(Channels, data.Length / Channels / 2, AVSampleFormat.AV_SAMPLE_FMT_S16, SampleRate);
             Marshal.Copy(data, 0, audioFrame.Data[0], data.Length);
             WriteAudioFrame(audioFrame);
         }
 
         public void WriteFLTP(byte[][] data)
         {
-            AudioFrame audioFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_FLTP, Channels, data[0].Length / 4, SampleRate);
+            AudioFrame audioFrame = new AudioFrame(Channels, data[0].Length / 4, AVSampleFormat.AV_SAMPLE_FMT_FLTP, SampleRate);
             for (int i = 0; i < data.Length; i++)
             {
                 Marshal.Copy(data[i], 0, audioFrame.Data[i], data.Length);

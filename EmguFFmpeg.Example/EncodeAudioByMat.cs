@@ -1,7 +1,5 @@
 ﻿using Emgu.CV;
 
-using EmguFFmpeg.EmgucvExtern;
-
 using System;
 using System.Runtime.InteropServices;
 

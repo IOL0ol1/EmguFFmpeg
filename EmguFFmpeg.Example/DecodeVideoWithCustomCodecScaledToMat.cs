@@ -1,6 +1,4 @@
 ﻿
-using EmguFFmpeg.EmgucvExtern;
-
 using FFmpeg.AutoGen;
 
 using System;
