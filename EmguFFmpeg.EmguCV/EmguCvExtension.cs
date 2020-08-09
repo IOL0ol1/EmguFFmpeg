@@ -6,9 +6,9 @@ using FFmpeg.AutoGen;
 
 using System;
 
-namespace EmguFFmpeg.EmgucvExtern
+namespace EmguFFmpeg
 {
-    public static partial class EmguFFmpegExtension
+    public static partial class EmguCvExtension
     {
         /// <summary>
         /// Convert to Mat
@@ -117,7 +117,7 @@ namespace EmguFFmpeg.EmgucvExtern
         {
             if ((AVPixelFormat)frame.AVFrame.format != AVPixelFormat.AV_PIX_FMT_BGRA)
             {
-                using (VideoFrame dstFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGRA, frame.AVFrame.width, frame.AVFrame.height))
+                using (VideoFrame dstFrame = new VideoFrame(frame.AVFrame.width, frame.AVFrame.height, AVPixelFormat.AV_PIX_FMT_BGRA))
                 using (PixelConverter converter = new PixelConverter(dstFrame))
                 {
                     return BgraToMat(converter.ConvertFrame(frame));
@@ -246,7 +246,7 @@ namespace EmguFFmpeg.EmgucvExtern
         private static AudioFrame MatToAudioFrame(Mat mat, AVSampleFormat srctFormat, int sampleRate)
         {
             int channels = mat.NumberOfChannels > 1 ? mat.NumberOfChannels : mat.Height;
-            AudioFrame frame = new AudioFrame(srctFormat, channels, mat.Width, sampleRate);
+            AudioFrame frame = new AudioFrame(channels, mat.Width, srctFormat, sampleRate);
             bool isPlanar = ffmpeg.av_sample_fmt_is_planar(srctFormat) > 0;
             int stride = mat.Step;
             for (int i = 0; i < (isPlanar ? channels : 1); i++)
@@ -260,7 +260,7 @@ namespace EmguFFmpeg.EmgucvExtern
         {
             using (Image<Bgr, byte> image = mat.ToImage<Bgr, byte>())
             {
-                VideoFrame frame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGR24, image.Width, image.Height);
+                VideoFrame frame = new VideoFrame(image.Width, image.Height, AVPixelFormat.AV_PIX_FMT_BGR24);
                 int stride = image.Width * image.NumberOfChannels;
                 unsafe
                 {

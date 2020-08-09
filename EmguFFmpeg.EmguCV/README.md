@@ -12,7 +12,7 @@ Add some extension methods for data exchange between [EmguCV](https://github.com
  
 Platform related packages need to be installed before use. 
 ```
-Emgu.CV.runtime.**
+Emgu.CV.runtime.*
 ```
 
 

@@ -7,7 +7,7 @@ EmguFFmpeg.OpenCvSharp
 Add some extension methods for data exchange between [OpenCvSharp](https://github.com/shimat/opencvsharp) and [EmguFFmpeg](../EmguFFmpeg/README.md)
 
 [![NuGet version (EmguFFmpeg.OpenCvSharp)](https://img.shields.io/nuget/v/EmguFFmpeg.OpenCvSharp.svg)](https://www.nuget.org/packages/EmguFFmpeg.OpenCvSharp/)
-[![NuGet downloads (EmguFFmpeg.OpenCvSharp)](https://img.shields.io/nuget/dt/EmguFFmpeg.OpenCvSharp.svg)](https://www.nuget.org/packages/EmguFFmpeg.OpenCvSharp/)    
+[![NuGet downloads (EmguFFmpeg.OpenCvSharp)](https://img.shields.io/nuget/dt/EmguFFmpeg.OpenCvSharp.svg)](https://www.nuget.org/packages/EmguFFmpeg.OpenCvSharp/)
 [![Build status](https://img.shields.io/appveyor/ci/IOL0ol1/emguffmpeg)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg)
 
 # Note
@@ -15,7 +15,7 @@ Add some extension methods for data exchange between [OpenCvSharp](https://githu
 Platform related packages need to be installed before use.
 nuget like:
 ```
-OpenCvSharp4.runtime.**
+OpenCvSharp4.runtime.*
 ```
 
 

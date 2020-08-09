@@ -4,7 +4,7 @@
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <Description>EmguFFmpeg with EmguCV expansian.</Description>
+    <Description>EmguFFmpeg with EmguCV extension.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/IOL0ol1/EmguFFmpeg</PackageProjectUrl>
     <PackageIcon>icon.png</PackageIcon>
@@ -14,9 +14,9 @@
     <PackageReleaseNotes>EmguFFmpeg with EmguCV expansian (EmguCV only net45) 
 MediaFrame and Mat convert to each other</PackageReleaseNotes>
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet emgucv image</PackageTags>
-    <Version>1.0.12</Version>
+    <Version>1.0.13</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <RootNamespace>EmguFFmpeg.EmgucvEx</RootNamespace>
+    <RootNamespace>EmguFFmpeg</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

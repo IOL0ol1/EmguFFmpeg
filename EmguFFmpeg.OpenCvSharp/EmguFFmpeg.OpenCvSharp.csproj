@@ -4,7 +4,7 @@
     <TargetFrameworks>netstandard2.0;net461;net48</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Platforms>AnyCPU</Platforms>
-    <Description>EmguFFmpeg with OpenCvSharp expansian.</Description>
+    <Description>EmguFFmpeg with OpenCvSharp extension.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/IOL0ol1/EmguFFmpeg</PackageProjectUrl>
     <PackageIcon>icon.png</PackageIcon>
@@ -16,10 +16,10 @@
       MediaFrame and Mat convert to each other
     </PackageReleaseNotes>
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet opencvsharp image</PackageTags>
-    <Version>1.0.12</Version>
+    <Version>1.0.13</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageIconUrl />
-    <RootNamespace>EmguFFmpeg.OpenCvSharpEx</RootNamespace>
+    <RootNamespace>EmguFFmpeg</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">

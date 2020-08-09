@@ -4,9 +4,9 @@ using OpenCvSharp;
 
 using System;
 
-namespace EmguFFmpeg.OpenCvSharpExtern
+namespace EmguFFmpeg
 {
-    public static partial class EmguFFmpegExtension
+    public static partial class OpenCvSharpExtension
     {
         /// <summary>
         /// Convert to Mat
@@ -117,7 +117,7 @@ namespace EmguFFmpeg.OpenCvSharpExtern
         {
             if ((AVPixelFormat)frame.AVFrame.format != AVPixelFormat.AV_PIX_FMT_BGRA)
             {
-                using (VideoFrame dstFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGRA, frame.AVFrame.width, frame.AVFrame.height))
+                using (VideoFrame dstFrame = new VideoFrame(frame.AVFrame.width, frame.AVFrame.height, AVPixelFormat.AV_PIX_FMT_BGRA))
                 using (PixelConverter converter = new PixelConverter(dstFrame))
                 {
                     return BgraToMat(converter.ConvertFrame(frame));
@@ -248,7 +248,7 @@ namespace EmguFFmpeg.OpenCvSharpExtern
         private static AudioFrame MatToAudioFrame(Mat mat, AVSampleFormat srctFormat, int sampleRate)
         {
             int channels = mat.Channels() > 1 ? mat.Channels() : mat.Height;
-            AudioFrame frame = new AudioFrame(srctFormat, channels, mat.Width, sampleRate);
+            AudioFrame frame = new AudioFrame(channels, mat.Width, srctFormat, sampleRate);
             bool isPlanar = ffmpeg.av_sample_fmt_is_planar(srctFormat) > 0;
             int stride = (int)mat.Step();
             for (int i = 0; i < (isPlanar ? channels : 1); i++)
@@ -262,7 +262,7 @@ namespace EmguFFmpeg.OpenCvSharpExtern
         {
             if (mat.Type() != MatType.CV_8UC3)
                 throw new FFmpegException(FFmpegException.NotSupportFormat);
-            VideoFrame frame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_BGR24, mat.Width, mat.Height);
+            VideoFrame frame = new VideoFrame(mat.Width, mat.Height, AVPixelFormat.AV_PIX_FMT_BGR24);
             int stride = (int)mat.Step();
             unsafe
             {
