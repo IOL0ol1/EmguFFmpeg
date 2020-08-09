@@ -145,13 +145,13 @@ namespace EmguFFmpeg
         /// <summary>
         /// get all decodes
         /// </summary>
-        public static IReadOnlyList<MediaDecode> Decodes
+        public static MediaDecode[] Decodes
         {
             get
             {
                 unsafe
                 {
-                    FFList<MediaDecode> result = new FFList<MediaDecode>();
+                    List<MediaDecode> result = new List<MediaDecode>();
                     void* i = null;
                     AVCodec* p;
                     while ((p = ffmpeg.av_codec_iterate(&i)) != null)
@@ -160,7 +160,7 @@ namespace EmguFFmpeg
                             result.Add(new MediaDecode(p));
                     }
 
-                    return result;
+                    return result.ToArray();
                 }
             }
         }

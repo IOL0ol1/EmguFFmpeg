@@ -34,7 +34,7 @@ namespace EmguFFmpeg
         /// <param name="device"></param>
         /// <param name="options">options for <see cref=" ffmpeg.avformat_open_input"/></param>
         /// <returns></returns>
-        public static IReadOnlyList<IReadOnlyList<MediaDevice>> GetDeviceInfos(MediaFormat device, MediaDictionary options = null)
+        public static MediaDevice[][] GetDeviceInfos(MediaFormat device, MediaDictionary options = null)
         {
             unsafe
             {
@@ -47,7 +47,7 @@ namespace EmguFFmpeg
                     ffmpeg.avformat_alloc_output_context2(&pFmtCtx, oformat, null, parame);
                 ffmpeg.av_log(null, (int)LogLevel.Verbose, "--------------------------");
                 ffmpeg.avformat_free_context(pFmtCtx);
-                return new FFList<IReadOnlyList<MediaDevice>>();
+                return new MediaDevice[0][];
             }
         }
 

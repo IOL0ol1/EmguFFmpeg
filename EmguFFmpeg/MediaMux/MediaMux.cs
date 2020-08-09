@@ -30,8 +30,8 @@ namespace EmguFFmpeg
         #region Stream Support
 
         protected Stream baseStream;
-        protected const int bufferLength = 4096;
-        protected readonly byte[] buffer = new byte[bufferLength];
+        protected int bufferLength;
+        protected byte[] buffer;
         protected avio_alloc_context_read_packet avio_Alloc_Context_Read_Packet;
         protected avio_alloc_context_write_packet avio_Alloc_Context_Write_Packet;
         protected avio_alloc_context_seek avio_Alloc_Context_Seek;

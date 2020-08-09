@@ -18,10 +18,15 @@ namespace EmguFFmpeg
             pOutputFormat = oformat;
         }
 
+        /// <summary>
+        /// create by format name,e.g. "mp4" ".mp4"
+        /// </summary>
+        /// <param name="name"></param>
         public OutFormat(string name)
         {
             unsafe
             {
+                name = name.Trim().TrimStart('.');
                 if (!string.IsNullOrEmpty(name))
                 {
                     void* ofmtOpaque = null;
@@ -70,20 +75,20 @@ namespace EmguFFmpeg
         /// <summary>
         /// get all supported output formats
         /// </summary>
-        public static IReadOnlyList<OutFormat> Formats
+        public static OutFormat[] Formats
         {
             get
             {
                 unsafe
                 {
-                    FFList<OutFormat> result = new FFList<OutFormat>();
+                    List<OutFormat> result = new List<OutFormat>();
                     void* ofmtOpaque = null;
                     AVOutputFormat* oformat;
                     while ((oformat = ffmpeg.av_muxer_iterate(&ofmtOpaque)) != null)
                     {
                         result.Add(new OutFormat(oformat));
                     }
-                    return result;
+                    return result.ToArray();
                 }
             }
         }

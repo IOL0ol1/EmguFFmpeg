@@ -12,10 +12,15 @@ namespace EmguFFmpeg
         public new OutFormat Format => base.Format as OutFormat;
 
         public MediaWriter(Stream stream, OutFormat oformat, MediaDictionary options = null)
+            : this(stream, 4096, oformat, options) { }
+
+        public MediaWriter(Stream stream, int buffersize, OutFormat oformat, MediaDictionary options = null)
         {
             unsafe
             {
                 baseStream = stream;
+                bufferLength = buffersize;
+                buffer = new byte[bufferLength];
                 avio_Alloc_Context_Read_Packet = ReadFunc;
                 avio_Alloc_Context_Write_Packet = WriteFunc;
                 avio_Alloc_Context_Seek = SeekFunc;
@@ -23,7 +28,7 @@ namespace EmguFFmpeg
                 pFormatContext->oformat = oformat;
                 base.Format = oformat;
                 if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                    pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc(bufferLength), bufferLength, 1, null,
+                    pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc((ulong)bufferLength), bufferLength, 1, null,
                         avio_Alloc_Context_Read_Packet, avio_Alloc_Context_Write_Packet, avio_Alloc_Context_Seek);
             }
         }

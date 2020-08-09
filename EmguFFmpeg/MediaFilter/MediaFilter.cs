@@ -1,7 +1,6 @@
 ﻿using FFmpeg.AutoGen;
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace EmguFFmpeg
@@ -34,20 +33,20 @@ namespace EmguFFmpeg
             return Name;
         }
 
-        public static IReadOnlyList<MediaFilter> Filters
+        public static MediaFilter[] Filters
         {
             get
             {
                 unsafe
                 {
-                    FFList<MediaFilter> result = new FFList<MediaFilter>();
+                    List<MediaFilter> result = new List<MediaFilter>();
                     void* p = null;
                     AVFilter* pFilter;
                     while ((pFilter = ffmpeg.av_filter_iterate(&p)) != null)
                     {
                         result.Add(new MediaFilter(pFilter));
                     }
-                    return result;
+                    return result.ToArray();
                 }
             }
         }

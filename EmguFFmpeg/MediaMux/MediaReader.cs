@@ -12,14 +12,19 @@ namespace EmguFFmpeg
         public new InFormat Format => base.Format as InFormat;
 
         public MediaReader(Stream stream, InFormat iformat = null, MediaDictionary options = null)
+            : this(stream, 4096, iformat, options) { }
+
+        public MediaReader(Stream stream, int buffersize, InFormat iformat = null, MediaDictionary options = null)
         {
             unsafe
             {
                 baseStream = stream;
+                bufferLength = buffersize;
+                buffer = new byte[bufferLength];
                 avio_Alloc_Context_Read_Packet = ReadFunc;
                 avio_Alloc_Context_Seek = SeekFunc;
                 pFormatContext = ffmpeg.avformat_alloc_context();
-                pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc(bufferLength), bufferLength, 0, null,
+                pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc((ulong)bufferLength), bufferLength, 0, null,
                     avio_Alloc_Context_Read_Packet, null, avio_Alloc_Context_Seek);
                 fixed (AVFormatContext** ppFormatContext = &pFormatContext)
                 {

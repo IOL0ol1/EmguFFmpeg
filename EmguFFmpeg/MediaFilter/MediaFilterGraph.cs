@@ -3,8 +3,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
@@ -175,10 +173,10 @@ namespace EmguFFmpeg
             return filterContext;
         }
 
-        private FFList<MediaFilterContext> inputs = new FFList<MediaFilterContext>();
-        private FFList<MediaFilterContext> outputs = new FFList<MediaFilterContext>();
-        public IReadOnlyList<MediaFilterContext> Outputs => outputs;
-        public IReadOnlyList<MediaFilterContext> Inputs => inputs;
+        private List<MediaFilterContext> inputs = new List<MediaFilterContext>();
+        private List<MediaFilterContext> outputs = new List<MediaFilterContext>();
+        public MediaFilterContext[] Outputs => outputs.ToArray();
+        public MediaFilterContext[] Inputs => inputs.ToArray();
 
         private List<MediaFilterContext> GetFilterContexts()
         {

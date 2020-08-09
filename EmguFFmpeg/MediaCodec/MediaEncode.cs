@@ -245,13 +245,13 @@ namespace EmguFFmpeg
             }
         }
 
-        public static IReadOnlyList<MediaEncode> Encodes
+        public static MediaEncode[] Encodes
         {
             get
             {
                 unsafe
                 {
-                    FFList<MediaEncode> result = new FFList<MediaEncode>();
+                    List<MediaEncode> result = new List<MediaEncode>();
                     void* i = null;
                     AVCodec* p;
                     while ((p = ffmpeg.av_codec_iterate(&i)) != null)
@@ -260,7 +260,7 @@ namespace EmguFFmpeg
                             result.Add(new MediaEncode(p));
                     }
 
-                    return result;
+                    return result.ToArray();
                 }
             }
         }

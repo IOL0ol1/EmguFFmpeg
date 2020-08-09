@@ -50,18 +50,18 @@ namespace EmguFFmpeg
             return value.ppDictionary;
         }
 
-        public unsafe static IReadOnlyList<KeyValuePair<string, string>> GetKeyValues(AVDictionary* dict)
+        public unsafe static KeyValuePair<string, string>[] GetKeyValues(AVDictionary* dict)
         {
-            FFList<KeyValuePair<string, string>> keyValuePairs = new FFList<KeyValuePair<string, string>>();
+            List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
             AVDictionaryEntry* t = null;
             while ((t = ffmpeg.av_dict_get(dict, "", t, (int)(DictFlags.AV_DICT_IGNORE_SUFFIX))) != null)
             {
                 keyValuePairs.Add((*t).ToKeyValuePair());
             }
-            return keyValuePairs;
+            return keyValuePairs.ToArray();
         }
 
-        public IReadOnlyList<KeyValuePair<string, string>> KeyValues
+        public KeyValuePair<string, string>[] KeyValues
         {
             get { unsafe { return GetKeyValues(*ppDictionary); } }
         }
@@ -78,7 +78,8 @@ namespace EmguFFmpeg
 
         public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
         {
-            return KeyValues.GetEnumerator();
+            foreach (var item in KeyValues)
+                yield return item;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -158,7 +159,7 @@ namespace EmguFFmpeg
             return true;
         }
 
-#region IDisposable Support
+        #region IDisposable Support
 
         private bool disposedValue = false; // 要检测冗余调用
 
@@ -200,9 +201,9 @@ namespace EmguFFmpeg
             GC.SuppressFinalize(this);
         }
 
-#endregion
+        #endregion
 
-#region ICloneable
+        #region ICloneable
 
         public MediaDictionary Clone()
         {

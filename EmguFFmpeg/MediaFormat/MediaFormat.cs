@@ -1,9 +1,4 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
-using System.Collections.Generic;
-
-namespace EmguFFmpeg
+﻿namespace EmguFFmpeg
 {
     public abstract class MediaFormat
     {

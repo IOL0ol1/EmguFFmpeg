@@ -52,20 +52,20 @@ namespace EmguFFmpeg
         /// <summary>
         /// get all supported input formats.
         /// </summary>
-        public static IReadOnlyList<InFormat> Formats
+        public static InFormat[] Formats
         {
             get
             {
                 unsafe
                 {
-                    FFList<InFormat> result = new FFList<InFormat>();
+                    List<InFormat> result = new List<InFormat>();
                     void* ifmtOpaque = null;
                     AVInputFormat* iformat;
                     while ((iformat = ffmpeg.av_demuxer_iterate(&ifmtOpaque)) != null)
                     {
                         result.Add(new InFormat(iformat));
                     }
-                    return result;
+                    return result.ToArray();
                 }
             }
         }
