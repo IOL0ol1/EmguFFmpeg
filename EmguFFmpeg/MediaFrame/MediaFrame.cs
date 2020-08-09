@@ -1,10 +1,8 @@
 ﻿using FFmpeg.AutoGen;
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace EmguFFmpeg
 {
@@ -123,22 +121,22 @@ namespace EmguFFmpeg
 
         #endregion
 
-        public IReadOnlyList<IntPtr> Data
+        public IntPtr[] Data
         {
             get
             {
                 unsafe
                 {
-                    FFList<IntPtr> result = new FFList<IntPtr>();
+                    List<IntPtr> result = new List<IntPtr>();
                     IntPtr intPtr;
                     for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero; i++)
                         result.Add(intPtr);
-                    return result;
+                    return result.ToArray();
                 }
             }
         }
 
-        public IReadOnlyList<int> Linesize { get { unsafe { return new FFList<int>(pFrame->linesize.ToArray()); } } }
+        public int[] Linesize { get { unsafe { return pFrame->linesize.ToArray(); } } }
 
         public int Width
         {

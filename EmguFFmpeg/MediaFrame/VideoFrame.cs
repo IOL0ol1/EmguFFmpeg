@@ -8,18 +8,18 @@ namespace EmguFFmpeg
         {
             if (codec.Type != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException(FFmpegException.CodecTypeError);
-            return new VideoFrame(codec.AVCodecContext.pix_fmt, codec.AVCodecContext.width, codec.AVCodecContext.height);
+            return new VideoFrame(codec.AVCodecContext.width, codec.AVCodecContext.height, codec.AVCodecContext.pix_fmt);
         }
 
         public VideoFrame() : base()
         { }
 
-        public VideoFrame(AVPixelFormat format, int width, int height, int align = 0) : base()
+        public VideoFrame(int width, int height, AVPixelFormat format, int align = 0) : base()
         {
-            AllocBuffer(format, width, height, align);
+            AllocBuffer(width, height, format, align);
         }
 
-        private void AllocBuffer(AVPixelFormat format, int width, int height, int align = 0)
+        private void AllocBuffer(int width, int height, AVPixelFormat format, int align = 0)
         {
             unsafe
             {
@@ -32,10 +32,10 @@ namespace EmguFFmpeg
             }
         }
 
-        public void Init(AVPixelFormat format, int width, int height, int align = 0)
+        public void Init(int width, int height, AVPixelFormat format, int align = 0)
         {
             Clear();
-            AllocBuffer(format, width, height, align);
+            AllocBuffer(width, height, format, align);
         }
 
         public override MediaFrame Copy()

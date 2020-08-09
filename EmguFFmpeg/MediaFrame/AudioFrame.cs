@@ -14,7 +14,7 @@ namespace EmguFFmpeg
             {
                 if (codec.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
                     throw new FFmpegException(FFmpegException.CodecTypeError);
-                AudioFrame audioFrame = new AudioFrame(codec.AVCodecContext.sample_fmt, codec.AVCodecContext.channels, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_rate);
+                AudioFrame audioFrame = new AudioFrame(codec.AVCodecContext.channels, codec.AVCodecContext.frame_size, codec.AVCodecContext.sample_fmt, codec.AVCodecContext.sample_rate);
                 if (codec.AVCodecContext.channel_layout > 0)
                     audioFrame.pFrame->channel_layout = codec.AVCodecContext.channel_layout;
                 return audioFrame;
@@ -24,27 +24,27 @@ namespace EmguFFmpeg
         public AudioFrame() : base()
         { }
 
-        public AudioFrame(AVSampleFormat format, int channels, int nbSamples, int sampleRate = 0, int align = 0) : base()
+        public AudioFrame(int channels, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0) : base()
         {
             unsafe
             {
-                AllocBuffer(format, channels, nbSamples, sampleRate, align);
+                AllocBuffer(channels, nbSamples, format, sampleRate, align);
                 pFrame->channel_layout = (ulong)ffmpeg.av_get_default_channel_layout(channels);
             }
         }
 
         /// <summary>
         /// </summary>
-        /// <param name="format"><see cref="AVCodecContext.sample_fmt"/></param>
         /// <param name="channelLayout">see <see cref="AVChannelLayout"/></param>
         /// <param name="nbSamples">recommended use <see cref="AVCodecContext.frame_size"/></param>
+        /// <param name="format"><see cref="AVCodecContext.sample_fmt"/></param>
         /// <param name="sampleRate"></param>
         /// <param name="align">
         /// Required buffer size alignment. If equal to 0, alignment will be chosen automatically for
         /// the current CPU. It is highly recommended to pass 0 here unless you know what you are doing.
         /// </param>
-        public AudioFrame(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
-            : this(format, ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout), nbSamples, sampleRate, align)
+        public AudioFrame(AVChannelLayout channelLayout, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
+            : this(ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout), nbSamples, format, sampleRate, align)
         {
             unsafe
             {
@@ -52,7 +52,7 @@ namespace EmguFFmpeg
             }
         }
 
-        private void AllocBuffer(AVSampleFormat format, int channels, int nbSamples, int sampleRate = 0, int align = 0)
+        private void AllocBuffer(int channels, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
         {
             unsafe
             {
@@ -66,16 +66,16 @@ namespace EmguFFmpeg
             }
         }
 
-        public void Init(AVSampleFormat format, int channels, int nbSamples, int sampleRate = 0, int align = 0)
+        public void Init(int channels, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
         {
             Clear();
-            AllocBuffer(format, channels, nbSamples, sampleRate, align);
+            AllocBuffer(channels, nbSamples, format, sampleRate, align);
         }
 
-        public void Init(AVSampleFormat format, AVChannelLayout channelLayout, int nbSamples, int sampleRate = 0, int align = 0)
+        public void Init(AVChannelLayout channelLayout, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
         {
             Clear();
-            AllocBuffer(format, ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout), nbSamples, sampleRate, align);
+            AllocBuffer(ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout), nbSamples, format, sampleRate, align);
             unsafe
             {
                 pFrame->channel_layout = (ulong)channelLayout;
@@ -123,6 +123,12 @@ namespace EmguFFmpeg
             }
         }
 
+        /// <summary>
+        /// convert current frame to planar frame.
+        /// if current frame is planer return current frame
+        /// else return new packet frame.
+        /// </summary>
+        /// <returns></returns>
         public AudioFrame ToPlanar()
         {
             unsafe
@@ -158,7 +164,7 @@ namespace EmguFFmpeg
                         outFormat = AVSampleFormat.AV_SAMPLE_FMT_S64P;
                         break;
                 }
-                AudioFrame outFrame = new AudioFrame(outFormat, pFrame->channels, pFrame->nb_samples, pFrame->sample_rate);
+                AudioFrame outFrame = new AudioFrame(pFrame->channels, pFrame->nb_samples, outFormat, pFrame->sample_rate);
                 outFrame.pFrame->channel_layout = pFrame->channel_layout;
                 using (SampleConverter converter = new SampleConverter(outFrame))
                 {
@@ -167,6 +173,12 @@ namespace EmguFFmpeg
             }
         }
 
+        /// <summary>
+        /// convert current frame to packet frame.
+        /// if current frame is planer return new packet frame
+        /// else return current frame.
+        /// </summary>
+        /// <returns></returns>
         public AudioFrame ToPacket()
         {
             unsafe
@@ -202,7 +214,7 @@ namespace EmguFFmpeg
                         outFormat = AVSampleFormat.AV_SAMPLE_FMT_S64;
                         break;
                 }
-                AudioFrame outFrame = new AudioFrame(outFormat, pFrame->channels, pFrame->nb_samples, pFrame->sample_rate);
+                AudioFrame outFrame = new AudioFrame(pFrame->channels, pFrame->nb_samples, outFormat, pFrame->sample_rate);
                 outFrame.pFrame->channel_layout = pFrame->channel_layout;
                 using (SampleConverter converter = new SampleConverter(outFrame))
                 {
@@ -211,6 +223,10 @@ namespace EmguFFmpeg
             }
         }
 
+        /// <summary>
+        /// A full copy.
+        /// </summary>
+        /// <returns></returns>
         public override MediaFrame Copy()
         {
             unsafe

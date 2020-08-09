@@ -21,7 +21,7 @@ namespace EmguFFmpeg
             DstHeight = dstHeight;
             DstFormat = dstFormat;
             SwsFlag = flag;
-            dstFrame = new VideoFrame(DstFormat, DstWidth, DstHeight);
+            dstFrame = new VideoFrame(DstWidth, DstHeight, DstFormat);
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace EmguFFmpeg
             DstHeight = dstCodec.AVCodecContext.height;
             DstFormat = dstCodec.AVCodecContext.pix_fmt;
             SwsFlag = flag;
-            dstFrame = new VideoFrame(DstFormat, DstWidth, DstHeight);
+            dstFrame = new VideoFrame(DstWidth, DstHeight, DstFormat);
         }
 
         public PixelConverter(VideoFrame dstFrame, int flag = ffmpeg.SWS_BILINEAR)
