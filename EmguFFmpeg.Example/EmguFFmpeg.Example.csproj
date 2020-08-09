@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net461</TargetFramework>
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <Version>1.0.12</Version>
+    <Version>1.0.13</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net461|x64'">
@@ -61,13 +61,11 @@
 
   <ItemGroup>
     <PackageReference Include="Emgu.CV.runtime.windows" Version="4.3.0.3890" />
-    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.4.0.20200725" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\EmguFFmpeg.EmguCV\EmguFFmpeg.EmguCV.csproj" />
-    <ProjectReference Include="..\EmguFFmpeg.OpenCvSharp\EmguFFmpeg.OpenCvSharp.csproj" />
   </ItemGroup>
 
 </Project>
