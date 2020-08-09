@@ -47,8 +47,6 @@ namespace EmguFFmpeg
         public const string NotSupportChLayout = "not supported channle layout";
         public const string NotSupportFrame = "not supported frame";
         public const string NonNegative = "argument must be non-negative";
-        public const string NotImplemented = "not implemented";
-        public const string NullReference = "null reference";
         public const string CodecTypeError = "codec type error";
         public const string MediaTypeError = "media type error";
         public const string LineSizeError = "line size error";
@@ -63,5 +61,7 @@ namespace EmguFFmpeg
         public const string FilterTypeError = "filter type error";
         public const string NotSourcesFilter = "not sources filter";
         public const string NotSinksFilter = "not sinks filter";
+        public static string NotImplemented { get; } = new NotImplementedException().Message;
+        public static string NullReference { get; } = new NullReferenceException().Message;
     }
 }
