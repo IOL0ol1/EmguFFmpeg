@@ -1,9 +1,9 @@
 ﻿
-using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
 #if NET40
+    using System.Collections.Generic;
     using System.Collections;
 
     public interface IReadOnlyCollection<out T> : IEnumerable<T>, IEnumerable
@@ -32,16 +32,4 @@ namespace EmguFFmpeg
         bool TryGetValue(TKey key, out TValue value);
     }
 #endif
-
-    /// <summary>
-    /// for support net formework 4.0
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    internal class FFList<T> : List<T>, IReadOnlyList<T>
-    {
-        public FFList() : base() { }
-        public FFList(int capacity) : base(capacity) { }
-        public FFList(IEnumerable<T> collection) : base(collection) { }
-    }
-
 }
