@@ -26,6 +26,11 @@ namespace EmguFFmpeg
         public FFmpegException(string message, Exception innerException) : base($"{FFmpegError} {message}", innerException)
         { }
 
+        /// <summary>
+        /// Get ffmpeg error string by error code
+        /// </summary>
+        /// <param name="errorCode"></param>
+        /// <returns></returns>
         public static string GetErrorString(int errorCode)
         {
             unsafe
@@ -40,6 +45,8 @@ namespace EmguFFmpeg
             : base(serializationInfo, streamingContext)
         { }
 
+
+        #region custom error string
         public const string FFmpegError = "FFmpeg error";
         public const string NotSupportCodecId = "not supported codec id";
         public const string NotSupportSampleRate = "not supported sample rate";
@@ -61,7 +68,8 @@ namespace EmguFFmpeg
         public const string FilterTypeError = "filter type error";
         public const string NotSourcesFilter = "not sources filter";
         public const string NotSinksFilter = "not sinks filter";
-        public static string NotImplemented { get; } = new NotImplementedException().Message;
-        public static string NullReference { get; } = new NullReferenceException().Message;
+        public static string NotImplemented { get; } = new NotImplementedException().Message; // for i18n string
+        public static string NullReference { get; } = new NullReferenceException().Message; // for i18n string
+        #endregion
     }
 }

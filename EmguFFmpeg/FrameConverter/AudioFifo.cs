@@ -59,7 +59,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Removes the data without reading it.
+        /// Drain data from an AVAudioFifo.
         /// </summary>
         /// <param name="nbSamples">number of samples to drain</param>
         /// <exception cref="FFmpegException"/>
@@ -71,6 +71,9 @@ namespace EmguFFmpeg
             }
         }
 
+        /// <summary>
+        /// Reset tha <see cref="AVFifoBuffer"/> buffer
+        /// </summary>
         public void Clear()
         {
             unsafe
@@ -81,7 +84,7 @@ namespace EmguFFmpeg
 
         #region IDisposable Support
 
-        private bool disposedValue = false; // 要检测冗余调用
+        private bool disposedValue = false;
 
         protected virtual void Dispose(bool disposing)
         {
