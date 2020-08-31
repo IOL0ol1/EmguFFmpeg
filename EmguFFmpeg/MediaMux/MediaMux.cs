@@ -73,16 +73,32 @@ namespace EmguFFmpeg
 
         #endregion
 
-        public abstract void DumpInfo();
+        /// <summary>
+        ///  Print detailed information about the format, such as duration,
+        ///     bitrate, streams, container, programs, metadata, side data, codec and time base.
+        /// </summary>
+        public abstract void DumpFormat();
 
         #region IReadOnlyList<MediaStream>
 
         protected List<MediaStream> streams = new List<MediaStream>();
 
+        /// <summary>
+        /// stream count in mux.
+        /// </summary>
         public int Count => streams.Count;
 
+        /// <summary>
+        /// get stream
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public MediaStream this[int index] => streams[index];
 
+        /// <summary>
+        /// enum stream
+        /// </summary>
+        /// <returns></returns>
         public IEnumerator<MediaStream> GetEnumerator()
         {
             return streams.GetEnumerator();

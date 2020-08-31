@@ -11,9 +11,22 @@ namespace EmguFFmpeg
     {
         public new OutFormat Format => base.Format as OutFormat;
 
+        /// <summary>
+        /// write to stream,default buffersize 4096
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="oformat"></param>
+        /// <param name="options"></param>
         public MediaWriter(Stream stream, OutFormat oformat, MediaDictionary options = null)
             : this(stream, 4096, oformat, options) { }
 
+        /// <summary>
+        /// write to stream
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="buffersize"></param>
+        /// <param name="oformat"></param>
+        /// <param name="options"></param>
         public MediaWriter(Stream stream, int buffersize, OutFormat oformat, MediaDictionary options = null)
         {
             unsafe
@@ -34,6 +47,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
+        /// write to file.
         /// <para><see cref="ffmpeg.avformat_alloc_output_context2(AVFormatContext**, AVOutputFormat*, string, string)"/></para>
         /// <para><see cref="ffmpeg.avio_open(AVIOContext**, string, int)"/></para>
         /// </summary>
@@ -55,9 +69,10 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// <see cref=" ffmpeg.av_dump_format(AVFormatContext*, int, string, int)"/>
+        /// Print detailed information about the output format, such as duration,
+        ///     bitrate, streams, container, programs, metadata, side data, codec and time base.
         /// </summary>
-        public override void DumpInfo()
+        public override void DumpFormat()
         {
             unsafe
             {
@@ -129,11 +144,11 @@ namespace EmguFFmpeg
         /// <see cref="ffmpeg.avformat_write_header(AVFormatContext*, AVDictionary**)"/>
         /// </summary>
         /// <param name="options"></param>
-        public void Initialize(MediaDictionary options = null)
+        public int Initialize(MediaDictionary options = null)
         {
             unsafe
             {
-                ffmpeg.avformat_write_header(pFormatContext, options).ThrowExceptionIfError();
+                return ffmpeg.avformat_write_header(pFormatContext, options).ThrowExceptionIfError();
             }
         }
 

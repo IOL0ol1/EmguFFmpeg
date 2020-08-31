@@ -9,11 +9,27 @@ namespace EmguFFmpeg
 {
     public partial class MediaReader : MediaMux
     {
+        /// <summary>
+        /// Get <see cref="AVInputFormat"/>
+        /// </summary>
         public new InFormat Format => base.Format as InFormat;
 
+        /// <summary>
+        /// Load stream, default buffer size is 4096
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="iformat"></param>
+        /// <param name="options"></param>
         public MediaReader(Stream stream, InFormat iformat = null, MediaDictionary options = null)
             : this(stream, 4096, iformat, options) { }
 
+        /// <summary>
+        /// Load stream with buffersize
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="buffersize"></param>
+        /// <param name="iformat"></param>
+        /// <param name="options"></param>
         public MediaReader(Stream stream, int buffersize, InFormat iformat = null, MediaDictionary options = null)
         {
             unsafe
@@ -45,13 +61,19 @@ namespace EmguFFmpeg
             }
         }
 
-        public MediaReader(string file, InFormat iformat = null, MediaDictionary options = null)
+        /// <summary>
+        /// Load path
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="iformat"></param>
+        /// <param name="options"></param>
+        public MediaReader(string url, InFormat iformat = null, MediaDictionary options = null)
         {
             unsafe
             {
                 fixed (AVFormatContext** ppFormatContext = &pFormatContext)
                 {
-                    ffmpeg.avformat_open_input(ppFormatContext, file, iformat, options).ThrowExceptionIfError();
+                    ffmpeg.avformat_open_input(ppFormatContext, url, iformat, options).ThrowExceptionIfError();
                 }
                 ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowExceptionIfError();
                 base.Format = iformat ?? new InFormat(pFormatContext->iformat);
@@ -68,7 +90,11 @@ namespace EmguFFmpeg
             }
         }
 
-        public override void DumpInfo()
+        /// <summary>
+        /// Print detailed information about the input format, such as duration,
+        ///     bitrate, streams, container, programs, metadata, side data, codec and time base.
+        /// </summary>
+        public override void DumpFormat()
         {
             unsafe
             {
