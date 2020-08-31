@@ -1,23 +1,15 @@
 ﻿using FFmpeg.AutoGen;
 
+using System;
 using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// must call <see cref="FFmpegHelper.RegisterDevice"/>
+    /// </summary>
     public class MediaDevice
     {
-        public bool IsDefaultDevice { get; private set; }
-        public string DeviceName { get; private set; }
-        public string DeviceDescription { get; private set; }
-
-        private MediaDevice()
-        { }
-
-        public static void InitializeDevice()
-        {
-            ffmpeg.avdevice_register_all();
-        }
-
         public static MediaDictionary ListDevicesOptions
         {
             get
@@ -29,30 +21,31 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// NOTE: ffmpeg not implemented, no return,just print to log output
+        /// NOTE: ffmpeg cannot get device information through code, only print the display.
         /// </summary>
         /// <param name="device"></param>
         /// <param name="options">options for <see cref=" ffmpeg.avformat_open_input"/></param>
         /// <returns></returns>
-        public static MediaDevice[][] GetDeviceInfos(MediaFormat device, MediaDictionary options = null)
+        public static void PrintDeviceInfos(MediaFormat device, string parame, MediaDictionary options = null)
         {
             unsafe
             {
-                string parame = "list";
                 AVFormatContext* pFmtCtx = ffmpeg.avformat_alloc_context();
-                ffmpeg.av_log(null, (int)LogLevel.Verbose, "--------------------------");
+                ffmpeg.av_log(null, (int)LogLevel.Verbose, $"--------------------------{Environment.NewLine}");
                 if (device is InFormat iformat)
                     ffmpeg.avformat_open_input(&pFmtCtx, parame, iformat, options);
                 else if (device is OutFormat oformat)
                     ffmpeg.avformat_alloc_output_context2(&pFmtCtx, oformat, null, parame);
-                ffmpeg.av_log(null, (int)LogLevel.Verbose, "--------------------------");
+                ffmpeg.av_log(null, (int)LogLevel.Verbose, $"--------------------------{Environment.NewLine}");
                 ffmpeg.avformat_free_context(pFmtCtx);
-                return new MediaDevice[0][];
             }
         }
 
         /* ffmpeg not implemented
-        private static List<List<MediaDevice>> CopyAndFree(AVDeviceInfoList** ppDeviceInfoList, int deviceInfoListLength)
+        public bool IsDefaultDevice { get; private set; }
+        public string DeviceName { get; private set; }
+        public string DeviceDescription { get; private set; }
+        private unsafe static IReadOnlyList<IReadOnlyList<MediaDevice>> CopyAndFree(AVDeviceInfoList** ppDeviceInfoList, int deviceInfoListLength)
         {
             unsafe
             {
@@ -67,8 +60,8 @@ namespace EmguFFmpeg
                             AVDeviceInfo* deviceInfo = ppDeviceInfoList[i]->devices[j];
                             MediaDevice info = new MediaDevice()
                             {
-                                DeviceName = System.Runtime.InteropServices.Marshal.PtrToStringAnsi((System.IntPtr)deviceInfo->device_name),
-                                DeviceDescription = System.Runtime.InteropServices.Marshal.PtrToStringAnsi((System.IntPtr)deviceInfo->device_description),
+                                DeviceName = ((System.IntPtr)deviceInfo->device_name).PtrToStringUTF8(),
+                                DeviceDescription =  ((System.IntPtr)deviceInfo->device_description).PtrToStringUTF8(),
                                 IsDefaultDevice = j == ppDeviceInfoList[i]->default_device,
                             };
                             infos.Add(info);
@@ -96,6 +89,13 @@ namespace EmguFFmpeg
             }
         }
 
+        /// <summary>
+        /// get output device infos
+        /// </summary>
+        /// <param name="deviceName"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+
         public static IReadOnlyList<IReadOnlyList<MediaDevice>> GetOutputDeviceInfos(string deviceName, MediaDictionary options = null)
         {
             unsafe
@@ -105,6 +105,13 @@ namespace EmguFFmpeg
                 return CopyAndFree(&pDeviceInfoList, deviceInfoListLength);
             }
         }
+
+        /// <summary>
+        /// get input device infos
+        /// </summary>
+        /// <param name="deviceName"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
         public static IReadOnlyList<IReadOnlyList<MediaDevice>> GetInputDeviceInfos(string deviceName, MediaDictionary options = null)
         {
             unsafe

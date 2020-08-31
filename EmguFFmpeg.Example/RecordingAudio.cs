@@ -1,10 +1,11 @@
 ﻿using FFmpeg.AutoGen;
 
+using System;
 using System.Linq;
 
 namespace EmguFFmpeg.Example
 {
-    public class RecordingAudio 
+    public class RecordingAudio
     {
         /// <summary>
         /// recording audio.
@@ -20,13 +21,16 @@ namespace EmguFFmpeg.Example
         /// <para>ffmpeg </para>
         /// </summary>
         /// <param name="outputFile"></param>
-        public RecordingAudio(string outputFile,string inputDeviceName = null)
+        public RecordingAudio(string outputFile, string inputDeviceName = null)
         {
+            // console output
+            FFmpegHelper.SetupLogging(logWrite: _ => Console.Write(_));
             // register all device
-            MediaDevice.InitializeDevice();
+            FFmpegHelper.RegisterDevice();
+
             var dshowInput = new InFormat("dshow");
             // list all "dshow" device at console output, ffmpeg does not support direct reading of device names
-            MediaDevice.GetDeviceInfos(dshowInput, MediaDevice.ListDevicesOptions);
+            MediaDevice.PrintDeviceInfos(dshowInput, "list", MediaDevice.ListDevicesOptions);
 
             if (string.IsNullOrWhiteSpace(inputDeviceName)) return;
             // get your audio input device name from console output
