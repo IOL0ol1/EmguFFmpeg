@@ -8,7 +8,7 @@ using System.Text;
 
 namespace EmguFFmpeg
 {
-    public class MediaDictionary : IReadOnlyDictionary<string, string>, ICloneable, IDisposable
+    public class MediaDictionary : IReadOnlyList<KeyValuePair<string, string>>, ICloneable, IDisposable
     {
         public const DictFlags DefaultFlags = DictFlags.AV_DICT_MATCH_CASE | DictFlags.AV_DICT_DONT_OVERWRITE;
         public const DictFlags Zero = DictFlags.AV_DICT_NONE;
@@ -141,6 +141,8 @@ namespace EmguFFmpeg
         public IEnumerable<string> Keys => KeyValues.Select(_ => _.Key);
 
         public IEnumerable<string> Values => KeyValues.Select(_ => _.Value);
+
+        public KeyValuePair<string, string> this[int index] => KeyValues[index];
 
         public bool ContainsKey(string key)
         {
