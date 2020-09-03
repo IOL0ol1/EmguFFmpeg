@@ -1,10 +1,7 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
+﻿using System;
 using System.Text;
+
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -151,24 +148,24 @@ namespace EmguFFmpeg
         /// <summary>
         /// Copy <paramref name="src"/> unmanaged memory to <paramref name="dst"/> unmanaged memory.
         /// </summary>
-        /// <param name="dst"></param>
         /// <param name="src"></param>
+        /// <param name="dst"></param>
         /// <param name="count"></param>
-        public static void CopyMemory(IntPtr dst, IntPtr src, int count)
+        public static void CopyMemory(IntPtr src, IntPtr dst, int count)
         {
             unsafe
             {
-                CopyMemory((byte*)dst, (byte*)src, count);
+                CopyMemory((byte*)src, (byte*)dst, count);
             }
         }
 
         /// <summary>
         /// [Unsafe] Copy <paramref name="src"/> unmanaged memory to <paramref name="dst"/> unmanaged memory.
         /// </summary>
-        /// <param name="dst"></param>
         /// <param name="src"></param>
+        /// <param name="dst"></param>
         /// <param name="count"></param>
-        public unsafe static void CopyMemory(void* dst, void* src, int count)
+        public unsafe static void CopyMemory(void* src, void* dst, int count)
         {
             ffmpeg.av_image_copy_plane((byte*)dst, count, (byte*)src, count, count, 1);
         }
@@ -181,13 +178,13 @@ namespace EmguFFmpeg
         /// The <paramref name="src"/> address increments by <paramref name="srcLineSize"/> bytes per line.
         /// </para>
         /// </summary>
-        /// <param name="dst">destination address.</param>
-        /// <param name="dstLineSize">linesize for the image plane in dst.</param>
         /// <param name="src">source address.</param>
         /// <param name="srcLineSize">linesize for the image plane in src.</param>
+        /// <param name="dst">destination address.</param>
+        /// <param name="dstLineSize">linesize for the image plane in dst.</param>
         /// <param name="byteWidth">the number of bytes copied per line.</param>
         /// <param name="height">the number of rows.</param>
-        public static void CopyPlane(IntPtr dst, int dstLineSize, IntPtr src, int srcLineSize, int byteWidth, int height)
+        public static void CopyPlane(IntPtr src, int srcLineSize, IntPtr dst, int dstLineSize, int byteWidth, int height)
         {
             unsafe
             {
