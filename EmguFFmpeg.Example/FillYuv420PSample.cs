@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -20,8 +21,12 @@ namespace EmguFFmpeg.Example
         /// <param name="width">video width</param>
         /// <param name="height">video height</param>
         /// <param name="fps">video fps</param>
+        /// <param name="outputbitmap">video fps</param>
         public FillYuv420PSample(string outputFile, int width, int height, int fps)
         {
+
+            var dir = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(outputFile), Path.GetFileNameWithoutExtension(outputFile))).FullName;
+
             using (MediaWriter writer = new MediaWriter(outputFile))
             {
                 writer.AddStream(MediaEncoder.CreateVideoEncode(writer.Format, width, height, fps));
@@ -31,7 +36,7 @@ namespace EmguFFmpeg.Example
                 PixelConverter pixelConverter = new PixelConverter(writer[0].Codec);
 
                 Random random = new Random();
-                for (int i = 0; i < fps*10; i++)
+                for (int i = 0; i < fps * 10; i++)
                 {
                     // fill video frame
                     FillYuv420P(srcframe, i);
@@ -39,6 +44,7 @@ namespace EmguFFmpeg.Example
                     foreach (var dstframe in pixelConverter.Convert(srcframe))
                     {
                         dstframe.Pts = i;
+                        SaveFrame(dstframe, Path.Combine(dir, $"{i}.bmp"));
                         foreach (var packet in writer[0].WriteFrame(dstframe))
                         {
                             writer.WritePacket(packet);
@@ -50,6 +56,21 @@ namespace EmguFFmpeg.Example
                 writer.FlushMuxer();
             }
         }
+
+        /// <summary>
+        /// save to bitmap
+        /// </summary>
+        /// <param name="frame"></param>
+        /// <param name="output"></param>
+
+        private static void SaveFrame(VideoFrame frame, string output)
+        {
+            using (var b = frame.ToBitmap())
+            {
+                b.Save(output);
+            }
+        }
+
 
         /// <summary>
         /// Fill frame
@@ -88,7 +109,5 @@ namespace EmguFFmpeg.Example
 
             frame.Pts = i;
         }
-
-
     }
 }
