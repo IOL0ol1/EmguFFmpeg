@@ -17,7 +17,7 @@ namespace EmguFFmpeg
             int width = frame.Width;
             int height = frame.Height;
             Bitmap bitmap = new Bitmap(width, height, (AVPixelFormat)frame.AVFrame.format == AVPixelFormat.AV_PIX_FMT_BGRA ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb);
-            BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
+            BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, bitmap.PixelFormat);
             var bytewidth = Math.Min(bitmapData.Stride, frame.Linesize[0]);
             FFmpegHelper.CopyPlane(frame.Data[0], frame.Linesize[0], bitmapData.Scan0, bitmapData.Stride, bytewidth, height);
             bitmap.UnlockBits(bitmapData);
@@ -52,7 +52,7 @@ namespace EmguFFmpeg
             int width = bitmap.Width;
             int height = bitmap.Height;
             VideoFrame frame = new VideoFrame(width, height, bitmap.PixelFormat == PixelFormat.Format24bppRgb ? AVPixelFormat.AV_PIX_FMT_BGR24 : AVPixelFormat.AV_PIX_FMT_BGRA);
-            BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
+            BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, bitmap.PixelFormat);
             var bytewidth = Math.Min(bitmapData.Stride, frame.Linesize[0]);
             FFmpegHelper.CopyPlane(bitmapData.Scan0, bitmapData.Stride, frame.Data[0], frame.Linesize[0], bytewidth, height);
             bitmap.UnlockBits(bitmapData);

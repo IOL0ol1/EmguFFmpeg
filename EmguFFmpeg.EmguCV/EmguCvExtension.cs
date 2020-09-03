@@ -108,7 +108,7 @@ namespace EmguFFmpeg
             Mat mat = new Mat(planes, frame.AVFrame.nb_samples, dstType, (planar != 0 ? 1 : frame.AVFrame.channels));
             for (int i = 0; i < planes; i++)
             {
-                FFmpegHelper.CopyMemory(mat.DataPointer + i * stride, frame.Data[i], stride);
+                FFmpegHelper.CopyMemory(frame.Data[i], mat.DataPointer + i * stride, stride);
             }
             return mat;
         }
@@ -251,7 +251,7 @@ namespace EmguFFmpeg
             int stride = mat.Step;
             for (int i = 0; i < (isPlanar ? channels : 1); i++)
             {
-                FFmpegHelper.CopyMemory(frame.Data[i], mat.DataPointer + i * stride, stride);
+                FFmpegHelper.CopyMemory(mat.DataPointer + i * stride, frame.Data[i], stride);
             }
             return frame;
         }
