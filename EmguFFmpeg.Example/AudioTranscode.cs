@@ -20,7 +20,7 @@ namespace EmguFFmpeg.Example
             {
                 int audioIndex = reader.First(_ => _.Codec.Type == AVMediaType.AVMEDIA_TYPE_AUDIO).Index;
 
-                writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, outChannels, outSampleRate));
+                writer.AddStream(MediaEncoder.CreateAudioEncode(writer.Format, outChannels, outSampleRate));
                 writer.Initialize();
 
                 AudioFrame dst = AudioFrame.CreateFrameByCodec(writer[0].Codec);

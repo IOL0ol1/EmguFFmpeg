@@ -11,7 +11,7 @@ namespace EmguFFmpeg
     public static class FFmpegHelper
     {
         /// <summary>
-        /// Set ffmpeg root path, default path is same as executable file, return <see cref="ffmpeg.av_version_info"/>
+        /// Set ffmpeg root path, return <see cref="ffmpeg.av_version_info"/>
         /// </summary>
         /// <param name="path"></param>
         public static string RegisterBinaries(string path = "")

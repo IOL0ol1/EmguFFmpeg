@@ -52,7 +52,7 @@ namespace EmguFFmpeg
                 for (int i = 0; i < pFormatContext->nb_streams; i++)
                 {
                     AVStream* pStream = pFormatContext->streams[i];
-                    MediaDecode codec = MediaDecode.CreateDecode(pStream->codecpar->codec_id, _ =>
+                    MediaDecoder codec = MediaDecoder.CreateDecode(pStream->codecpar->codec_id, _ =>
                     {
                         ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
                     });
@@ -81,7 +81,7 @@ namespace EmguFFmpeg
                 for (int i = 0; i < pFormatContext->nb_streams; i++)
                 {
                     AVStream* pStream = pFormatContext->streams[i];
-                    MediaDecode codec = MediaDecode.CreateDecode(pStream->codecpar->codec_id, _ =>
+                    MediaDecoder codec = MediaDecoder.CreateDecode(pStream->codecpar->codec_id, _ =>
                     {
                         ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
                     });

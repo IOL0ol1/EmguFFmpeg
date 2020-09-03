@@ -64,7 +64,7 @@ namespace EmguFFmpeg
                 yield break;
             if (packet.StreamIndex != Index)
                 yield break;
-            foreach (var item in (Codec as MediaDecode).DecodePacket(packet))
+            foreach (var item in (Codec as MediaDecoder).DecodePacket(packet))
             {
                 yield return item;
             }
@@ -72,7 +72,7 @@ namespace EmguFFmpeg
 
         /// <summary>
         /// Write a fram by <see cref="Codec"/>.
-        /// <para><see cref="MediaEncode.EncodeFrame(MediaFrame)"/></para>
+        /// <para><see cref="MediaEncoder.EncodeFrame(MediaFrame)"/></para>
         /// <para><see cref="FixPacket(MediaPacket)"/></para>
         /// </summary>
         /// <param name="frame"></param>
@@ -82,7 +82,7 @@ namespace EmguFFmpeg
         {
             if (!HasEncoder)
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            foreach (var packet in (Codec as MediaEncode).EncodeFrame(frame))
+            foreach (var packet in (Codec as MediaEncoder).EncodeFrame(frame))
             {
                 FixPacket(packet);
                 yield return packet;
@@ -130,6 +130,6 @@ namespace EmguFFmpeg
             return value.pStream;
         }
 
-        protected unsafe AVStream* pStream = null;
+        private unsafe AVStream* pStream = null;
     }
 }

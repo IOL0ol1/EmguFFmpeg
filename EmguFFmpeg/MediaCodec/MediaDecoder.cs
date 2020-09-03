@@ -6,18 +6,18 @@ using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
-    public class MediaDecode : MediaCodec
+    public class MediaDecoder : MediaCodec
     {
-        public static MediaDecode CreateDecode(AVCodecID codecId, Action<MediaCodec> setBeforeOpen = null, MediaDictionary opts = null)
+        public static MediaDecoder CreateDecode(AVCodecID codecId, Action<MediaCodec> setBeforeOpen = null, MediaDictionary opts = null)
         {
-            MediaDecode encode = new MediaDecode(codecId);
+            MediaDecoder encode = new MediaDecoder(codecId);
             encode.Initialize(setBeforeOpen, 0, opts);
             return encode;
         }
 
-        public static MediaDecode CreateDecode(string codecName, Action<MediaCodec> setBeforeOpen = null, MediaDictionary opts = null)
+        public static MediaDecoder CreateDecode(string codecName, Action<MediaCodec> setBeforeOpen = null, MediaDictionary opts = null)
         {
-            MediaDecode encode = new MediaDecode(codecName);
+            MediaDecoder encode = new MediaDecoder(codecName);
             encode.Initialize(setBeforeOpen, 0, opts);
             return encode;
         }
@@ -29,7 +29,7 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecId">codec id</param>
-        public MediaDecode(AVCodecID codecId)
+        public MediaDecoder(AVCodecID codecId)
         {
             unsafe
             {
@@ -45,7 +45,7 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecName">codec name</param>
-        public MediaDecode(string codecName)
+        public MediaDecoder(string codecName)
         {
             unsafe
             {
@@ -54,7 +54,7 @@ namespace EmguFFmpeg
             }
         }
 
-        internal unsafe MediaDecode(AVCodec* codec)
+        internal unsafe MediaDecoder(AVCodec* codec)
         {
             pCodec = codec;
         }
@@ -145,19 +145,19 @@ namespace EmguFFmpeg
         /// <summary>
         /// get all decodes
         /// </summary>
-        public static MediaDecode[] Decodes
+        public static MediaDecoder[] Decodes
         {
             get
             {
                 unsafe
                 {
-                    List<MediaDecode> result = new List<MediaDecode>();
+                    List<MediaDecoder> result = new List<MediaDecoder>();
                     void* i = null;
                     AVCodec* p;
                     while ((p = ffmpeg.av_codec_iterate(&i)) != null)
                     {
                         if (ffmpeg.av_codec_is_decoder(p) != 0)
-                            result.Add(new MediaDecode(p));
+                            result.Add(new MediaDecoder(p));
                     }
 
                     return result.ToArray();

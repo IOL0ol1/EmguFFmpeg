@@ -20,7 +20,7 @@ namespace EmguFFmpeg.Example
         {
             using (MediaWriter writer = new MediaWriter(outputFile))
             {
-                writer.AddStream(MediaEncode.CreateVideoEncode(writer.Format, width, height, fps));
+                writer.AddStream(MediaEncoder.CreateVideoEncode(writer.Format, width, height, fps));
                 writer.Initialize();
 
                 VideoFrame dstframe = VideoFrame.CreateFrameByCodec(writer[0].Codec);
@@ -52,6 +52,7 @@ namespace EmguFFmpeg.Example
 
                 // flush cache
                 writer.FlushMuxer();
+
             }
         }
     }

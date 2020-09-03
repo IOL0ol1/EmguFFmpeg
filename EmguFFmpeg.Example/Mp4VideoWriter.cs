@@ -48,7 +48,7 @@ namespace EmguFFmpeg.Example.Example
                 Height = height;
                 Width = width;
                 FPS = fps;
-                var st = writer.AddStream(MediaEncode.CreateVideoEncode(writer.Format, width, height, fps));
+                var st = writer.AddStream(MediaEncoder.CreateVideoEncode(writer.Format, width, height, fps));
                 videoIndex = writer.Count() - 1;
                 pixelConverter = new PixelConverter(st.Codec);
             }
@@ -61,7 +61,7 @@ namespace EmguFFmpeg.Example.Example
             {
                 Channels = dstChannels;
                 SampleRate = dstSampleRate;
-                var stream = writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, dstChannels, dstSampleRate));
+                var stream = writer.AddStream(MediaEncoder.CreateAudioEncode(writer.Format, dstChannels, dstSampleRate));
                 audioIndex = writer.Count - 1;
                 sampleConverter = new SampleConverter(stream.Codec);
             }

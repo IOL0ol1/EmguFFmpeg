@@ -35,7 +35,7 @@ namespace EmguFFmpeg.Example
                 {
                     // relpace the default vide decode
                     // !!! IMPORTANT NOTE: This sample won't work, if you haven't downloaded ffmpeg (GPL license, as it is more complete), and you don't have NVIDIA hardware (CUDA) !!!
-                    reader[videoIndex].Codec = MediaDecode.CreateDecode("h264_cuvid", _ => ffmpeg.avcodec_parameters_to_context(_, reader[videoIndex].Stream.codecpar));
+                    reader[videoIndex].Codec = MediaDecoder.CreateDecode("h264_cuvid", _ => ffmpeg.avcodec_parameters_to_context(_, reader[videoIndex].Stream.codecpar));
                 }
 
                 int height = reader[videoIndex].Codec.AVCodecContext.height;

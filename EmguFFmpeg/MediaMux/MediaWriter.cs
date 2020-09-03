@@ -91,7 +91,7 @@ namespace EmguFFmpeg
         /// then use <see cref="WritePacket(MediaPacket)"/> write data directly.
         /// </param>
         /// <returns></returns>
-        public MediaStream AddStream(MediaEncode encode)
+        public MediaStream AddStream(MediaEncoder encode)
         {
             unsafe
             {
@@ -125,7 +125,7 @@ namespace EmguFFmpeg
                 MediaCodec mediaCodec = null;
                 if (stream.Codec != null)
                 {
-                    mediaCodec = MediaEncode.CreateEncode(stream.Codec.AVCodecContext.codec_id, flags, _ =>
+                    mediaCodec = MediaEncoder.CreateEncode(stream.Codec.AVCodecContext.codec_id, flags, _ =>
                     {
                         AVCodecContext* pContext = _;
                         AVCodecParameters* pParameters = ffmpeg.avcodec_parameters_alloc();
@@ -188,6 +188,10 @@ namespace EmguFFmpeg
                 }
                 catch (FFmpegException) { }
             }
+            unsafe
+            {
+                ffmpeg.av_write_trailer(pFormatContext).ThrowExceptionIfError();
+            }
         }
 
         #region IDisposable
@@ -205,7 +209,6 @@ namespace EmguFFmpeg
                 {
                     try
                     {
-                        ffmpeg.av_write_trailer(pFormatContext);
                         // Close the output file.
                         if ((pFormatContext->flags & ffmpeg.AVFMT_NOFILE) == 0)
                         {

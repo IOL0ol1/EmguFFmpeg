@@ -11,7 +11,7 @@ namespace EmguFFmpeg.Example
         {
             using (MediaWriter writer = new MediaWriter(output))
             {
-                writer.AddStream(MediaEncode.CreateAudioEncode(writer.Format, 2, 44100));
+                writer.AddStream(MediaEncoder.CreateAudioEncode(writer.Format, 2, 44100));
                 writer.Initialize();
 
                 AudioFrame dstFrame = AudioFrame.CreateFrameByCodec(writer[0].Codec);

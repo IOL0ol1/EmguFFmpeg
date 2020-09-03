@@ -7,25 +7,25 @@ using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
-    public class MediaEncode : MediaCodec
+    public class MediaEncoder : MediaCodec
     {
         #region static create
 
-        public static MediaEncode CreateEncode(AVCodecID codecId, int flags, Action<MediaCodec> setBeforeOpen = null, MediaDictionary opts = null)
+        public static MediaEncoder CreateEncode(AVCodecID codecId, int flags, Action<MediaCodec> setBeforeOpen = null, MediaDictionary opts = null)
         {
-            MediaEncode encode = new MediaEncode(codecId);
+            MediaEncoder encode = new MediaEncoder(codecId);
             encode.Initialize(setBeforeOpen, flags, opts);
             return encode;
         }
 
-        public static MediaEncode CreateEncode(string codecName, int flags, Action<MediaCodec> setBeforeOpen = null, MediaDictionary opts = null)
+        public static MediaEncoder CreateEncode(string codecName, int flags, Action<MediaCodec> setBeforeOpen = null, MediaDictionary opts = null)
         {
-            MediaEncode encode = new MediaEncode(codecName);
+            MediaEncoder encode = new MediaEncoder(codecName);
             encode.Initialize(setBeforeOpen, flags, opts);
             return encode;
         }
 
-        public static MediaEncode CreateVideoEncode(OutFormat oformat, int width, int height, int fps, long bitRate = 0, AVPixelFormat format = AVPixelFormat.AV_PIX_FMT_NONE)
+        public static MediaEncoder CreateVideoEncode(OutFormat oformat, int width, int height, int fps, long bitRate = 0, AVPixelFormat format = AVPixelFormat.AV_PIX_FMT_NONE)
         {
             return CreateVideoEncode(oformat.VideoCodec, oformat.Flags, width, height, fps, bitRate, format);
         }
@@ -41,7 +41,7 @@ namespace EmguFFmpeg
         /// <param name="bitRate">default is auto bit rate, must be greater than or equal to 0</param>
         /// <param name="format">default is first supported pixel format</param>
         /// <returns></returns>
-        public static MediaEncode CreateVideoEncode(AVCodecID videoCodec, int flags, int width, int height, int fps, long bitRate = 0, AVPixelFormat format = AVPixelFormat.AV_PIX_FMT_NONE)
+        public static MediaEncoder CreateVideoEncode(AVCodecID videoCodec, int flags, int width, int height, int fps, long bitRate = 0, AVPixelFormat format = AVPixelFormat.AV_PIX_FMT_NONE)
         {
             unsafe
             {
@@ -65,17 +65,17 @@ namespace EmguFFmpeg
             }
         }
 
-        public static MediaEncode CreateAudioEncode(OutFormat Oformat, ulong channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        public static MediaEncoder CreateAudioEncode(OutFormat Oformat, ulong channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
             return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, channelLayout, sampleRate, bitRate, format);
         }
 
-        public static MediaEncode CreateAudioEncode(OutFormat Oformat, int channels, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        public static MediaEncoder CreateAudioEncode(OutFormat Oformat, int channels, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
             return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, (ulong)ffmpeg.av_get_default_channel_layout(channels), sampleRate, bitRate, format);
         }
 
-        public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, int channels, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        public static MediaEncoder CreateAudioEncode(AVCodecID audioCodec, int flags, int channels, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
             return CreateAudioEncode(audioCodec, flags, FFmpegHelper.GetChannelLayout(channels), sampleRate, bitRate, format);
         }
@@ -90,7 +90,7 @@ namespace EmguFFmpeg
         /// <param name="bitRate">default is auto bit rate, must be greater than or equal to 0</param>
         /// <param name="format">default is first supported pixel format</param>
         /// <returns></returns>
-        public static MediaEncode CreateAudioEncode(AVCodecID audioCodec, int flags, ulong channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        public static MediaEncoder CreateAudioEncode(AVCodecID audioCodec, int flags, ulong channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
             unsafe
             {
@@ -133,7 +133,7 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecId">codec id</param>
-        public MediaEncode(AVCodecID codecId)
+        public MediaEncoder(AVCodecID codecId)
         {
             unsafe
             {
@@ -149,7 +149,7 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="codecName">codec name</param>
-        public MediaEncode(string codecName)
+        public MediaEncoder(string codecName)
         {
             unsafe
             {
@@ -158,7 +158,7 @@ namespace EmguFFmpeg
             }
         }
 
-        internal unsafe MediaEncode(AVCodec* codec)
+        internal unsafe MediaEncoder(AVCodec* codec)
         {
             pCodec = codec;
         }
@@ -245,19 +245,19 @@ namespace EmguFFmpeg
             }
         }
 
-        public static MediaEncode[] Encodes
+        public static MediaEncoder[] Encodes
         {
             get
             {
                 unsafe
                 {
-                    List<MediaEncode> result = new List<MediaEncode>();
+                    List<MediaEncoder> result = new List<MediaEncoder>();
                     void* i = null;
                     AVCodec* p;
                     while ((p = ffmpeg.av_codec_iterate(&i)) != null)
                     {
                         if (ffmpeg.av_codec_is_encoder(p) != 0)
-                            result.Add(new MediaEncode(p));
+                            result.Add(new MediaEncoder(p));
                     }
 
                     return result.ToArray();
