@@ -169,12 +169,12 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// send null frame and receive packet to flush encoder cache.
+        /// send null frame to flush encoder cache and write trailer
         /// <para><see cref="MediaStream.WriteFrame(MediaFrame)"/></para>
         /// <para><see cref="WritePacket(MediaPacket)"/></para>
         /// <para><see cref="ffmpeg.av_write_trailer(AVFormatContext*)"/></para>
         /// </summary>
-        public void FlushMuxer()
+        public int FlushMuxer()
         {
             foreach (var stream in streams)
             {
@@ -190,7 +190,7 @@ namespace EmguFFmpeg
             }
             unsafe
             {
-                ffmpeg.av_write_trailer(pFormatContext).ThrowExceptionIfError();
+                return ffmpeg.av_write_trailer(pFormatContext).ThrowExceptionIfError();
             }
         }
 
