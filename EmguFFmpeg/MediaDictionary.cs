@@ -37,12 +37,6 @@ namespace EmguFFmpeg
             }
         }
 
-        public unsafe static implicit operator AVDictionary*(MediaDictionary value)
-        {
-            if (value == null)
-                return null;
-            return *value.ppDictionary;
-        }
 
         public unsafe static implicit operator AVDictionary**(MediaDictionary value)
         {
