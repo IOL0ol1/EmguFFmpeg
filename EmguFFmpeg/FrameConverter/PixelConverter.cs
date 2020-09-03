@@ -15,6 +15,13 @@ namespace EmguFFmpeg
         public readonly int DstHeight;
         public readonly int SwsFlag;
 
+        /// <summary>
+        /// create video frame converter by dst output parames
+        /// </summary>
+        /// <param name="dstFormat"></param>
+        /// <param name="dstWidth"></param>
+        /// <param name="dstHeight"></param>
+        /// <param name="flag"></param>
         public PixelConverter(AVPixelFormat dstFormat, int dstWidth, int dstHeight, int flag = ffmpeg.SWS_BILINEAR)
         {
             DstWidth = dstWidth;
@@ -25,7 +32,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// create video frame conbverter by dst codec
+        /// create video frame converter by dst codec
         /// </summary>
         /// <param name="dstCodec"></param>
         /// <param name="flag"></param>
@@ -40,6 +47,11 @@ namespace EmguFFmpeg
             dstFrame = new VideoFrame(DstWidth, DstHeight, DstFormat);
         }
 
+        /// <summary>
+        /// create video fram converter by dst frame
+        /// </summary>
+        /// <param name="dstFrame"></param>
+        /// <param name="flag"></param>
         public PixelConverter(VideoFrame dstFrame, int flag = ffmpeg.SWS_BILINEAR)
         {
             unsafe
@@ -58,9 +70,18 @@ namespace EmguFFmpeg
             return value.pSwsContext;
         }
 
-        public override IEnumerable<VideoFrame> Convert(MediaFrame frame)
+        /// <summary>
+        /// Convert <paramref name="srcframe"/>
+        /// <para>
+        /// Video conversion can be made without the use of IEnumerable,
+        /// here In order to be consistent with the <see cref="SampleConverter"/> interface.
+        /// </para>
+        /// </summary>
+        /// <param name="srcframe"></param>
+        /// <returns></returns>
+        public override IEnumerable<VideoFrame> Convert(MediaFrame srcframe)
         {
-            yield return ConvertFrame(frame);
+            yield return ConvertFrame(srcframe);
         }
 
         public VideoFrame ConvertFrame(MediaFrame srcFrame)

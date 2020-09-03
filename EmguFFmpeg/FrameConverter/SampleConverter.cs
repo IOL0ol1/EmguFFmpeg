@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace EmguFFmpeg
 {
     /// <summary>
-    /// <see cref="SwrContext"/> wapper, include <see cref="AVAudioFifo"/> cache
+    /// <see cref="SwrContext"/> wapper, include a <see cref="AVAudioFifo"/>.
     /// </summary>
     public class SampleConverter : FrameConverter<AudioFrame>
     {
@@ -18,7 +18,7 @@ namespace EmguFFmpeg
         public readonly int DstSampleRate;
 
         /// <summary>
-        ///
+        /// create audio converter by dst output parames
         /// </summary>
         /// <param name="dstFormat"></param>
         /// <param name="dstChannelLayout">see <see cref="AVChannelLayout"/></param>
@@ -35,6 +35,13 @@ namespace EmguFFmpeg
             audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
         }
 
+        /// <summary>
+        /// create audio converter by dst output parames
+        /// </summary>
+        /// <param name="dstFormat"></param>
+        /// <param name="dstChannels"></param>
+        /// <param name="dstNbSamples"></param>
+        /// <param name="dstSampleRate"></param>
         public SampleConverter(AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate)
         {
             DstFormat = dstFormat;
@@ -46,6 +53,10 @@ namespace EmguFFmpeg
             audioFifo = new AudioFifo(DstFormat, DstChannels);
         }
 
+        /// <summary>
+        /// create audio converter by dst codec
+        /// </summary>
+        /// <param name="dstCodec"></param>
         public SampleConverter(MediaCodec dstCodec)
         {
             if (dstCodec.Type != AVMediaType.AVMEDIA_TYPE_AUDIO)
@@ -61,6 +72,10 @@ namespace EmguFFmpeg
             audioFifo = new AudioFifo(DstFormat, DstChannels);
         }
 
+        /// <summary>
+        /// create audio converter by dst frame
+        /// </summary>
+        /// <param name="dstFrame"></param>
         public SampleConverter(AudioFrame dstFrame)
         {
             unsafe
@@ -136,6 +151,16 @@ namespace EmguFFmpeg
 
         #endregion
 
+        /// <summary>
+        /// Convert <paramref name="srcFrame"/>.
+        /// <para>
+        /// sometimes audio inputs and outputs are used at different
+        /// frequencies and need to be resampled using fifo, 
+        /// so use <see cref="IEnumerable{T}"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="srcFrame"></param>
+        /// <returns></returns>
         public override IEnumerable<AudioFrame> Convert(MediaFrame srcFrame)
         {
             SwrCheckInit(srcFrame);
@@ -163,7 +188,10 @@ namespace EmguFFmpeg
             return dstframe;
         }
 
-        public void ClearCache()
+        /// <summary>
+        /// clear internal fifo.
+        /// </summary>
+        public void ClearFifo()
         {
             audioFifo.Clear();
         }
