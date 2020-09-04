@@ -178,6 +178,8 @@ namespace EmguFFmpeg
             {
                 pCodecContext->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
             }
+            if (pCodec == null)
+                throw new FFmpegException(FFmpegException.NullReference);
             return ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
         }
 
