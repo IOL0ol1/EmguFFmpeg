@@ -86,7 +86,7 @@ namespace EmguFFmpeg
             }
         }
 
-        #region safe wapper for IEnumerable
+        #region Safe wapper for IEnumerable
         private static IntPtr MuxerIterate(IntPtr2Ptr ptr)
         {
             return (IntPtr)ffmpeg.av_muxer_iterate(ptr);

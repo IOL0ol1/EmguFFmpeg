@@ -8,7 +8,7 @@ namespace EmguFFmpeg
 {
 
     /// <summary>
-    /// TODO: test
+    /// Bitmap extension
     /// </summary>
     public static class BitmapExtension
     {

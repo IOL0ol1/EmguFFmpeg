@@ -8,6 +8,9 @@ using System;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// EmguCv extension
+    /// </summary>
     public static partial class EmguCvExtension
     {
         /// <summary>
