@@ -31,17 +31,18 @@ using EmguFFmpeg;
 **Decode** 
 ```csharp
 // create media reader by file
-MediaReader reader = new MediaReader("input.mp4");
-
-// get packet from reader
-foreach(var packet in reader.ReadPacket())
+using(MediaReader reader = new MediaReader("input.mp4"))
 {
-    // decode data frames from different streams(video stream,audio stream etc.).
-    foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
+    // get packet from reader
+    foreach(var packet in reader.ReadPacket())
     {
-        // get managed copy of AVFrame.data, 
-        // can add Emgucv or OpenCvSharp extension to use frame.ToMat() 
-        var data = frame.GetData();
+        // decode data frames from different streams(video stream,audio stream etc.).
+        foreach (var frame in reader[packet.StreamIndex].ReadFrame(packet))
+        {
+            // get managed copy of AVFrame.data, 
+            // can add Emgucv or OpenCvSharp extension to use frame.ToMat() 
+            var data = frame.GetData();
+        }
     }
 }
 ```
@@ -56,39 +57,40 @@ int fps = 30;
 int duration = 60;
 
 // create media writer
-MediaWriter writer = new MediaWriter("output.mp4");
-// create media encode
-MediaEncode videoEncode = MediaEncode.CreateVideoEncode(writer.Format.VideoCodec, writer.Format.Flags, width, height, fps);
-// add stream by encode
-writer.AddStream(videoEncode);
-// init writer
-writer.Initialize();
-// create video frame,default video frame is green image 
-VideoFrame videoFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_YUV420P, width, height);
-
-// write frame by timespan see EmguFFmpeg.Example/Mp4VideoWriter.cs#L95
-// write 60s duration video
-long lastpts = -1;
-Stopwatch timer = Stopwatch.StartNew();
-for(stopwatch.Elapsed <= TimeSpan.FromSeconds(duration)) 
+using(MediaWriter writer = new MediaWriter("output.mp4"))
 {
-    long curpts = (long)(timeSpan.TotalSeconds * fps);
-    if(curpts > lastpts)
-    {
-        lastpts = curpts;
-        // TODO: add converter to fill video frame yuv data from bgr24 data
-        // TODO: change WriteFrame interface, add timespan parame
+    // create media encode
+    MediaEncode videoEncode = MediaEncode.CreateVideoEncode(writer.Format.VideoCodec, writer.Format.Flags, width, height, fps);
+    // add stream by encode
+    writer.AddStream(videoEncode);
+    // init writer
+    writer.Initialize();
+    // create video frame,default video frame is green image 
+    VideoFrame videoFrame = new VideoFrame(AVPixelFormat.AV_PIX_FMT_YUV420P, width, height);
 
-        videoFrame.PTS = curpts;
-        // write frame, encode to packet and write to writer
-        foreach (var packet in writer.First().WriteFrame(videoFrame))
+    // write frame by timespan see EmguFFmpeg.Example/Mp4VideoWriter.cs#L95
+    // write 60s duration video
+    long lastpts = -1;
+    Stopwatch timer = Stopwatch.StartNew();
+    for(stopwatch.Elapsed <= TimeSpan.FromSeconds(duration)) 
+    {
+        long curpts = (long)(timeSpan.TotalSeconds * fps);
+        if(curpts > lastpts)
         {
-            writer.WritePacket(packet);
+            lastpts = curpts;
+            
+            /* fill video frame data, see more code in example*/
+            
+            videoFrame.PTS = curpts;
+            // write frame, encode to packet and write to writer
+            foreach (var packet in writer.First().WriteFrame(videoFrame))
+            {
+                writer.WritePacket(packet);
+            }
         }
     }
-}
 
-// flush encode cache
-writer.FlushMuxer();
-writer.Dispose();
+    // flush encode cache
+    writer.FlushMuxer();
+}
 ```
