@@ -1,15 +1,14 @@
 EmguFFmpeg
 =====================
-A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.     
-Make ffmpeg api easier to use.
+[![NuGet version (EmguFFmpeg)](https://img.shields.io/nuget/v/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)
+[![NuGet downloads (EmguFFmpeg)](https://img.shields.io/nuget/dt/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)
+[![Build status](https://img.shields.io/appveyor/ci/IOL0ol1/emguffmpeg)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg)     
+
+A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) warpper library, make ffmpeg api easier to use.    
     
 **NOTE** not recommended in production environments,
 - api is unstable.
     
-[![NuGet version (EmguFFmpeg)](https://img.shields.io/nuget/v/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)
-[![NuGet downloads (EmguFFmpeg)](https://img.shields.io/nuget/dt/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)
-[![Build status](https://img.shields.io/appveyor/ci/IOL0ol1/emguffmpeg)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg)
-
 ## Features
 
 1. compatible with **Bitmap**, **EmguCV** and **OpenCvSharp4**.
@@ -111,7 +110,7 @@ using(MediaWriter writer = new MediaWriter("output.mp4"))
 	- nuget install OpenCvSharp4.runtime.win
 	- download the dll of ffmpeg with different licenses on your own.
 4. [EmguFFmpeg.Bitmap](/EmguFFmpeg.Bitmap)    
-        Some extension methods for Bitmap. only supported video frame to Bitmap
+        Some extension methods for Bitmap. only supported video frame.
 5. [EmguFFmpeg.Example](/EmguFFmpeg.Example)    
 	EmguFFmpeg example.     
 
