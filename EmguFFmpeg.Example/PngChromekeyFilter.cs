@@ -19,7 +19,7 @@ namespace EmguFFmpeg.Example
         /// </summary>
         /// <param name="input"></param>
         /// <param name="output"></param>
-        /// <param name="chromakeyOptions">rgb(green or 0x008000):similarity:blend, see <see cref="http://ffmpeg.org/ffmpeg-filters.html#chromakey"/> </param>
+        /// <param name="chromakeyOptions">rgb(green or 0x008000):similarity:blend, see http://ffmpeg.org/ffmpeg-filters.html#chromakey </param>
         public PngChromekeyFilter(string input, string output,string chromakeyOptions = "red:0.1:0.0")
         {
             using (MediaReader reader = new MediaReader(input))

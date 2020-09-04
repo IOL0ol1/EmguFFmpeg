@@ -8,161 +8,160 @@ namespace EmguFFmpeg
     /// <summary>
     /// <see cref="AVCodec"/> and <see cref="AVCodecContext"/> wapper
     /// </summary>
-    public abstract class MediaCodec : IDisposable
+    public unsafe abstract class MediaCodec : IDisposable
     {
-        protected unsafe AVCodec* pCodec = null;
+        protected AVCodec* pCodec = null;
 
-        protected unsafe AVCodecContext* pCodecContext = null;
+        protected AVCodecContext* pCodecContext = null;
 
-        public abstract void Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null);
+        public abstract int Initialize(Action<MediaCodec> setBeforeOpen = null, int flags = 0, MediaDictionary opts = null);
 
         /// <summary>
         /// Get value if <see cref="Id"/> is not <see cref="AVCodecID.AV_CODEC_ID_NONE"/>
         /// </summary>
         /// <exception cref="FFmpegException"/>
-        public AVCodec AVCodec { get { unsafe { return pCodec == null ? throw new FFmpegException(FFmpegException.NullReference) : *pCodec; } } }
+        public AVCodec AVCodec => pCodec == null ? throw new FFmpegException(FFmpegException.NullReference) : *pCodec;
 
         /// <summary>
         /// Get value after <see cref="Initialize(Action{MediaCodec}, int, MediaDictionary)"/>
         /// </summary>
         /// <exception cref="FFmpegException"/>
-        public AVCodecContext AVCodecContext { get { unsafe { return pCodecContext == null ? throw new FFmpegException(FFmpegException.NullReference) : *pCodecContext; } } }
+        public AVCodecContext AVCodecContext => pCodecContext == null ? throw new FFmpegException(FFmpegException.NullReference) : *pCodecContext;
 
-        public AVMediaType Type { get { unsafe { return pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type; } } }
-        public AVCodecID Id { get { unsafe { return pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id; } } }
-        public string Name { get { unsafe { return pCodec == null ? null : ((IntPtr)pCodec->name).PtrToStringUTF8(); } } }
-        public string LongName { get { unsafe { return pCodec == null ? null : ((IntPtr)pCodec->long_name).PtrToStringUTF8(); } } }
-        public bool IsDecoder { get { unsafe { return pCodec == null ? false : ffmpeg.av_codec_is_decoder(pCodec) > 0; } } }
-        public bool IsEncoder { get { unsafe { return pCodec == null ? false : ffmpeg.av_codec_is_encoder(pCodec) > 0; } } }
+        public AVMediaType Type => pCodec == null ? AVMediaType.AVMEDIA_TYPE_UNKNOWN : pCodec->type;
+        public AVCodecID Id => pCodec == null ? AVCodecID.AV_CODEC_ID_NONE : pCodec->id;
+        public string Name => pCodec == null ? null : ((IntPtr)pCodec->name).PtrToStringUTF8();
+        public string LongName => pCodec == null ? null : ((IntPtr)pCodec->long_name).PtrToStringUTF8();
+        public bool IsDecoder => pCodec == null ? false : ffmpeg.av_codec_is_decoder(pCodec) > 0;
+        public bool IsEncoder => pCodec == null ? false : ffmpeg.av_codec_is_encoder(pCodec) > 0;
+
+        #region safe wapper for IEnumerable
+        protected static IntPtr CodecIterate(IntPtr2Ptr opaque)
+        {
+            return (IntPtr)ffmpeg.av_codec_iterate(opaque);
+        }
+
+        protected static bool CodecIsDecoder(IntPtr codec)
+        {
+            return ffmpeg.av_codec_is_decoder((AVCodec*)codec) != 0;
+        }
+
+        protected static bool CodecIsEncoder(IntPtr codec)
+        {
+            return ffmpeg.av_codec_is_encoder((AVCodec*)codec) != 0;
+        }
+        #endregion
 
         #region Supported
 
-        public List<AVCodecHWConfig> SupportedHardware
+        public AVCodecHWConfig[] SupportedHardware
         {
             get
             {
-                unsafe
+                List<AVCodecHWConfig> result = new List<AVCodecHWConfig>();
+                if (pCodec == null) return result.ToArray();
+                for (int i = 0; ; i++)
                 {
-                    List<AVCodecHWConfig> result = new List<AVCodecHWConfig>();
-                    if (pCodec == null) return result;
-                    for (int i = 0; ; i++)
-                    {
-                        AVCodecHWConfig* config = ffmpeg.avcodec_get_hw_config(pCodec, i);
-                        if (config == null)
-                            return result;
-                        result.Add(*config);
-                    }
+                    AVCodecHWConfig* config = ffmpeg.avcodec_get_hw_config(pCodec, i);
+                    if (config == null)
+                        return result.ToArray();
+                    result.Add(*config);
                 }
             }
         }
 
-        public List<AVPixelFormat> SupportedPixelFmts
+        public AVPixelFormat[] SupportedPixelFmts
         {
             get
             {
-                unsafe
+                List<AVPixelFormat> result = new List<AVPixelFormat>();
+                if (pCodec == null) return result.ToArray();
+                AVPixelFormat* p = pCodec->pix_fmts;
+                if (p != null)
                 {
-                    List<AVPixelFormat> result = new List<AVPixelFormat>();
-                    if (pCodec == null) return result;
-                    AVPixelFormat* p = pCodec->pix_fmts;
-                    if (p != null)
+                    while (*p != AVPixelFormat.AV_PIX_FMT_NONE)
                     {
-                        while (*p != AVPixelFormat.AV_PIX_FMT_NONE)
-                        {
-                            result.Add(*p);
-                            p++;
-                        }
+                        result.Add(*p);
+                        p++;
                     }
-                    return result;
                 }
+                return result.ToArray();
             }
         }
 
-        public List<AVRational> SupportedFrameRates
+        public AVRational[] SupportedFrameRates
         {
             get
             {
-                unsafe
+                List<AVRational> result = new List<AVRational>();
+                if (pCodec == null) return result.ToArray();
+                AVRational* p = pCodec->supported_framerates;
+                if (p != null)
                 {
-                    List<AVRational> result = new List<AVRational>();
-                    if (pCodec == null) return result;
-                    AVRational* p = pCodec->supported_framerates;
-                    if (p != null)
+                    while (p->num != 0)
                     {
-                        while (p->num != 0)
-                        {
-                            result.Add(*p);
-                            p++;
-                        }
+                        result.Add(*p);
+                        p++;
                     }
-                    return result;
                 }
+                return result.ToArray();
             }
         }
 
-        public List<AVSampleFormat> SupportedSampelFmts
+        public AVSampleFormat[] SupportedSampelFmts
         {
             get
             {
-                unsafe
+                List<AVSampleFormat> result = new List<AVSampleFormat>();
+                if (pCodec == null) return result.ToArray();
+                AVSampleFormat* p = pCodec->sample_fmts;
+                if (p != null)
                 {
-                    List<AVSampleFormat> result = new List<AVSampleFormat>();
-                    if (pCodec == null) return result;
-                    AVSampleFormat* p = pCodec->sample_fmts;
-                    if (p != null)
+                    while (*p != AVSampleFormat.AV_SAMPLE_FMT_NONE)
                     {
-                        while (*p != AVSampleFormat.AV_SAMPLE_FMT_NONE)
-                        {
-                            result.Add(*p);
-                            p++;
-                        }
+                        result.Add(*p);
+                        p++;
                     }
-                    return result;
                 }
+                return result.ToArray();
             }
         }
 
-        public List<int> SupportedSampleRates
+        public int[] SupportedSampleRates
         {
             get
             {
-                unsafe
+                List<int> result = new List<int>();
+                if (pCodec == null) return result.ToArray();
+                int* p = pCodec->supported_samplerates;
+                if (p != null)
                 {
-                    List<int> result = new List<int>();
-                    if (pCodec == null) return result;
-                    int* p = pCodec->supported_samplerates;
-                    if (p != null)
+                    while (*p != 0)
                     {
-                        while (*p != 0)
-                        {
-                            result.Add(*p);
-                            p++;
-                        }
+                        result.Add(*p);
+                        p++;
                     }
-                    return result;
                 }
+                return result.ToArray();
             }
         }
 
-        public List<ulong> SupportedChannelLayout
+        public ulong[] SupportedChannelLayout
         {
             get
             {
-                unsafe
+                List<ulong> result = new List<ulong>();
+                if (pCodec == null) return result.ToArray();
+                ulong* p = pCodec->channel_layouts;
+                if (p != null)
                 {
-                    List<ulong> result = new List<ulong>();
-                    if (pCodec == null) return result;
-                    ulong* p = pCodec->channel_layouts;
-                    if (p != null)
+                    while (*p != 0)
                     {
-                        while (*p != 0)
-                        {
-                            result.Add(*p);
-                            p++;
-                        }
+                        result.Add(*p);
+                        p++;
                     }
-                    return result;
                 }
+                return result.ToArray();
             }
         }
 
@@ -173,13 +172,13 @@ namespace EmguFFmpeg
             return Name;
         }
 
-        public unsafe static implicit operator AVCodec*(MediaCodec value)
+        public static implicit operator AVCodec*(MediaCodec value)
         {
             if (value == null) return null;
             return value.pCodec;
         }
 
-        public unsafe static implicit operator AVCodecContext*(MediaCodec value)
+        public static implicit operator AVCodecContext*(MediaCodec value)
         {
             if (value == null) return null;
             return value.pCodecContext;
@@ -202,16 +201,13 @@ namespace EmguFFmpeg
 
         protected virtual void Dispose(bool disposing)
         {
-            unsafe
+            if (!disposedValue)
             {
-                if (!disposedValue)
+                fixed (AVCodecContext** ppCodecContext = &pCodecContext)
                 {
-                    fixed (AVCodecContext** ppCodecContext = &pCodecContext)
-                    {
-                        ffmpeg.avcodec_free_context(ppCodecContext);
-                    }
-                    disposedValue = true;
+                    ffmpeg.avcodec_free_context(ppCodecContext);
                 }
+                disposedValue = true;
             }
         }
 

@@ -6,48 +6,48 @@ using System.Linq;
 
 namespace EmguFFmpeg
 {
-    public class MediaStream
+    public unsafe class MediaStream
     {
         public MediaCodec Codec { get; set; }
 
-        internal unsafe MediaStream(AVStream* stream)
+        internal MediaStream(AVStream* stream)
         {
             pStream = stream;
         }
 
         public AVRational TimeBase
         {
-            get { unsafe { return pStream->time_base; } }
-            set { unsafe { pStream->time_base = value; } }
+            get => pStream->time_base;
+            set => pStream->time_base = value;
         }
 
         public long StartTime
         {
-            get { unsafe { return pStream->start_time; } }
-            set { unsafe { pStream->start_time = value; } }
+            get => pStream->start_time;
+            set => pStream->start_time = value;
         }
 
         public long Duration
         {
-            get { unsafe { return pStream->duration; } }
-            set { unsafe { pStream->duration = value; } }
+            get => pStream->duration;
+            set => pStream->duration = value;
         }
 
         public long FirstDts
         {
-            get { unsafe { return pStream->first_dts; } }
-            set { unsafe { pStream->first_dts = value; } }
+            get => pStream->first_dts;
+            set => pStream->first_dts = value;
         }
 
         public long CurDts
         {
-            get { unsafe { return pStream->cur_dts; } }
-            set { unsafe { pStream->cur_dts = value; } }
+            get => pStream->cur_dts;
+            set => pStream->cur_dts = value;
         }
 
-        public AVStream Stream { get { unsafe { return *pStream; } } }
+        public AVStream Stream => *pStream;
 
-        public int Index { get { unsafe { return pStream->index; } } }
+        public int Index => pStream->index;
 
         public bool HasDecoder => Codec == null ? false : Codec.IsDecoder;
 
@@ -73,7 +73,7 @@ namespace EmguFFmpeg
         /// <summary>
         /// Write a fram by <see cref="Codec"/>.
         /// <para><see cref="MediaEncoder.EncodeFrame(MediaFrame)"/></para>
-        /// <para><see cref="FixPacket(MediaPacket)"/></para>
+        /// <para><see cref="RescalePacketTs(MediaPacket)"/></para>
         /// </summary>
         /// <param name="frame"></param>
         /// <exception cref="FFmpegException"/>
@@ -84,7 +84,7 @@ namespace EmguFFmpeg
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
             foreach (var packet in (Codec as MediaEncoder).EncodeFrame(frame))
             {
-                FixPacket(packet);
+                RescalePacketTs(packet);
                 yield return packet;
             }
         }
@@ -94,13 +94,10 @@ namespace EmguFFmpeg
         /// cref="AVStream.time_base"/> and set <see cref="AVPacket.stream_index"/>
         /// </summary>
         /// <param name="packet"></param>
-        public void FixPacket(MediaPacket packet)
+        public void RescalePacketTs(MediaPacket packet)
         {
-            unsafe
-            {
-                ffmpeg.av_packet_rescale_ts(packet, Codec.AVCodecContext.time_base, Stream.time_base);
-                packet.StreamIndex = Stream.index;
-            }
+            ffmpeg.av_packet_rescale_ts(packet, Codec.AVCodecContext.time_base, Stream.time_base);
+            packet.StreamIndex = Stream.index;
         }
 
         /// <summary>
@@ -124,12 +121,12 @@ namespace EmguFFmpeg
             return true;
         }
 
-        public unsafe static implicit operator AVStream*(MediaStream value)
+        public static implicit operator AVStream*(MediaStream value)
         {
             if (value == null) return null;
             return value.pStream;
         }
 
-        private unsafe AVStream* pStream = null;
+        private AVStream* pStream = null;
     }
 }

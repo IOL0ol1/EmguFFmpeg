@@ -31,7 +31,7 @@ namespace EmguFFmpeg.Example
         /// <param name="input0">foreground</param>
         /// <param name="input1">background</param>
         /// <param name="output">output</param>
-        /// <param name="chromakeyOptions">rgb(green or 0x008000):similarity:blend, see <see cref="http://ffmpeg.org/ffmpeg-filters.html#chromakey"/> </param>
+        /// <param name="chromakeyOptions">rgb(green or 0x008000):similarity:blend, see http://ffmpeg.org/ffmpeg-filters.html#chromakey </param>
         public VideoChromekeyFilter(string input0, string input1, string output,string chromakeyOptions = "green:0.1:0.0")
         {
             using (MediaReader reader0 = new MediaReader(input0))

@@ -14,12 +14,14 @@ namespace EmguFFmpeg.Example
             FFmpegHelper.SetupLogging(logWrite: _ => Trace.Write(_));
             Console.WriteLine("Hello FFmpeg!");
 
+            new EnumerableInfo(_ => Console.WriteLine(_));
+
             //new S64Audio();
 
-            var output = "output.mp4";
-            new FillYuv420PSample(output, 800, 600, 30);
+            //var output = "output.mp4";
+            //new FillYuv420PSample(output, 800, 600, 30);
             //new EncodeVideoByMat(output, 800, 600, 1);
-            Process.Start(output);
+            //Process.Start(output);
 
             //new DecodeVideoToMat(output, "images");
             //new DecodeVideoWithCustomCodecScaledToMat(output, "images");

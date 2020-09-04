@@ -33,12 +33,12 @@ namespace EmguFFmpeg.Example.Example
 
         public Mp4VideoWriter(string output)
         {
-            writer = new MediaWriter(output, new OutFormat("mp4"));
+            writer = new MediaWriter(output, OutFormat.Get("mp4"));
         }
 
         public Mp4VideoWriter(Stream output)
         {
-            writer = new MediaWriter(output, new OutFormat("mp4"));
+            writer = new MediaWriter(output, OutFormat.Get("mp4"));
         }
 
         public Mp4VideoWriter AddVideo(int width, int height, int fps)

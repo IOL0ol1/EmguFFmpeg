@@ -5,19 +5,23 @@ using System.Collections.Generic;
 
 namespace EmguFFmpeg
 {
-    public class MediaFilterContext
+    public unsafe class MediaFilterContext
     {
-        protected unsafe AVFilterContext* pFilterContext;
+        protected AVFilterContext* pFilterContext;
 
-        internal unsafe MediaFilterContext(AVFilterContext* p)
+
+        public MediaFilterContext(IntPtr pAVFilterContext)
         {
-            if (p == null)
+            if (pAVFilterContext == IntPtr.Zero)
                 throw new FFmpegException(FFmpegException.NullReference);
-            pFilterContext = p;
-            Filter = new MediaFilter(p->filter);
+            pFilterContext = (AVFilterContext*)pAVFilterContext;
+            Filter = new MediaFilter(pFilterContext->filter);
         }
 
-        public unsafe static implicit operator AVFilterContext*(MediaFilterContext value)
+        internal MediaFilterContext(AVFilterContext* p)
+            : this((IntPtr)p) { }
+
+        public static implicit operator AVFilterContext*(MediaFilterContext value)
         {
             if (value == null) return null;
             return value.pFilterContext;
@@ -27,34 +31,32 @@ namespace EmguFFmpeg
 
         public void Init(string options)
         {
-            unsafe
-            {
-                ffmpeg.avfilter_init_str(pFilterContext, options).ThrowExceptionIfError();
-            }
+            ffmpeg.avfilter_init_str(pFilterContext, options).ThrowExceptionIfError();
         }
 
         public void Init(MediaDictionary options)
         {
-            unsafe
-            {
-                ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
-            }
+            ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
         }
 
-        public MediaFilterContext LinkTo(uint outPad, MediaFilterContext dstFilterContext, uint inPad = 0)
+        /// <summary>
+        /// link current filter's <paramref name="srcOutPad"/> to <paramref name="dstFilterContext"/>'s <paramref name="dstInPad"/>
+        /// </summary>
+        /// <param name="srcOutPad"></param>
+        /// <param name="dstFilterContext"></param>
+        /// <param name="dstInPad"></param>
+        /// <returns></returns>
+        public MediaFilterContext LinkTo(uint srcOutPad, MediaFilterContext dstFilterContext, uint dstInPad = 0)
         {
-            unsafe
-            {
-                ffmpeg.avfilter_link(pFilterContext, outPad, dstFilterContext, inPad).ThrowExceptionIfError();
-                return dstFilterContext;
-            }
+            ffmpeg.avfilter_link(pFilterContext, srcOutPad, dstFilterContext, dstInPad).ThrowExceptionIfError();
+            return dstFilterContext;
         }
 
-        public uint NbOutputs { get { unsafe { return pFilterContext->nb_outputs; } } }
+        public uint NbOutputs => pFilterContext->nb_outputs;
 
-        public uint NbInputs { get { unsafe { return pFilterContext->nb_inputs; } } }
+        public uint NbInputs => pFilterContext->nb_inputs;
 
-        public string Name { get { unsafe { return ((IntPtr)pFilterContext->name).PtrToStringUTF8(); } } }
+        public string Name => ((IntPtr)pFilterContext->name).PtrToStringUTF8();
 
         public void WriteFrame(MediaFrame frame, BufferSrcFlags flags = BufferSrcFlags.KeepRef)
         {
@@ -71,10 +73,7 @@ namespace EmguFFmpeg
 
         public int GetFrame(MediaFrame frame)
         {
-            unsafe
-            {
-                return ffmpeg.av_buffersink_get_frame(pFilterContext, frame);
-            }
+            return ffmpeg.av_buffersink_get_frame(pFilterContext, frame);
         }
 
         public IEnumerable<MediaFrame> ReadFrame()
@@ -97,20 +96,14 @@ namespace EmguFFmpeg
 
         public override bool Equals(object obj)
         {
-            unsafe
-            {
-                if (obj is MediaFilterContext filterContext)
-                    return filterContext.pFilterContext == pFilterContext;
-                return false;
-            }
+            if (obj is MediaFilterContext filterContext)
+                return filterContext.pFilterContext == pFilterContext;
+            return false;
         }
 
         public override int GetHashCode()
         {
-            unsafe
-            {
-                return ((IntPtr)pFilterContext).ToInt32();
-            }
+            return ((IntPtr)pFilterContext).ToInt32();
         }
 
         public override string ToString()

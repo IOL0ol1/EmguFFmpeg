@@ -6,6 +6,9 @@ using System;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// OpenCVSharp Extension
+    /// </summary>
     public static partial class OpenCvSharpExtension
     {
         /// <summary>
@@ -197,7 +200,7 @@ namespace EmguFFmpeg
         /// <param name="dstFotmat">Default is auto format by <see cref="Mat.Depth"/> and <see cref="Mat.Channels()"/> use mapping table</param>
         /// <param name="dstSampleRate">Mat not have sample rate, set value here or later</param>
         /// <returns></returns>
-        public static AudioFrame ToAudioFrame(this Mat mat, AVSampleFormat dstFotmat = AVSampleFormat.AV_SAMPLE_FMT_NONE, int dstSampleRate = 0)
+        public unsafe static AudioFrame ToAudioFrame(this Mat mat, AVSampleFormat dstFotmat = AVSampleFormat.AV_SAMPLE_FMT_NONE, int dstSampleRate = 0)
         {
             AVSampleFormat srcformat;
             switch (mat.Depth())
@@ -234,11 +237,8 @@ namespace EmguFFmpeg
                 using (SampleConverter converter = new SampleConverter(dstFotmat, mat.Channels() > 1 ? mat.Channels() : mat.Height, mat.Width, Math.Min(1, dstSampleRate)))
                 {
                     AudioFrame frame = converter.ConvertFrame(MatToAudioFrame(mat, srcformat, Math.Min(1, dstSampleRate)), out int a, out int b);
-                    unsafe
-                    {
-                        // set real sample rate after convert
-                        ((AVFrame*)frame)->sample_rate = dstSampleRate;
-                    }
+                    // set real sample rate after convert
+                    ((AVFrame*)frame)->sample_rate = dstSampleRate;
                 }
             }
 
@@ -258,17 +258,14 @@ namespace EmguFFmpeg
             return frame;
         }
 
-        private static VideoFrame MatToVideoFrame(Mat mat)
+        private unsafe static VideoFrame MatToVideoFrame(Mat mat)
         {
             if (mat.Type() != MatType.CV_8UC3)
                 throw new FFmpegException(FFmpegException.NotSupportFormat);
             VideoFrame frame = new VideoFrame(mat.Width, mat.Height, AVPixelFormat.AV_PIX_FMT_BGR24);
             int stride = (int)mat.Step();
-            unsafe
-            {
-                var bytewidth = Math.Min(stride, frame.AVFrame.linesize[0]);
-                ffmpeg.av_image_copy_plane((byte*)frame.Data[0], frame.AVFrame.linesize[0], mat.DataPointer, stride, bytewidth, frame.AVFrame.height);
-            }
+            var bytewidth = Math.Min(stride, frame.AVFrame.linesize[0]);
+            ffmpeg.av_image_copy_plane((byte*)frame.Data[0], frame.AVFrame.linesize[0], mat.DataPointer, stride, bytewidth, frame.AVFrame.height);
             return frame;
         }
 

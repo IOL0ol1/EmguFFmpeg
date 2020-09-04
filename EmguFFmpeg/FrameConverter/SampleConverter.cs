@@ -7,10 +7,10 @@ namespace EmguFFmpeg
     /// <summary>
     /// <see cref="SwrContext"/> wapper, include a <see cref="AVAudioFifo"/>.
     /// </summary>
-    public class SampleConverter : FrameConverter<AudioFrame>
+    public unsafe class SampleConverter : FrameConverter<AudioFrame>
     {
-        private AudioFifo audioFifo;
-        private unsafe SwrContext* pSwrContext = null;
+        private SwrContext* pSwrContext = null;
+        public readonly AudioFifo AudioFifo;
         public readonly AVSampleFormat DstFormat;
         public readonly ulong DstChannelLayout;
         public readonly int DstChannels;
@@ -32,7 +32,7 @@ namespace EmguFFmpeg
             DstNbSamples = dstNbSamples;
             DstSampleRate = dstSampleRate;
             dstFrame = new AudioFrame(DstChannels, DstNbSamples, DstFormat, DstSampleRate);
-            audioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
+            AudioFifo = new AudioFifo(DstFormat, ffmpeg.av_get_channel_layout_nb_channels(DstChannelLayout), 1);
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace EmguFFmpeg
             DstNbSamples = dstNbSamples;
             DstSampleRate = dstSampleRate;
             dstFrame = new AudioFrame(DstChannels, DstNbSamples, DstFormat, DstSampleRate);
-            audioFifo = new AudioFifo(DstFormat, DstChannels);
+            AudioFifo = new AudioFifo(DstFormat, DstChannels);
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace EmguFFmpeg
             DstNbSamples = dstCodec.AVCodecContext.frame_size;
             DstSampleRate = dstCodec.AVCodecContext.sample_rate;
             dstFrame = new AudioFrame(DstChannels, DstNbSamples, DstFormat, DstSampleRate);
-            audioFifo = new AudioFifo(DstFormat, DstChannels);
+            AudioFifo = new AudioFifo(DstFormat, DstChannels);
         }
 
         /// <summary>
@@ -78,75 +78,59 @@ namespace EmguFFmpeg
         /// <param name="dstFrame"></param>
         public SampleConverter(AudioFrame dstFrame)
         {
-            unsafe
-            {
-                ffmpeg.av_frame_make_writable(dstFrame).ThrowExceptionIfError();
-                DstFormat = (AVSampleFormat)dstFrame.AVFrame.format;
-                DstChannels = dstFrame.AVFrame.channels;
-                DstChannelLayout = dstFrame.AVFrame.channel_layout;
-                if (DstChannelLayout == 0)
-                    DstChannelLayout = FFmpegHelper.GetChannelLayout(DstChannels);
-                DstNbSamples = dstFrame.AVFrame.nb_samples;
-                DstSampleRate = dstFrame.AVFrame.sample_rate;
-                base.dstFrame = dstFrame;
-                audioFifo = new AudioFifo(DstFormat, DstChannels);
-            }
+            ffmpeg.av_frame_make_writable(dstFrame).ThrowExceptionIfError();
+            DstFormat = (AVSampleFormat)dstFrame.AVFrame.format;
+            DstChannels = dstFrame.AVFrame.channels;
+            DstChannelLayout = dstFrame.AVFrame.channel_layout;
+            if (DstChannelLayout == 0)
+                DstChannelLayout = FFmpegHelper.GetChannelLayout(DstChannels);
+            DstNbSamples = dstFrame.AVFrame.nb_samples;
+            DstSampleRate = dstFrame.AVFrame.sample_rate;
+            base.dstFrame = dstFrame;
+            AudioFifo = new AudioFifo(DstFormat, DstChannels);
         }
 
-        public unsafe static implicit operator SwrContext*(SampleConverter value)
-        {
-            return value.pSwrContext;
-        }
 
         #region  safe wapper for IEnumerable
 
         private void SwrCheckInit(MediaFrame srcFrame)
         {
-            unsafe
+            if (pSwrContext == null && !isDisposing)
             {
-                if (pSwrContext == null && !isDisposing)
-                {
-                    AVFrame* src = srcFrame;
-                    AVFrame* dst = dstFrame;
-                    ulong srcChannelLayout = src->channel_layout;
-                    if (srcChannelLayout == 0)
-                        srcChannelLayout = FFmpegHelper.GetChannelLayout(src->channels);
+                AVFrame* src = srcFrame;
+                AVFrame* dst = dstFrame;
+                ulong srcChannelLayout = src->channel_layout;
+                if (srcChannelLayout == 0)
+                    srcChannelLayout = FFmpegHelper.GetChannelLayout(src->channels);
 
-                    pSwrContext = ffmpeg.swr_alloc_set_opts(null,
-                        (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,
-                        (long)srcChannelLayout, (AVSampleFormat)src->format, src->sample_rate,
-                        0, null);
-                    ffmpeg.swr_init(pSwrContext).ThrowExceptionIfError();
-                }
+                pSwrContext = ffmpeg.swr_alloc_set_opts(null,
+                    (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,
+                    (long)srcChannelLayout, (AVSampleFormat)src->format, src->sample_rate,
+                    0, null);
+                ffmpeg.swr_init(pSwrContext).ThrowExceptionIfError();
             }
         }
 
         private int FifoPush(MediaFrame srcFrame)
         {
-            unsafe
+            AVFrame* src = srcFrame;
+            AVFrame* dst = dstFrame;
+            for (int i = 0, ret = DstNbSamples; ret == DstNbSamples && src != null; i++)
             {
-                AVFrame* src = srcFrame;
-                AVFrame* dst = dstFrame;
-                for (int i = 0, ret = DstNbSamples; ret == DstNbSamples && src != null; i++)
-                {
-                    if (i == 0 && src != null)
-                        ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, src->extended_data, src->nb_samples).ThrowExceptionIfError();
-                    else
-                        ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, null, 0).ThrowExceptionIfError();
-                    audioFifo.Add((void**)dst->extended_data, ret);
-                }
-                return audioFifo.Size;
+                if (i == 0 && src != null)
+                    ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, src->extended_data, src->nb_samples).ThrowExceptionIfError();
+                else
+                    ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, null, 0).ThrowExceptionIfError();
+                AudioFifo.Add((void**)dst->extended_data, ret);
             }
+            return AudioFifo.Size;
         }
 
         private AudioFrame FifoPop()
         {
-            unsafe
-            {
-                AVFrame* dst = dstFrame;
-                audioFifo.Read((void**)dst->extended_data, DstNbSamples);
-                return dstFrame as AudioFrame;
-            }
+            AVFrame* dst = dstFrame;
+            AudioFifo.Read((void**)dst->extended_data, DstNbSamples);
+            return dstFrame as AudioFrame;
         }
 
         #endregion
@@ -165,7 +149,7 @@ namespace EmguFFmpeg
         {
             SwrCheckInit(srcFrame);
             FifoPush(srcFrame);
-            while (audioFifo.Size >= DstNbSamples)
+            while (AudioFifo.Size >= DstNbSamples)
             {
                 yield return FifoPop();
             }
@@ -183,17 +167,14 @@ namespace EmguFFmpeg
             SwrCheckInit(srcFrame);
             int curSamples = FifoPush(srcFrame);
             AudioFrame dstframe = FifoPop();
-            cacheSamples = audioFifo.Size;
+            cacheSamples = AudioFifo.Size;
             outSamples = curSamples - cacheSamples;
             return dstframe;
         }
 
-        /// <summary>
-        /// clear internal fifo.
-        /// </summary>
-        public void ClearFifo()
+        public static implicit operator SwrContext*(SampleConverter value)
         {
-            audioFifo.Clear();
+            return value.pSwrContext;
         }
 
         #region IDisposable Support
@@ -205,14 +186,11 @@ namespace EmguFFmpeg
             if (!disposedValue)
             {
                 isDisposing = true;
-                unsafe
+                fixed (SwrContext** ppSwrContext = &pSwrContext)
                 {
-                    fixed (SwrContext** ppSwrContext = &pSwrContext)
-                    {
-                        ffmpeg.swr_free(ppSwrContext);
-                    }
+                    ffmpeg.swr_free(ppSwrContext);
                 }
-                audioFifo.Dispose();
+                AudioFifo.Dispose();
 
                 disposedValue = true;
             }

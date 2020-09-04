@@ -8,46 +8,47 @@ namespace EmguFFmpeg
     /// <summary>
     /// <see cref="AVOutputFormat"/> wapper
     /// </summary>
-    public class OutFormat : MediaFormat
+    public unsafe class OutFormat : MediaFormat
     {
-        protected unsafe AVOutputFormat* pOutputFormat = null;
+        protected AVOutputFormat* pOutputFormat = null;
 
-        internal unsafe OutFormat(AVOutputFormat* oformat)
+        internal OutFormat(AVOutputFormat* oformat)
+            : this((IntPtr)oformat) { }
+
+        /// <summary>
+        /// <see cref="AVOutputFormat"/> adapter.
+        /// </summary>
+        /// <param name="pAVOutputFormat"></param>
+        public OutFormat(IntPtr pAVOutputFormat)
         {
-            if (oformat == null) throw new FFmpegException(FFmpegException.NullReference);
-            pOutputFormat = oformat;
+            if (pAVOutputFormat == IntPtr.Zero) throw new FFmpegException(FFmpegException.NullReference);
+            pOutputFormat = (AVOutputFormat*)pAVOutputFormat;
         }
 
         /// <summary>
-        /// create by format name,e.g. "mp4" ".mp4"
+        /// get muxer format by name,e.g. "mp4" ".mp4"
         /// </summary>
         /// <param name="name"></param>
-        public OutFormat(string name)
+        public static OutFormat Get(string name)
         {
-            unsafe
+            name = name.Trim().TrimStart('.');
+            if (!string.IsNullOrEmpty(name))
             {
-                name = name.Trim().TrimStart('.');
-                if (!string.IsNullOrEmpty(name))
+
+                foreach (var format in Formats)
                 {
-                    void* ofmtOpaque = null;
-                    AVOutputFormat* oformat;
-                    while ((oformat = ffmpeg.av_muxer_iterate(&ofmtOpaque)) != null)
+                    // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
+                    string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var item in names)
                     {
-                        OutFormat format = new OutFormat(oformat);
-                        // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
-                        string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var item in names)
+                        if (string.Compare(item, name, true) == 0)
                         {
-                            if (item == name.ToLower())
-                            {
-                                pOutputFormat = oformat;
-                                return;
-                            }
+                            return format;
                         }
                     }
                 }
-                throw new FFmpegException(ffmpeg.AVERROR_MUXER_NOT_FOUND);
             }
+            throw new FFmpegException(ffmpeg.AVERROR_MUXER_NOT_FOUND);
         }
 
         /// <summary>
@@ -66,50 +67,49 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public static OutFormat GuessFormat(string shortName, string fileName, string mimeType)
         {
-            unsafe
-            {
-                return new OutFormat(ffmpeg.av_guess_format(shortName, fileName, mimeType));
-            }
+            return new OutFormat(ffmpeg.av_guess_format(shortName, fileName, mimeType));
         }
 
         /// <summary>
         /// get all supported output formats
         /// </summary>
-        public static OutFormat[] Formats
+        public static IEnumerable<OutFormat> Formats
         {
             get
             {
-                unsafe
+                IntPtr oformat;
+                IntPtr2Ptr ofmtOpaque = IntPtr2Ptr.Null;
+                while ((oformat = MuxerIterate(ofmtOpaque)) != IntPtr.Zero)
                 {
-                    List<OutFormat> result = new List<OutFormat>();
-                    void* ofmtOpaque = null;
-                    AVOutputFormat* oformat;
-                    while ((oformat = ffmpeg.av_muxer_iterate(&ofmtOpaque)) != null)
-                    {
-                        result.Add(new OutFormat(oformat));
-                    }
-                    return result.ToArray();
+                    yield return new OutFormat(oformat);
                 }
             }
         }
 
-        public AVOutputFormat AVOutputFormat { get { unsafe { return *pOutputFormat; } } }
+        #region safe wapper for IEnumerable
+        private static IntPtr MuxerIterate(IntPtr2Ptr ptr)
+        {
+            return (IntPtr)ffmpeg.av_muxer_iterate(ptr);
+        }
+        #endregion
 
-        public unsafe static implicit operator AVOutputFormat*(OutFormat value)
+        public AVOutputFormat AVOutputFormat => *pOutputFormat;
+
+        public static implicit operator AVOutputFormat*(OutFormat value)
         {
             if (value == null) return null;
             return value.pOutputFormat;
         }
 
-        public AVCodecID VideoCodec { get { unsafe { return pOutputFormat->video_codec; } } }
-        public AVCodecID AudioCodec { get { unsafe { return pOutputFormat->audio_codec; } } }
-        public AVCodecID DataCodec { get { unsafe { return pOutputFormat->data_codec; } } }
-        public AVCodecID SubtitleCodec { get { unsafe { return pOutputFormat->subtitle_codec; } } }
-        public OutFormat Next { get { unsafe { return pOutputFormat->next == null ? null : new OutFormat(pOutputFormat->next); } } }
-        public override int Flags { get { unsafe { return pOutputFormat->flags; } } }
-        public override string Name { get { unsafe { return ((IntPtr)pOutputFormat->name).PtrToStringUTF8(); } } }
-        public override string LongName { get { unsafe { return ((IntPtr)pOutputFormat->long_name).PtrToStringUTF8(); } } }
-        public override string Extensions { get { unsafe { return ((IntPtr)pOutputFormat->extensions).PtrToStringUTF8(); } } }
-        public override string MimeType { get { unsafe { return ((IntPtr)pOutputFormat->mime_type).PtrToStringUTF8(); } } }
+        public AVCodecID VideoCodec => pOutputFormat->video_codec;
+        public AVCodecID AudioCodec => pOutputFormat->audio_codec;
+        public AVCodecID DataCodec => pOutputFormat->data_codec;
+        public AVCodecID SubtitleCodec => pOutputFormat->subtitle_codec;
+        public OutFormat Next => pOutputFormat->next == null ? null : new OutFormat(pOutputFormat->next);
+        public override int Flags => pOutputFormat->flags;
+        public override string Name => ((IntPtr)pOutputFormat->name).PtrToStringUTF8();
+        public override string LongName => ((IntPtr)pOutputFormat->long_name).PtrToStringUTF8();
+        public override string Extensions => ((IntPtr)pOutputFormat->extensions).PtrToStringUTF8();
+        public override string MimeType => ((IntPtr)pOutputFormat->mime_type).PtrToStringUTF8();
     }
 }

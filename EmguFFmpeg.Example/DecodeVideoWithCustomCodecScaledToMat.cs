@@ -9,7 +9,7 @@ using System.Linq;
 namespace EmguFFmpeg.Example
 {
     /// <summary>
-    /// from <see cref="https://github.com/HEBOS"/>
+    /// from https://github.com/HEBOS
     /// </summary>
     internal class DecodeVideoWithCustomCodecScaledToMat
     {
@@ -22,7 +22,7 @@ namespace EmguFFmpeg.Example
         /// </summary>
         /// <param name="inputFile">input video file</param>
         /// <param name="outDirectory">folder for output image files</param>
-        /// <param name="scaleOptions">scale options <see cref="http://ffmpeg.org/ffmpeg-filters.html#scale-1"/></param>
+        /// <param name="scaleOptions">scale options see http://ffmpeg.org/ffmpeg-filters.html#scale-1 </param>
         public DecodeVideoWithCustomCodecScaledToMat(string inputFile, string outDirectory, string scaleOptions = "512:288")
         {
 
@@ -35,7 +35,7 @@ namespace EmguFFmpeg.Example
                 {
                     // relpace the default vide decode
                     // !!! IMPORTANT NOTE: This sample won't work, if you haven't downloaded ffmpeg (GPL license, as it is more complete), and you don't have NVIDIA hardware (CUDA) !!!
-                    reader[videoIndex].Codec = MediaDecoder.CreateDecode("h264_cuvid", _ => ffmpeg.avcodec_parameters_to_context(_, reader[videoIndex].Stream.codecpar));
+                    reader[videoIndex].Codec = MediaDecoder.CreateDecoder("h264_cuvid", _ => ffmpeg.avcodec_parameters_to_context(_, reader[videoIndex].Stream.codecpar));
                 }
 
                 int height = reader[videoIndex].Codec.AVCodecContext.height;

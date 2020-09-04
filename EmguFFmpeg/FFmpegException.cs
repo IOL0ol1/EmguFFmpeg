@@ -5,8 +5,11 @@ using System.Runtime.Serialization;
 
 namespace EmguFFmpeg
 {
+    /// <summary>
+    /// FFmpeg exception
+    /// </summary>
     [Serializable]
-    public class FFmpegException : Exception
+    public unsafe class FFmpegException : Exception
     {
         public int ErrorCode { get; } = 0;
 
@@ -33,12 +36,9 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public static string GetErrorString(int errorCode)
         {
-            unsafe
-            {
-                byte* buffer = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE];
-                ffmpeg.av_strerror(errorCode, buffer, ffmpeg.AV_ERROR_MAX_STRING_SIZE);
-                return ((IntPtr)buffer).PtrToStringUTF8();
-            }
+            byte* buffer = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE];
+            ffmpeg.av_strerror(errorCode, buffer, ffmpeg.AV_ERROR_MAX_STRING_SIZE);
+            return ((IntPtr)buffer).PtrToStringUTF8();
         }
 
         protected FFmpegException(SerializationInfo serializationInfo, StreamingContext streamingContext)
@@ -70,6 +70,7 @@ namespace EmguFFmpeg
         public const string NotSinksFilter = "not sinks filter";
         public static string NotImplemented { get; } = new NotImplementedException().Message; // for i18n string
         public static string NullReference { get; } = new NullReferenceException().Message; // for i18n string
+
         #endregion
     }
 }

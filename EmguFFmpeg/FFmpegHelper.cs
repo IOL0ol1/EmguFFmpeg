@@ -5,7 +5,7 @@ using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public static class FFmpegHelper
+    public unsafe static class FFmpegHelper
     {
         /// <summary>
         /// Set ffmpeg root path, return <see cref="ffmpeg.av_version_info"/>
@@ -25,32 +25,29 @@ namespace EmguFFmpeg
         /// <param name="logWrite">set <see langword="null"/> to use default log output</param>
         public static void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string> logWrite = null)
         {
-            unsafe
-            {
-                ffmpeg.av_log_set_level((int)logLevel);
-                ffmpeg.av_log_set_flags((int)logFlags);
+            ffmpeg.av_log_set_level((int)logLevel);
+            ffmpeg.av_log_set_flags((int)logFlags);
 
-                if (logWrite == null)
-                {
-                    logCallback = ffmpeg.av_log_default_callback;
-                }
-                else
-                {
-                    logCallback = (p0, level, format, vl) =>
-                    {
-                        if (level > ffmpeg.av_log_get_level()) return;
-                        var lineSize = 1024;
-                        var printPrefix = 1;
-                        var lineBuffer = stackalloc byte[lineSize];
-                        ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
-                        logWrite.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
-                    };
-                }
-                ffmpeg.av_log_set_callback(logCallback);
+            if (logWrite == null)
+            {
+                logCallback = ffmpeg.av_log_default_callback;
             }
+            else
+            {
+                logCallback = (p0, level, format, vl) =>
+                {
+                    if (level > ffmpeg.av_log_get_level()) return;
+                    var lineSize = 1024;
+                    var printPrefix = 1;
+                    var lineBuffer = stackalloc byte[lineSize];
+                    ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
+                    logWrite.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
+                };
+            }
+            ffmpeg.av_log_set_callback(logCallback);
         }
 
-        private static unsafe av_log_set_callback_callback logCallback;
+        private static av_log_set_callback_callback logCallback;
 
         /// <summary>
         /// <see cref="ffmpeg.avdevice_register_all"/>
@@ -70,16 +67,13 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public static string PtrToStringUTF8(this IntPtr ptr)
         {
-            unsafe
-            {
-                if (IntPtr.Zero == ptr)
-                    return null;
-                int length = 0;
-                sbyte* psbyte = (sbyte*)ptr;
-                while (psbyte[length] != 0)
-                    length++;
-                return new string(psbyte, 0, length, Encoding.UTF8);
-            }
+            if (IntPtr.Zero == ptr)
+                return null;
+            int length = 0;
+            sbyte* psbyte = (sbyte*)ptr;
+            while (psbyte[length] != 0)
+                length++;
+            return new string(psbyte, 0, length, Encoding.UTF8);
         }
 
         /// <summary>
@@ -153,10 +147,7 @@ namespace EmguFFmpeg
         /// <param name="count"></param>
         public static void CopyMemory(IntPtr src, IntPtr dst, int count)
         {
-            unsafe
-            {
-                CopyMemory((byte*)src, (byte*)dst, count);
-            }
+            CopyMemory((byte*)src, (byte*)dst, count);
         }
 
         /// <summary>
@@ -165,7 +156,7 @@ namespace EmguFFmpeg
         /// <param name="src"></param>
         /// <param name="dst"></param>
         /// <param name="count"></param>
-        public unsafe static void CopyMemory(void* src, void* dst, int count)
+        public static void CopyMemory(void* src, void* dst, int count)
         {
             ffmpeg.av_image_copy_plane((byte*)dst, count, (byte*)src, count, count, 1);
         }
@@ -186,10 +177,65 @@ namespace EmguFFmpeg
         /// <param name="height">the number of rows.</param>
         public static void CopyPlane(IntPtr src, int srcLineSize, IntPtr dst, int dstLineSize, int byteWidth, int height)
         {
-            unsafe
+            ffmpeg.av_image_copy_plane((byte*)dst, dstLineSize, (byte*)src, srcLineSize, byteWidth, height);
+        }
+    }
+
+
+    /// <summary>
+    /// pointer to pointer (void**)
+    /// </summary>
+    public unsafe class IntPtr2Ptr
+    {
+        private void* _ptr;
+
+        /// <summary>
+        /// create pointer to <paramref name="ptr"/>.
+        /// </summary>
+        /// <param name="ptr"></param>
+        public IntPtr2Ptr(IntPtr ptr)
+        {
+            _ptr = (void*)ptr;
+            fixed (void** pptr = &_ptr)
             {
-                ffmpeg.av_image_copy_plane((byte*)dst, dstLineSize, (byte*)src, srcLineSize, byteWidth, height);
+                Ptr2Ptr = (IntPtr)pptr;
             }
+        }
+
+        /// <summary>
+        /// create a pointer to <paramref name="ptr"/>.
+        /// </summary>
+        /// <param name="ptr"></param>
+        /// <returns></returns>
+        public static IntPtr2Ptr Pointer(IntPtr ptr) => new IntPtr2Ptr(ptr);
+
+        /// <summary>
+        /// create a pointer to <see langword="null"/>.
+        /// </summary>
+        /// <returns></returns>
+        public static IntPtr2Ptr Null => new IntPtr2Ptr(IntPtr.Zero);
+
+        /// <summary>
+        /// get pointer (ptr).
+        /// </summary>
+        public IntPtr Ptr => (IntPtr)_ptr;
+
+        /// <summary>
+        /// get pointer to pointer (&amp;ptr).
+        /// </summary>
+        public IntPtr Ptr2Ptr { get; private set; }
+
+
+        public static implicit operator IntPtr(IntPtr2Ptr ptr2ptr)
+        {
+            if (ptr2ptr == null) return IntPtr.Zero;
+            return ptr2ptr.Ptr2Ptr;
+        }
+
+        public static implicit operator void**(IntPtr2Ptr ptr2Ptr)
+        {
+            if (ptr2Ptr == null) return null;
+            return (void**)ptr2Ptr.Ptr2Ptr;
         }
     }
 

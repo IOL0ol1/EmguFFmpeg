@@ -15,7 +15,7 @@
     <PackageReleaseNotes>EmguFFmpeg with EmguCV expansian (EmguCV only net45) 
 MediaFrame and Mat convert to each other</PackageReleaseNotes>
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet emgucv image</PackageTags>
-    <Version>1.0.13</Version>
+    <Version>1.0.14</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>EmguFFmpeg</RootNamespace>
   </PropertyGroup>

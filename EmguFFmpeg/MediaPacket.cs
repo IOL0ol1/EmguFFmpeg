@@ -4,69 +4,66 @@ using System;
 
 namespace EmguFFmpeg
 {
-    public class MediaPacket : IDisposable, ICloneable
+    public unsafe class MediaPacket : IDisposable, ICloneable
     {
-        protected unsafe AVPacket* pPacket;
+        protected AVPacket* pPacket;
 
         public MediaPacket()
         {
-            unsafe
-            {
-                pPacket = ffmpeg.av_packet_alloc();
-            }
+            pPacket = ffmpeg.av_packet_alloc();
         }
 
-        public AVPacket AVPacket { get { unsafe { return *pPacket; } } }
+        public AVPacket AVPacket => *pPacket;
 
         public long ConvergenceDuration
         {
-            get { unsafe { return pPacket->convergence_duration; } }
-            set { unsafe { pPacket->convergence_duration = value; } }
+            get => pPacket->convergence_duration;
+            set => pPacket->convergence_duration = value;
         }
 
         public long Dts
         {
-            get { unsafe { return pPacket->dts; } }
-            set { unsafe { pPacket->dts = value; } }
+            get => pPacket->dts;
+            set => pPacket->dts = value;
         }
 
         public long Duration
         {
-            get { unsafe { return pPacket->duration; } }
-            set { unsafe { pPacket->duration = value; } }
+            get => pPacket->duration;
+            set => pPacket->duration = value;
         }
 
         public int Flags
         {
-            get { unsafe { return pPacket->flags; } }
-            set { unsafe { pPacket->flags = value; } }
+            get => pPacket->flags;
+            set => pPacket->flags = value;
         }
 
         public long Pos
         {
-            get { unsafe { return pPacket->pos; } }
-            set { unsafe { pPacket->pos = value; } }
+            get => pPacket->pos;
+            set => pPacket->pos = value;
         }
 
         public long Pts
         {
-            get { unsafe { return pPacket->pts; } }
-            set { unsafe { pPacket->pts = value; } }
+            get => pPacket->pts;
+            set => pPacket->pts = value;
         }
 
         public int Size
         {
-            get { unsafe { return pPacket->size; } }
-            set { unsafe { pPacket->size = value; } }
+            get => pPacket->size;
+            set => pPacket->size = value;
         }
 
         public int StreamIndex
         {
-            get { unsafe { return pPacket->stream_index; } }
-            set { unsafe { pPacket->stream_index = value; } }
+            get => pPacket->stream_index;
+            set => pPacket->stream_index = value;
         }
 
-        public unsafe static implicit operator AVPacket*(MediaPacket value)
+        public static implicit operator AVPacket*(MediaPacket value)
         {
             if (value == null) return null;
             return value.pPacket;
@@ -77,10 +74,7 @@ namespace EmguFFmpeg
         /// </summary>
         public void Clear()
         {
-            unsafe
-            {
-                ffmpeg.av_packet_unref(pPacket);
-            }
+            ffmpeg.av_packet_unref(pPacket);
         }
 
         /// <summary>
@@ -92,19 +86,16 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public MediaPacket Clone()
         {
-            unsafe
+            MediaPacket packet = new MediaPacket();
+            AVPacket* dstpkt = packet;
+            int ret;
+            if ((ret = ffmpeg.av_packet_ref(dstpkt, pPacket)) < 0)
             {
-                MediaPacket packet = new MediaPacket();
-                AVPacket* dstpkt = packet;
-                int ret;
-                if ((ret = ffmpeg.av_packet_ref(dstpkt, pPacket)) < 0)
-                {
-                    ffmpeg.av_packet_free(&dstpkt);
-                    throw new FFmpegException(ret);
-                }
-                ffmpeg.av_packet_copy_props(dstpkt, pPacket).ThrowExceptionIfError();
-                return packet;
+                ffmpeg.av_packet_free(&dstpkt);
+                throw new FFmpegException(ret);
             }
+            ffmpeg.av_packet_copy_props(dstpkt, pPacket).ThrowExceptionIfError();
+            return packet;
         }
 
         object ICloneable.Clone()
@@ -118,17 +109,14 @@ namespace EmguFFmpeg
 
         protected virtual void Dispose(bool disposing)
         {
-            unsafe
+            if (!disposedValue)
             {
-                if (!disposedValue)
+                fixed (AVPacket** ppPacket = &pPacket)
                 {
-                    fixed (AVPacket** ppPacket = &pPacket)
-                    {
-                        ffmpeg.av_packet_free(ppPacket);
-                    }
-
-                    disposedValue = true;
+                    ffmpeg.av_packet_free(ppPacket);
                 }
+
+                disposedValue = true;
             }
         }
 

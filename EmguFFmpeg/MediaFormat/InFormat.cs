@@ -2,88 +2,91 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace EmguFFmpeg
 {
     /// <summary>
     /// <see cref="AVInputFormat"/> wapper
     /// </summary>
-    public class InFormat : MediaFormat
+    public unsafe class InFormat : MediaFormat
     {
-        protected unsafe AVInputFormat* pInputFormat = null;
+        protected AVInputFormat* pInputFormat = null;
 
-        internal unsafe InFormat(AVInputFormat* iformat)
+        internal InFormat(AVInputFormat* iformat)
+            : this((IntPtr)iformat) { }
+
+        /// <summary>
+        /// <see cref="AVInputFormat"/> adapter.
+        /// </summary>
+        /// <param name="pAVInputFormat"></param>
+        public InFormat(IntPtr pAVInputFormat)
         {
-            if (iformat == null) throw new FFmpegException(FFmpegException.NullReference);
-            pInputFormat = iformat;
+            if (pAVInputFormat == IntPtr.Zero) throw new FFmpegException(FFmpegException.NullReference);
+            pInputFormat = (AVInputFormat*)pAVInputFormat;
         }
 
         /// <summary>
-        /// init format demuxer by name
+        /// get demuxer format by name
         /// </summary>
         /// <param name="name">e.g. mov,mp4 ...</param>
-        public InFormat(string name)
+        public static InFormat Get(string name)
         {
-            unsafe
+            name = name.Trim().TrimStart('.');
+            if (!string.IsNullOrEmpty(name))
             {
-                if (!string.IsNullOrEmpty(name))
+                foreach (var format in Formats)
                 {
-                    void* ifmtOpaque = null;
-                    AVInputFormat* iformat;
-                    while ((iformat = ffmpeg.av_demuxer_iterate(&ifmtOpaque)) != null)
+                    // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
+                    string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var item in names)
                     {
-                        InFormat format = new InFormat(iformat);
-                        // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
-                        string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var item in names)
+                        if (string.Compare(item, name, true) == 0)
                         {
-                            if (item == name.ToLower())
-                            {
-                                pInputFormat = iformat;
-                                return;
-                            }
+                            return format;
                         }
                     }
                 }
-                throw new FFmpegException(ffmpeg.AVERROR_DEMUXER_NOT_FOUND);
             }
+            throw new FFmpegException(ffmpeg.AVERROR_DEMUXER_NOT_FOUND);
         }
 
         /// <summary>
         /// get all supported input formats.
         /// </summary>
-        public static InFormat[] Formats
+        public static IEnumerable<InFormat> Formats
         {
             get
             {
-                unsafe
+                IntPtr iformat;
+                IntPtr2Ptr ifmtOpaque = IntPtr2Ptr.Null;
+                while ((iformat = DemuxerIterate(ifmtOpaque)) != IntPtr.Zero)
                 {
-                    List<InFormat> result = new List<InFormat>();
-                    void* ifmtOpaque = null;
-                    AVInputFormat* iformat;
-                    while ((iformat = ffmpeg.av_demuxer_iterate(&ifmtOpaque)) != null)
-                    {
-                        result.Add(new InFormat(iformat));
-                    }
-                    return result.ToArray();
+                    yield return new InFormat(iformat);
                 }
             }
         }
 
-        public AVInputFormat AVInputFormat { get { unsafe { return *pInputFormat; } } }
+        private static IntPtr DemuxerIterate(IntPtr2Ptr opaque)
+        {
+            return (IntPtr)ffmpeg.av_demuxer_iterate(opaque);
+        }
 
-        public unsafe static implicit operator AVInputFormat*(InFormat value)
+
+        public AVInputFormat AVInputFormat => *pInputFormat;
+
+        public static implicit operator AVInputFormat*(InFormat value)
         {
             if (value == null) return null;
             return value.pInputFormat;
         }
 
-        public int RawCodecId { get { unsafe { return pInputFormat->raw_codec_id; } } }
-        public InFormat Next { get { unsafe { return pInputFormat->next == null ? null : new InFormat(pInputFormat->next); } } }
-        public override int Flags { get { unsafe { return pInputFormat->flags; } } }
-        public override string Name { get { unsafe { return ((IntPtr)pInputFormat->name).PtrToStringUTF8(); } } }
-        public override string LongName { get { unsafe { return ((IntPtr)pInputFormat->long_name).PtrToStringUTF8(); } } }
-        public override string Extensions { get { unsafe { return ((IntPtr)pInputFormat->extensions).PtrToStringUTF8(); } } }
-        public override string MimeType { get { unsafe { return ((IntPtr)pInputFormat->mime_type).PtrToStringUTF8(); } } }
+        public int RawCodecId => pInputFormat->raw_codec_id;
+        public InFormat Next => pInputFormat->next == null ? null : new InFormat(pInputFormat->next);
+        public override int Flags => pInputFormat->flags;
+        public override string Name => ((IntPtr)pInputFormat->name).PtrToStringUTF8();
+        public override string LongName => ((IntPtr)pInputFormat->long_name).PtrToStringUTF8();
+        public override string Extensions => ((IntPtr)pInputFormat->extensions).PtrToStringUTF8();
+        public override string MimeType => ((IntPtr)pInputFormat->mime_type).PtrToStringUTF8();
     }
 }

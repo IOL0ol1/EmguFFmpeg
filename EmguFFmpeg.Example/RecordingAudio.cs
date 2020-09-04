@@ -28,7 +28,7 @@ namespace EmguFFmpeg.Example
             // register all device
             FFmpegHelper.RegisterDevice();
 
-            var dshowInput = new InFormat("dshow");
+            var dshowInput = InFormat.Get("dshow");
             // list all "dshow" device at console output, ffmpeg does not support direct reading of device names
             MediaDevice.PrintDeviceInfos(dshowInput, "list", MediaDevice.ListDevicesOptions);
 
