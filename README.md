@@ -31,8 +31,9 @@ using(MediaReader reader = new MediaReader("input.mp4"))
         {
             IntPtr[] data = frame.Data; // FFmpeg AVFrame.data
 	    byte[][] managed = frame.GetData(); // copy AVFrame.data to managed data
-	    Bitmap bitmap = frame.ToBitmap(); // add EmguFFmpeg.Bitmap
-	    Mat mat = frame.ToMat(); // add EmguFFmpeg.OpenCvSharp or EmguFFmpeg.EmguCV
+	    if(frame is VideoFrame)
+	        Bitmap bitmap = frame.ToBitmap(); // add EmguFFmpeg.Bitmap, only for video frame
+	    Mat mat = frame.ToMat(); // add EmguFFmpeg.OpenCvSharp or EmguFFmpeg.EmguCV (video and audio)
         }
     }
 }
