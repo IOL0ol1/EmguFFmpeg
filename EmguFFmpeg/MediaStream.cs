@@ -47,10 +47,19 @@ namespace EmguFFmpeg
 
         public AVStream Stream => *pStream;
 
+        /// <summary>
+        /// stream index in AVFormatContext
+        /// </summary>
         public int Index => pStream->index;
 
+        /// <summary>
+        /// <see cref="ffmpeg.av_codec_is_decoder(AVCodec*)"/>
+        /// </summary>
         public bool HasDecoder => Codec == null ? false : Codec.IsDecoder;
 
+        /// <summary>
+        /// <see cref="ffmpeg.av_codec_is_encoder(AVCodec*)"/>
+        /// </summary>
         public bool HasEncoder => Codec == null ? false : Codec.IsEncoder;
 
         /// <summary>
@@ -73,7 +82,7 @@ namespace EmguFFmpeg
         /// <summary>
         /// Write a fram by <see cref="Codec"/>.
         /// <para><see cref="MediaEncoder.EncodeFrame(MediaFrame)"/></para>
-        /// <para><see cref="RescalePacketTs(MediaPacket)"/></para>
+        /// <para><see cref="PacketRescaleTs(MediaPacket)"/></para>
         /// </summary>
         /// <param name="frame"></param>
         /// <exception cref="FFmpegException"/>
@@ -84,7 +93,8 @@ namespace EmguFFmpeg
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
             foreach (var packet in (Codec as MediaEncoder).EncodeFrame(frame))
             {
-                RescalePacketTs(packet);
+                PacketRescaleTs(packet);
+                packet.StreamIndex = Stream.index;
                 yield return packet;
             }
         }
@@ -94,16 +104,19 @@ namespace EmguFFmpeg
         /// cref="AVStream.time_base"/> and set <see cref="AVPacket.stream_index"/>
         /// </summary>
         /// <param name="packet"></param>
-        public void RescalePacketTs(MediaPacket packet)
+        public void PacketRescaleTs(MediaPacket packet)
         {
             ffmpeg.av_packet_rescale_ts(packet, Codec.AVCodecContext.time_base, Stream.time_base);
-            packet.StreamIndex = Stream.index;
         }
 
         /// <summary>
-        /// Convert to TimeSpan use <see cref="TimeBase"/>
+        /// Convert to TimeSpan use <see cref="TimeBase"/>.
         /// </summary>
+        /// <remarks>
+        /// throw exception when <paramref name="pts"/> &lt; 0.
+        /// </remarks>
         /// <param name="pts"></param>
+        /// <exception cref="FFmpegException"/>
         /// <returns></returns>
         public TimeSpan ToTimeSpan(long pts)
         {
@@ -112,6 +125,12 @@ namespace EmguFFmpeg
             return TimeSpan.FromSeconds(pts * ffmpeg.av_q2d(TimeBase));
         }
 
+        /// <summary>
+        /// Convert to TimeSpan use <see cref="TimeBase"/>
+        /// </summary>
+        /// <param name="pts"></param>
+        /// <param name="timeSpan"></param>
+        /// <returns></returns>
         public bool TryToTimeSpan(long pts, out TimeSpan timeSpan)
         {
             timeSpan = TimeSpan.Zero;
@@ -121,6 +140,10 @@ namespace EmguFFmpeg
             return true;
         }
 
+        /// <summary>
+        /// [Unsafe]
+        /// </summary>
+        /// <param name="value"></param>
         public static implicit operator AVStream*(MediaStream value)
         {
             if (value == null) return null;
