@@ -67,7 +67,7 @@ namespace EmguFFmpeg
                 {
                     int h = pFrame->height;
                     int bwidth = ffmpeg.av_image_get_linesize((AVPixelFormat)pFrame->format, pFrame->width, i);
-                    bwidth.ThrowExceptionIfError();
+                    bwidth.ThrowIfError();
                     if (i == 1 || i == 2)
                         h = (int)Math.Ceiling((double)pFrame->height / (1 << desc->log2_chroma_h));
                     result.Add(GetVideoPlane((IntPtr)pFrame->data[(uint)i], pFrame->linesize[(uint)i], bwidth, h));

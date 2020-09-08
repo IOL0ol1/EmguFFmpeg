@@ -79,11 +79,11 @@ namespace EmguFFmpeg
         /// <summary>
         /// throw exception if error when it's true, otherwise return error code
         /// </summary>
-        public static bool IsThrowExceptionIfError { get; set; } = true;
+        public static bool IsThrowIfError { get; set; } = true;
 
-        internal static int ThrowExceptionIfError(this int error)
+        internal static int ThrowIfError(this int error)
         {
-            return IsThrowExceptionIfError ? (error < 0 ? throw new FFmpegException(error) : error) : error;
+            return IsThrowIfError ? (error < 0 ? throw new FFmpegException(error) : error) : error;
         }
 
         /// <summary>

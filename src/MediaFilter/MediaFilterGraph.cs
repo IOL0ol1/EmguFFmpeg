@@ -114,7 +114,7 @@ namespace EmguFFmpeg
         public MediaFilterContext AddFilter(MediaFilter filter, string options = null, string contextName = null)
         {
             AVFilterContext* p = ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName);
-            ffmpeg.avfilter_init_str(p, options).ThrowExceptionIfError();
+            ffmpeg.avfilter_init_str(p, options).ThrowIfError();
             return CreateAndUpdate(p);
         }
 
@@ -123,14 +123,14 @@ namespace EmguFFmpeg
             AVFilterContext* p = ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName);
             if (options != null)
                 options.Invoke(new MediaFilterContext(p));
-            ffmpeg.avfilter_init_str(p, null).ThrowExceptionIfError();
+            ffmpeg.avfilter_init_str(p, null).ThrowIfError();
             return CreateAndUpdate(p);
         }
 
         public MediaFilterContext AddFilter(MediaFilter filter, MediaDictionary options, string contextName = null)
         {
             AVFilterContext* p = ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName);
-            ffmpeg.avfilter_init_dict(p, options).ThrowExceptionIfError();
+            ffmpeg.avfilter_init_dict(p, options).ThrowIfError();
             return CreateAndUpdate(p);
         }
 
@@ -180,7 +180,7 @@ namespace EmguFFmpeg
 
         public void Initialize()
         {
-            ffmpeg.avfilter_graph_config(pFilterGraph, null).ThrowExceptionIfError();
+            ffmpeg.avfilter_graph_config(pFilterGraph, null).ThrowIfError();
         }
 
         public static MediaFilterGraph CreateMediaFilterGraph(string graphDesc)
@@ -188,7 +188,7 @@ namespace EmguFFmpeg
             MediaFilterGraph filterGraph = new MediaFilterGraph();
             AVFilterInOut* inputs;
             AVFilterInOut* outputs;
-            ffmpeg.avfilter_graph_parse2(filterGraph, graphDesc, &inputs, &outputs).ThrowExceptionIfError();
+            ffmpeg.avfilter_graph_parse2(filterGraph, graphDesc, &inputs, &outputs).ThrowIfError();
             AVFilterInOut* cur = inputs;
             for (cur = inputs; cur != null; cur = cur->next)
             {

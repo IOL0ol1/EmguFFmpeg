@@ -180,7 +180,7 @@ namespace EmguFFmpeg
             }
             if (pCodec == null)
                 throw new FFmpegException(FFmpegException.NullReference);
-            return ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
+            return ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowIfError();
         }
 
         /// <summary>
@@ -204,7 +204,7 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public virtual IEnumerable<MediaPacket> EncodeFrame(MediaFrame frame)
         {
-            SendFrame(frame).ThrowExceptionIfError();
+            SendFrame(frame).ThrowIfError();
             RemoveSideData(frame);
             using (MediaPacket packet = new MediaPacket())
             {
@@ -213,7 +213,7 @@ namespace EmguFFmpeg
                     int ret = ReceivePacket(packet);
                     if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
                         break;
-                    ret.ThrowExceptionIfError();
+                    ret.ThrowIfError();
                     yield return packet;
                 }
             }

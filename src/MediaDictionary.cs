@@ -10,8 +10,8 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaDictionary : IReadOnlyList<KeyValuePair<string, string>>, ICloneable, IDisposable
     {
-        public const DictFlags DefaultFlags = DictFlags.AV_DICT_MATCH_CASE | DictFlags.AV_DICT_DONT_OVERWRITE;
-        public const DictFlags Zero = DictFlags.AV_DICT_NONE;
+        public const DictFlags DefaultFlags = DictFlags.MatchCase | DictFlags.DontOverwrite;
+        public const DictFlags Zero = DictFlags.None;
 
         /// <summary>
         /// DO NOT USE THIS VALUE EVER.
@@ -21,12 +21,12 @@ namespace EmguFFmpeg
         /// from <see cref="MediaDictionary"/> to <see cref="AVDictionary"/>*
         /// </para>
         /// </summary>
-        private AVDictionary* internalPointerPlaceHolder = null;
+        public AVDictionary* internalPointerPlaceHolder = null;
 
         /// <summary>
         /// NOTE: ffmpeg maybe change the value of *<see cref="ppDictionary"/>
         /// </summary>
-        private AVDictionary** ppDictionary = null;
+        public AVDictionary** ppDictionary = null;
 
         public MediaDictionary()
         {
@@ -45,7 +45,7 @@ namespace EmguFFmpeg
         {
             List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
             AVDictionaryEntry* t = null;
-            while ((t = ffmpeg.av_dict_get(dict, "", t, (int)(DictFlags.AV_DICT_IGNORE_SUFFIX))) != null)
+            while ((t = ffmpeg.av_dict_get(dict, "", t, (int)(DictFlags.IgnoreSuffix))) != null)
             {
                 keyValuePairs.Add((*t).ToKeyValuePair());
             }
@@ -74,12 +74,12 @@ namespace EmguFFmpeg
 
         public void Add(string key, string value, DictFlags flags = DefaultFlags)
         {
-            ffmpeg.av_dict_set(ppDictionary, key, value, (int)flags).ThrowExceptionIfError();
+            ffmpeg.av_dict_set(ppDictionary, key, value, (int)flags).ThrowIfError();
         }
 
         public void Add(string key, long value, DictFlags flags = DefaultFlags)
         {
-            ffmpeg.av_dict_set_int(ppDictionary, key, value, (int)flags).ThrowExceptionIfError();
+            ffmpeg.av_dict_set_int(ppDictionary, key, value, (int)flags).ThrowIfError();
         }
 
         public string[] GetValue(string key, DictFlags flags)
@@ -93,7 +93,7 @@ namespace EmguFFmpeg
             return output.ToArray();
         }
 
-        public bool Remove(string key, DictFlags flags = DictFlags.AV_DICT_MATCH_CASE)
+        public bool Remove(string key, DictFlags flags = DictFlags.MatchCase)
         {
             int count = 0;
             AVDictionaryEntry* t = null;
@@ -108,7 +108,7 @@ namespace EmguFFmpeg
         public string this[string key]
         {
             get => GetValue(key, DefaultFlags).First();
-            set => Add(key, value, DictFlags.AV_DICT_MATCH_CASE);
+            set => Add(key, value, DictFlags.MatchCase);
         }
 
         public IEnumerable<string> Keys => KeyValues.Select(_ => _.Key);
@@ -180,7 +180,7 @@ namespace EmguFFmpeg
         public MediaDictionary Clone()
         {
             MediaDictionary keyValuePairs = new MediaDictionary();
-            ffmpeg.av_dict_copy(keyValuePairs, *ppDictionary, (int)DictFlags.AV_DICT_MULTIKEY);
+            ffmpeg.av_dict_copy(keyValuePairs, *ppDictionary, (int)DictFlags.MultiKey);
             return keyValuePairs;
         }
 
@@ -206,7 +206,7 @@ namespace EmguFFmpeg
         /// <summary>
         /// Default is case insensitive.
         /// </summary>
-        AV_DICT_NONE = 0,
+        None = 0,
 
         /// <summary>
         /// Only get an entry with exact-case key match. Only relevant in get method.
@@ -214,7 +214,7 @@ namespace EmguFFmpeg
         /// <para>//get "k1" == "v1"</para>
         /// <para>//get "K1" == null</para>
         /// </summary>
-        AV_DICT_MATCH_CASE = 1,
+        MatchCase = 1,
 
         /// <summary>
         /// Return first entry in a dictionary whose first part corresponds to the search key,
@@ -222,7 +222,7 @@ namespace EmguFFmpeg
         /// <para>Add("k1","v1",DictFlags.AV_DICT_IGNORE_SUFFIX);</para>
         /// <para>//get "k" == "v1"</para>
         /// </summary>
-        AV_DICT_IGNORE_SUFFIX = 2,
+        IgnoreSuffix = 2,
 
         //AV_DICT_DONT_STRDUP_KEY = 4, // Not suppord in managed code
         //AV_DICT_DONT_STRDUP_VAL = 8, // Not suppord in managed code
@@ -233,7 +233,7 @@ namespace EmguFFmpeg
         /// <para>Add("k1","v2",DictFlags.AV_DICT_DONT_OVERWRITE);</para>
         /// <para>//"k1" == "v1"</para>
         /// </summary>
-        AV_DICT_DONT_OVERWRITE = 16,
+        DontOverwrite = 16,
 
         /// <summary>
         /// If the key already exists, append to it's value.
@@ -241,7 +241,7 @@ namespace EmguFFmpeg
         /// <para>Add("k1","v2",DictFlags.AV_DICT_APPEND);</para>
         /// <para>//"k1" == "v1v2"</para>
         /// </summary>
-        AV_DICT_APPEND = 32,
+        Append = 32,
 
         /// <summary>
         /// Allow to store several equal keys in the dictionary
@@ -249,7 +249,7 @@ namespace EmguFFmpeg
         /// <para>Add("k1","v2",DictFlags.AV_DICT_MULTIKEY);</para>
         /// <para>//"k1" == {"v1","v2"}</para>
         /// </summary>
-        AV_DICT_MULTIKEY = 64,
+        MultiKey = 64,
     }
 
     public static class AVDictionaryEntryEx

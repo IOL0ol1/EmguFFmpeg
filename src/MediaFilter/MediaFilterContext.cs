@@ -31,12 +31,12 @@ namespace EmguFFmpeg
 
         public void Init(string options)
         {
-            ffmpeg.avfilter_init_str(pFilterContext, options).ThrowExceptionIfError();
+            ffmpeg.avfilter_init_str(pFilterContext, options).ThrowIfError();
         }
 
         public void Init(MediaDictionary options)
         {
-            ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowExceptionIfError();
+            ffmpeg.avfilter_init_dict(pFilterContext, options).ThrowIfError();
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public MediaFilterContext LinkTo(uint srcOutPad, MediaFilterContext dstFilterContext, uint dstInPad = 0)
         {
-            ffmpeg.avfilter_link(pFilterContext, srcOutPad, dstFilterContext, dstInPad).ThrowExceptionIfError();
+            ffmpeg.avfilter_link(pFilterContext, srcOutPad, dstFilterContext, dstInPad).ThrowIfError();
             return dstFilterContext;
         }
 
@@ -60,7 +60,7 @@ namespace EmguFFmpeg
 
         public void WriteFrame(MediaFrame frame, BufferSrcFlags flags = BufferSrcFlags.KeepRef)
         {
-            AddFrame(frame, flags).ThrowExceptionIfError();
+            AddFrame(frame, flags).ThrowIfError();
         }
 
         public int AddFrame(MediaFrame frame, BufferSrcFlags flags = BufferSrcFlags.KeepRef)
@@ -85,7 +85,7 @@ namespace EmguFFmpeg
                     int ret = GetFrame(frame);
                     if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
                         break;
-                    ret.ThrowExceptionIfError();
+                    ret.ThrowIfError();
                     yield return frame;
                     frame.Clear();
                 }

@@ -44,7 +44,7 @@ namespace EmguFFmpeg
         /// </returns>
         public int Peek(void** data, int nbSamples)
         {
-            return ffmpeg.av_audio_fifo_peek(pAudioFifo, data, nbSamples).ThrowExceptionIfError();
+            return ffmpeg.av_audio_fifo_peek(pAudioFifo, data, nbSamples).ThrowIfError();
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace EmguFFmpeg
         /// </returns>
         public int PeekAt(void** data, int nbSamples, int Offset)
         {
-            return ffmpeg.av_audio_fifo_peek_at(pAudioFifo, data, nbSamples, Offset).ThrowExceptionIfError();
+            return ffmpeg.av_audio_fifo_peek_at(pAudioFifo, data, nbSamples, Offset).ThrowIfError();
         }
 
         /// <summary>
@@ -74,10 +74,10 @@ namespace EmguFFmpeg
             if (Space < nbSamples)
             {
                 int ret;
-                if ((ret = ffmpeg.av_audio_fifo_realloc(pAudioFifo, Size + nbSamples).ThrowExceptionIfError()) < 0)
+                if ((ret = ffmpeg.av_audio_fifo_realloc(pAudioFifo, Size + nbSamples).ThrowIfError()) < 0)
                     return ret;
             }
-            return ffmpeg.av_audio_fifo_write(pAudioFifo, data, nbSamples).ThrowExceptionIfError();
+            return ffmpeg.av_audio_fifo_write(pAudioFifo, data, nbSamples).ThrowIfError();
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace EmguFFmpeg
         /// </returns>
         public int Read(void** data, int nbSamples)
         {
-            return ffmpeg.av_audio_fifo_read(pAudioFifo, data, nbSamples).ThrowExceptionIfError();
+            return ffmpeg.av_audio_fifo_read(pAudioFifo, data, nbSamples).ThrowIfError();
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace EmguFFmpeg
         /// <exception cref="FFmpegException"/>
         public int Drain(int nbSamples)
         {
-            return ffmpeg.av_audio_fifo_drain(pAudioFifo, nbSamples).ThrowExceptionIfError();
+            return ffmpeg.av_audio_fifo_drain(pAudioFifo, nbSamples).ThrowIfError();
         }
 
         /// <summary>

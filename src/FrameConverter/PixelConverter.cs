@@ -54,7 +54,7 @@ namespace EmguFFmpeg
         /// <param name="flag"></param>
         public PixelConverter(VideoFrame dstFrame, int flag = ffmpeg.SWS_BILINEAR)
         {
-            ffmpeg.av_frame_make_writable(dstFrame).ThrowExceptionIfError();
+            ffmpeg.av_frame_make_writable(dstFrame).ThrowIfError();
             DstWidth = dstFrame.AVFrame.width;
             DstHeight = dstFrame.AVFrame.height;
             DstFormat = (AVPixelFormat)dstFrame.AVFrame.format;
@@ -87,7 +87,7 @@ namespace EmguFFmpeg
                     src->width, src->height, (AVPixelFormat)src->format,
                     DstWidth, DstHeight, DstFormat, SwsFlag, null, null, null);
             }
-            ffmpeg.sws_scale(pSwsContext, src->data, src->linesize, 0, src->height, dst->data, dst->linesize).ThrowExceptionIfError();
+            ffmpeg.sws_scale(pSwsContext, src->data, src->linesize, 0, src->height, dst->data, dst->linesize).ThrowIfError();
             return dstFrame as VideoFrame;
         }
 

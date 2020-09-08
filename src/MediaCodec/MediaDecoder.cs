@@ -76,7 +76,7 @@ namespace EmguFFmpeg
             setBeforeOpen?.Invoke(this);
             if (pCodec == null)
                 throw new FFmpegException(FFmpegException.NullReference);
-            return ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowExceptionIfError();
+            return ffmpeg.avcodec_open2(pCodecContext, pCodec, opts).ThrowIfError();
         }
 
         /// <summary>

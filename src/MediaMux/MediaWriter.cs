@@ -26,7 +26,7 @@ namespace EmguFFmpeg
         /// <param name="stream"></param>
         /// <param name="buffersize"></param>
         /// <param name="oformat"></param>
-        /// <param name="options"></param>
+        /// <param name="options">useless, the future may change</param>
         public MediaWriter(Stream stream, int buffersize, OutFormat oformat, MediaDictionary options = null)
         {
             baseStream = stream;
@@ -55,11 +55,11 @@ namespace EmguFFmpeg
         {
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
-                ffmpeg.avformat_alloc_output_context2(ppFormatContext, oformat, null, file).ThrowExceptionIfError();
+                ffmpeg.avformat_alloc_output_context2(ppFormatContext, oformat, null, file).ThrowIfError();
             }
             base.Format = oformat ?? new OutFormat(pFormatContext->oformat);
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, options).ThrowExceptionIfError();
+                ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, options).ThrowIfError();
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace EmguFFmpeg
                 {
                     AVCodecContext* pContext = _;
                     AVCodecParameters* pParameters = ffmpeg.avcodec_parameters_alloc();
-                    ffmpeg.avcodec_parameters_from_context(pParameters, stream.Codec).ThrowExceptionIfError();
+                    ffmpeg.avcodec_parameters_from_context(pParameters, stream.Codec).ThrowIfError();
                     ffmpeg.avcodec_parameters_to_context(pContext, pParameters);
                     ffmpeg.avcodec_parameters_free(&pParameters);
                     pContext->time_base = stream.Stream.r_frame_rate.ToInvert();
@@ -131,7 +131,7 @@ namespace EmguFFmpeg
         /// <param name="options"></param>
         public int Initialize(MediaDictionary options = null)
         {
-            return ffmpeg.avformat_write_header(pFormatContext, options).ThrowExceptionIfError();
+            return ffmpeg.avformat_write_header(pFormatContext, options).ThrowIfError();
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace EmguFFmpeg
                 }
                 catch (FFmpegException) { }
             }
-            return ffmpeg.av_write_trailer(pFormatContext).ThrowExceptionIfError();
+            return ffmpeg.av_write_trailer(pFormatContext).ThrowIfError();
         }
 
         #region IDisposable

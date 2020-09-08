@@ -49,10 +49,10 @@ namespace EmguFFmpeg
             dst->height = pFrame->height;
             if (ffmpeg.av_frame_is_writable(pFrame) != 0)
             {
-                ffmpeg.av_frame_get_buffer(dst, 0).ThrowExceptionIfError();
-                ffmpeg.av_frame_copy(dst, pFrame).ThrowExceptionIfError();
+                ffmpeg.av_frame_get_buffer(dst, 0).ThrowIfError();
+                ffmpeg.av_frame_copy(dst, pFrame).ThrowIfError();
             }
-            ffmpeg.av_frame_copy_props(dst, pFrame).ThrowExceptionIfError();
+            ffmpeg.av_frame_copy_props(dst, pFrame).ThrowIfError();
             return dstFrame;
         }
     }

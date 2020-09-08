@@ -42,9 +42,9 @@ namespace EmguFFmpeg
                 avio_Alloc_Context_Read_Packet, null, avio_Alloc_Context_Seek);
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
-                ffmpeg.avformat_open_input(ppFormatContext, null, iformat, options).ThrowExceptionIfError();
+                ffmpeg.avformat_open_input(ppFormatContext, null, iformat, options).ThrowIfError();
             }
-            ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowExceptionIfError();
+            ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowIfError();
             base.Format = iformat ?? new InFormat(pFormatContext->iformat);
 
             for (int i = 0; i < pFormatContext->nb_streams; i++)
@@ -68,9 +68,9 @@ namespace EmguFFmpeg
         {
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
-                ffmpeg.avformat_open_input(ppFormatContext, url, iformat, options).ThrowExceptionIfError();
+                ffmpeg.avformat_open_input(ppFormatContext, url, iformat, options).ThrowIfError();
             }
-            ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowExceptionIfError();
+            ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowIfError();
             base.Format = iformat ?? new InFormat(pFormatContext->iformat);
 
             for (int i = 0; i < pFormatContext->nb_streams; i++)
@@ -106,7 +106,7 @@ namespace EmguFFmpeg
         {
             if (streamIndex >= 0)
                 timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), streams[streamIndex].TimeBase);
-            var ret = ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, long.MaxValue, 0).ThrowExceptionIfError();
+            var ret = ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, long.MaxValue, 0).ThrowIfError();
             if (streamIndex >= 0)
             {
                 ffmpeg.avcodec_flush_buffers(streams[streamIndex].Codec);

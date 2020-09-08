@@ -98,7 +98,7 @@ namespace EmguFFmpeg
                 ffmpeg.av_packet_free(&dstpkt);
                 throw new FFmpegException(ret);
             }
-            ffmpeg.av_packet_copy_props(dstpkt, pPacket).ThrowExceptionIfError();
+            ffmpeg.av_packet_copy_props(dstpkt, pPacket).ThrowIfError();
             return packet;
         }
 

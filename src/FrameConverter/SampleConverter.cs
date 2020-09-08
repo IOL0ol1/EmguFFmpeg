@@ -78,7 +78,7 @@ namespace EmguFFmpeg
         /// <param name="dstFrame"></param>
         public SampleConverter(AudioFrame dstFrame)
         {
-            ffmpeg.av_frame_make_writable(dstFrame).ThrowExceptionIfError();
+            ffmpeg.av_frame_make_writable(dstFrame).ThrowIfError();
             DstFormat = (AVSampleFormat)dstFrame.AVFrame.format;
             DstChannels = dstFrame.AVFrame.channels;
             DstChannelLayout = dstFrame.AVFrame.channel_layout;
@@ -107,7 +107,7 @@ namespace EmguFFmpeg
                     (long)DstChannelLayout, DstFormat, DstSampleRate == 0 ? src->sample_rate : DstSampleRate,
                     (long)srcChannelLayout, (AVSampleFormat)src->format, src->sample_rate,
                     0, null);
-                ffmpeg.swr_init(pSwrContext).ThrowExceptionIfError();
+                ffmpeg.swr_init(pSwrContext).ThrowIfError();
             }
         }
 
@@ -118,9 +118,9 @@ namespace EmguFFmpeg
             for (int i = 0, ret = DstNbSamples; ret == DstNbSamples && src != null; i++)
             {
                 if (i == 0 && src != null)
-                    ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, src->extended_data, src->nb_samples).ThrowExceptionIfError();
+                    ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, src->extended_data, src->nb_samples).ThrowIfError();
                 else
-                    ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, null, 0).ThrowExceptionIfError();
+                    ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, null, 0).ThrowIfError();
                 AudioFifo.Add((void**)dst->extended_data, ret);
             }
             return AudioFifo.Size;
