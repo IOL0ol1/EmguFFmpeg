@@ -8,7 +8,7 @@ namespace EmguFFmpeg
 {
     public class MediaRational
     {
-        private AVRational rational;
+        //private AVRational rational;
 
 
     }

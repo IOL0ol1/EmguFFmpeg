@@ -21,7 +21,6 @@ namespace EmguFFmpeg.Example
         /// <param name="width">video width</param>
         /// <param name="height">video height</param>
         /// <param name="fps">video fps</param>
-        /// <param name="outputbitmap">video fps</param>
         public FillYuv420PSample(string outputFile, int width, int height, int fps)
         {
 

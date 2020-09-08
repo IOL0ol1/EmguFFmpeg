@@ -21,6 +21,7 @@ namespace EmguFFmpeg.Example
         /// <para>ffmpeg </para>
         /// </summary>
         /// <param name="outputFile"></param>
+        /// <param name="inputDeviceName"></param>
         public RecordingAudio(string outputFile, string inputDeviceName = null)
         {
             // console output
