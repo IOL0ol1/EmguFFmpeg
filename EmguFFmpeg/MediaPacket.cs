@@ -63,6 +63,10 @@ namespace EmguFFmpeg
             set => pPacket->stream_index = value;
         }
 
+        /// <summary>
+        /// [Unsafe]
+        /// </summary>
+        /// <param name="value"></param>
         public static implicit operator AVPacket*(MediaPacket value)
         {
             if (value == null) return null;
