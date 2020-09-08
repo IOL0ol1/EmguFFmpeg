@@ -102,16 +102,23 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="timestamp">Seconds * <see cref="ffmpeg.AV_TIME_BASE"/> </param>
         /// <param name="streamIndex"></param>
-        public void Seek(long timestamp, int streamIndex = -1)
+        public int Seek(long timestamp, int streamIndex = -1)
         {
             if (streamIndex >= 0)
                 timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), streams[streamIndex].TimeBase);
-            ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, long.MaxValue, 0).ThrowExceptionIfError();
-            foreach (var stream in streams)
+            var ret = ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, long.MaxValue, 0).ThrowExceptionIfError();
+            if (streamIndex >= 0)
             {
-                if (stream.Index == streamIndex || streamIndex < 0)
-                    ffmpeg.avcodec_flush_buffers(stream.Codec);
+                ffmpeg.avcodec_flush_buffers(streams[streamIndex].Codec);
             }
+            else
+            {
+                foreach (var stream in streams)
+                {
+                    ffmpeg.avcodec_flush_buffers(stream.Codec);
+                }
+            }
+            return ret;
         }
 
         /// <summary>
@@ -119,9 +126,9 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="time"></param>
         /// <param name="streamIndex"></param>
-        public void Seek(TimeSpan time, int streamIndex = -1)
+        public int Seek(TimeSpan time, int streamIndex = -1)
         {
-            Seek((long)(time.TotalSeconds * ffmpeg.AV_TIME_BASE), streamIndex);
+            return Seek((long)(time.TotalSeconds * ffmpeg.AV_TIME_BASE), streamIndex);
         }
 
         #region IEnumerable<MediaPacket>
