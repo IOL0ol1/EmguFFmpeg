@@ -19,7 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8E939179
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmguFFmpeg.Example", "examples\EmguFFmpeg.Example\EmguFFmpeg.Example.csproj", "{2B90E0C4-4B1F-4258-A376-227DCAD880AE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmugFFmpeg.Test", "tests\EmugFFmpeg.Test\EmugFFmpeg.Test.csproj", "{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmugFFmpeg.WapperTest", "tests\EmugFFmpeg.Test\EmugFFmpeg.WapperTest.csproj", "{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -93,16 +93,16 @@ Global
 		{2B90E0C4-4B1F-4258-A376-227DCAD880AE}.Release|x86.Build.0 = Release|x86
 		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|x64.Build.0 = Debug|Any CPU
-		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|x86.Build.0 = Debug|Any CPU
+		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|x64.ActiveCfg = Debug|x64
+		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|x64.Build.0 = Debug|x64
+		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|x86.ActiveCfg = Debug|x86
+		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Debug|x86.Build.0 = Debug|x86
 		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|x64.ActiveCfg = Release|Any CPU
-		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|x64.Build.0 = Release|Any CPU
-		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|x86.ActiveCfg = Release|Any CPU
-		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|x86.Build.0 = Release|Any CPU
+		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|x64.ActiveCfg = Release|x64
+		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|x64.Build.0 = Release|x64
+		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|x86.ActiveCfg = Release|x86
+		{B1B3B9F1-FACA-409A-BCA3-0CF42BBE9A53}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

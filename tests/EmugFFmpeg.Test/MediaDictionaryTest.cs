@@ -2,7 +2,7 @@ using System;
 
 using Xunit;
 
-namespace EmugFFmpeg.Test
+namespace EmugFFmpeg.WapperTest
 {
     public class MediaDictionaryTest
     {
