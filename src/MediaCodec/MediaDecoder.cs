@@ -113,7 +113,7 @@ namespace EmguFFmpeg
 
         #region safe for IEnumerable
         /// <summary>
-        /// send packet to decoder
+        /// <see cref="ffmpeg.avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
@@ -125,7 +125,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// receive frame from decoder
+        /// <see cref="ffmpeg.avcodec_receive_frame(AVCodecContext*, AVFrame*)"/>
         /// </summary>
         /// <param name="frame"></param>
         /// <returns></returns>
@@ -146,9 +146,9 @@ namespace EmguFFmpeg
             {
                 IntPtr pCodec;
                 IntPtr2Ptr opaque = IntPtr2Ptr.Null;
-                while ((pCodec = CodecIterate(opaque)) != IntPtr.Zero)
+                while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
                 {
-                    if (CodecIsDecoder(pCodec))
+                    if (av_codec_is_decoder_safe(pCodec))
                         yield return new MediaDecoder(pCodec);
                 }
 

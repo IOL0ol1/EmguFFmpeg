@@ -79,7 +79,7 @@ namespace EmguFFmpeg
             {
                 IntPtr oformat;
                 IntPtr2Ptr ofmtOpaque = IntPtr2Ptr.Null;
-                while ((oformat = MuxerIterate(ofmtOpaque)) != IntPtr.Zero)
+                while ((oformat = av_muxer_iterate_safe(ofmtOpaque)) != IntPtr.Zero)
                 {
                     yield return new OutFormat(oformat);
                 }
@@ -87,7 +87,7 @@ namespace EmguFFmpeg
         }
 
         #region Safe wapper for IEnumerable
-        private static IntPtr MuxerIterate(IntPtr2Ptr ptr)
+        private static IntPtr av_muxer_iterate_safe(IntPtr2Ptr ptr)
         {
             return (IntPtr)ffmpeg.av_muxer_iterate(ptr);
         }

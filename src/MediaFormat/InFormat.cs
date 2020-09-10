@@ -60,14 +60,14 @@ namespace EmguFFmpeg
             {
                 IntPtr iformat;
                 IntPtr2Ptr ifmtOpaque = IntPtr2Ptr.Null;
-                while ((iformat = DemuxerIterate(ifmtOpaque)) != IntPtr.Zero)
+                while ((iformat = av_demuxer_iterate_safe(ifmtOpaque)) != IntPtr.Zero)
                 {
                     yield return new InFormat(iformat);
                 }
             }
         }
 
-        private static IntPtr DemuxerIterate(IntPtr2Ptr opaque)
+        private static IntPtr av_demuxer_iterate_safe(IntPtr2Ptr opaque)
         {
             return (IntPtr)ffmpeg.av_demuxer_iterate(opaque);
         }

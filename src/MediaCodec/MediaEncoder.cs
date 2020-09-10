@@ -51,7 +51,7 @@ namespace EmguFFmpeg
                 if (_.SupportedPixelFmts.Count() <= 0)
                     throw new FFmpegException(FFmpegException.NotSupportCodecId);
                 if (format == AVPixelFormat.AV_PIX_FMT_NONE)
-                    format = _.SupportedPixelFmts[0];
+                    format = _.SupportedPixelFmts.First();
                 else if (_.SupportedPixelFmts.Where(__ => __ == format).Count() <= 0)
                     throw new FFmpegException(FFmpegException.NotSupportFormat);
                 pCodecContext->width = width;
@@ -98,12 +98,12 @@ namespace EmguFFmpeg
                     throw new FFmpegException(FFmpegException.NotSupportCodecId);
                 // check or set sampleRate
                 if (sampleRate <= 0)
-                    sampleRate = _.SupportedSampleRates[0];
+                    sampleRate = _.SupportedSampleRates.First();
                 else if (_.SupportedSampleRates.Where(__ => __ == sampleRate).Count() <= 0)
                     throw new FFmpegException(FFmpegException.NotSupportSampleRate);
                 // check or set format
                 if (format == AVSampleFormat.AV_SAMPLE_FMT_NONE)
-                    format = _.SupportedSampelFmts[0];
+                    format = _.SupportedSampelFmts.First();
                 else if (_.SupportedSampelFmts.Where(__ => __ == format).Count() <= 0)
                     throw new FFmpegException(FFmpegException.NotSupportFormat);
                 // check channelLayout when SupportedChannelLayout.Count() > 0
@@ -220,13 +220,27 @@ namespace EmguFFmpeg
         }
 
         #region safe wapper for IEnumerable
+        /// <summary>
+        /// <see cref="ffmpeg.avcodec_send_frame(AVCodecContext*, AVFrame*)"/>
+        /// </summary>
+        /// <param name="frame"></param>
+        /// <returns></returns>
         public int SendFrame([In] MediaFrame frame)
         {
+            if (pCodecContext == null)
+                throw new FFmpegException(FFmpegException.NotInitCodecContext);
             return ffmpeg.avcodec_send_frame(pCodecContext, frame);
         }
 
+        /// <summary>
+        /// <see cref="ffmpeg.avcodec_receive_packet(AVCodecContext*, AVPacket*)"/>
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <returns></returns>
         public int ReceivePacket([Out] MediaPacket packet)
         {
+            if (pCodecContext == null)
+                throw new FFmpegException(FFmpegException.NotInitCodecContext);
             return ffmpeg.avcodec_receive_packet(pCodecContext, packet);
         }
         #endregion
@@ -237,9 +251,9 @@ namespace EmguFFmpeg
             {
                 IntPtr pCodec;
                 IntPtr2Ptr opaque = IntPtr2Ptr.Null;
-                while ((pCodec = CodecIterate(opaque)) != IntPtr.Zero)
+                while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
                 {
-                    if (CodecIsEncoder(pCodec))
+                    if (av_codec_is_encoder_safe(pCodec))
                         yield return new MediaEncoder(pCodec);
                 }
             }
