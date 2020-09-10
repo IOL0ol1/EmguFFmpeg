@@ -1,265 +1,320 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaDictionary : IReadOnlyList<KeyValuePair<string, string>>, ICloneable, IDisposable
+    public unsafe class MediaDictionary : IDictionary<string, string>, IDisposable
     {
-        public const DictFlags DefaultFlags = DictFlags.MatchCase | DictFlags.DontOverwrite;
-        public const DictFlags Zero = DictFlags.None;
 
-        /// <summary>
-        /// DO NOT USE THIS VALUE EVER.
-        /// <para>
-        /// get real pointer by *(<see cref="ppDictionary"/>)
-        /// or use implicit conversion operator
-        /// from <see cref="MediaDictionary"/> to <see cref="AVDictionary"/>*
-        /// </para>
-        /// </summary>
-        public AVDictionary* internalPointerPlaceHolder = null;
-
-        /// <summary>
-        /// NOTE: ffmpeg maybe change the value of *<see cref="ppDictionary"/>
-        /// </summary>
-        public AVDictionary** ppDictionary = null;
+        private AVDictionary* pDictionary = null;
 
         public MediaDictionary()
         {
-            fixed (AVDictionary** pInitPointer = &internalPointerPlaceHolder)
-                ppDictionary = pInitPointer;
+            pDictionary = null;
         }
 
-
-        public static implicit operator AVDictionary**(MediaDictionary value)
+        /// <summary>
+        /// <paramref name="ptr"/> will be free when <see cref="Dispose(bool)"/>
+        /// </summary>
+        /// <param name="ptr"></param>
+        internal MediaDictionary(AVDictionary* ptr)
         {
-            if (value == null) return null;
-            return value.ppDictionary;
-        }
-
-        public static KeyValuePair<string, string>[] GetKeyValues(AVDictionary* dict)
-        {
-            List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
-            AVDictionaryEntry* t = null;
-            while ((t = ffmpeg.av_dict_get(dict, "", t, (int)(DictFlags.IgnoreSuffix))) != null)
-            {
-                keyValuePairs.Add((*t).ToKeyValuePair());
-            }
-            return keyValuePairs.ToArray();
-        }
-
-        public KeyValuePair<string, string>[] KeyValues => GetKeyValues(*ppDictionary);
-
-        public int Count => ffmpeg.av_dict_count(*ppDictionary);
-
-        public void Clear()
-        {
-            ffmpeg.av_dict_free(ppDictionary);
-        }
-
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
-        {
-            foreach (var item in KeyValues)
-                yield return item;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return KeyValues.GetEnumerator();
-        }
-
-        public void Add(string key, string value, DictFlags flags = DefaultFlags)
-        {
-            ffmpeg.av_dict_set(ppDictionary, key, value, (int)flags).ThrowIfError();
-        }
-
-        public void Add(string key, long value, DictFlags flags = DefaultFlags)
-        {
-            ffmpeg.av_dict_set_int(ppDictionary, key, value, (int)flags).ThrowIfError();
-        }
-
-        public string[] GetValue(string key, DictFlags flags)
-        {
-            List<string> output = new List<string>();
-            AVDictionaryEntry* t = null;
-            while ((t = ffmpeg.av_dict_get(*ppDictionary, key, t, (int)flags)) != null)
-            {
-                output.Add((*t).ToKeyValuePair().Value);
-            }
-            return output.ToArray();
-        }
-
-        public bool Remove(string key, DictFlags flags = DictFlags.MatchCase)
-        {
-            int count = 0;
-            AVDictionaryEntry* t = null;
-            while ((t = ffmpeg.av_dict_get(*ppDictionary, key, t, (int)flags)) != null)
-            {
-                Add(key, null, 0);
-                count++;
-            }
-            return count != 0;
+            pDictionary = ptr;
         }
 
         public string this[string key]
         {
-            get => GetValue(key, DefaultFlags).First();
-            set => Add(key, value, DictFlags.MatchCase);
+            get
+            {
+                AVDictionaryEntry* entry;
+                if ((entry = (AVDictionaryEntry*)av_dict_get_safe(this, key, IntPtr.Zero, AVDictReadFlags.MatchCase)) != null)
+                    return (*entry).GetValue();
+                throw new KeyNotFoundException();
+            }
+            set
+            {
+                Add(key, value, AVDictWriteFlags.None);
+            }
         }
 
-        public IEnumerable<string> Keys => KeyValues.Select(_ => _.Key);
+        public ICollection<string> Keys => this.Select(_ => _.Key).ToArray();
 
-        public IEnumerable<string> Values => KeyValues.Select(_ => _.Value);
+        public ICollection<string> Values => this.Select(_ => _.Value).ToArray();
 
-        public KeyValuePair<string, string> this[int index] => KeyValues[index];
+        public int Count => ffmpeg.av_dict_count(pDictionary);
+
+        public bool IsReadOnly => false;
+
+        public void Add(string key, string value)
+        {
+            if (key == null || value == null)
+                throw new ArgumentNullException();
+            if (ContainsKey(key))
+                throw new ArgumentException();
+            Add(key, value, AVDictWriteFlags.DontOverwrite);
+        }
+
+        public int Add(string key, string value, AVDictWriteFlags flags)
+        {
+            fixed (AVDictionary** pp = &pDictionary)
+            {
+                return ffmpeg.av_dict_set(pp, key, value, (int)flags).ThrowIfError();
+            }
+        }
+
+        public void Add(KeyValuePair<string, string> item)
+        {
+            Add(item.Key, item.Value);
+        }
+
+        public bool Contains(KeyValuePair<string, string> item)
+        {
+            return TryGetValue(item.Key, out var value) && value == item.Value;
+        }
 
         public bool ContainsKey(string key)
         {
-            return GetValue(key, DefaultFlags).Length > 0;
+            return av_dict_get_safe(this, key, IntPtr.Zero, AVDictReadFlags.MatchCase) != IntPtr.Zero;
+        }
+
+        public bool ContainsKey(string key, AVDictReadFlags flags)
+        {
+            return av_dict_get_safe(this, key, IntPtr.Zero, flags) != IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Full copy
+        /// </summary>
+        /// <param name="array"></param>
+        /// <param name="arrayIndex"></param>
+        public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex)
+        {
+            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (arrayIndex > array.Length) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+            if (array.Length - arrayIndex < Count) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+
+            foreach (KeyValuePair<string, string> entry in this)
+            {
+                if (++arrayIndex > 0)
+                {
+                    array[arrayIndex - 1] = entry;
+                }
+            }
+        }
+
+        #region IEnumerator
+        private static IntPtr av_dict_get_safe(MediaDictionary dict, string key, IntPtr prev, AVDictReadFlags flags)
+        {
+            return (IntPtr)ffmpeg.av_dict_get(dict.pDictionary, key, (AVDictionaryEntry*)prev, (int)flags);
+        }
+
+        private static KeyValuePair<string, string> GetEntry(IntPtr intPtr)
+        {
+            AVDictionaryEntry entry = *(AVDictionaryEntry*)intPtr;
+            return new KeyValuePair<string, string>(entry.GetKey(), entry.GetValue());
+        }
+
+
+        public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
+        {
+            IntPtr prev = IntPtr.Zero;
+            while ((prev = av_dict_get_safe(this, string.Empty, prev, AVDictReadFlags.IgnoreSuffix)) != IntPtr.Zero)
+            {
+                yield return GetEntry(prev);
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// remove first match entry, can call multiple times to delete a entry with the same key
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool Remove(string key)
+        {
+            return Add(key, null, AVDictWriteFlags.None) == 0;
+        }
+
+        public bool Remove(KeyValuePair<string, string> item)
+        {
+            if (TryGetValue(item.Key, out var value) && value == item.Value)
+            {
+                return Remove(item.Key);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// remove all
+        /// </summary>
+        public void Clear()
+        {
+            fixed (AVDictionary** pp = &pDictionary)
+            {
+                ffmpeg.av_dict_free(pp);
+            }
         }
 
         public bool TryGetValue(string key, out string value)
         {
-            string[] values = GetValue(key, DefaultFlags);
-            if (values.Length > 0)
+            AVDictionaryEntry* entry;
+            if ((entry = (AVDictionaryEntry*)av_dict_get_safe(this, key, IntPtr.Zero, AVDictReadFlags.MatchCase)) != null)
             {
-                value = values[0];
+                value = (*entry).GetValue();
                 return true;
             }
-            value = null;
-            return true;
+            value = default;
+            return false;
         }
 
-        #region IDisposable Support
+        public bool TryGetValues(string key, AVDictReadFlags flags, out string[] values)
+        {
+            var list = new List<string>();
+            AVDictionaryEntry* prev = null;
+            while ((prev = (AVDictionaryEntry*)av_dict_get_safe(this, key, (IntPtr)prev, flags)) != null)
+            {
+                list.Add((*prev).GetValue());
 
-        private bool disposedValue = false; // 要检测冗余调用
+            }
+            values = list.ToArray();
+            return values.Length > 0;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public static implicit operator AVDictionary**(MediaDictionary value)
+        {
+            if (value == null) return null;
+            fixed (AVDictionary** ppDictionary = &value.pDictionary)
+                return ppDictionary;
+        }
+
+        private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                if (disposing)
-                {
-                    // TODO: 释放托管状态(托管对象)。
-                }
-
-                // TODO: 释放未托管的资源(未托管的对象)并在以下内容中替代终结器。
-                // TODO: 将大型字段设置为 null。
-                ffmpeg.av_dict_free(ppDictionary);
-                internalPointerPlaceHolder = null;
-                ppDictionary = null;
-
+                Clear();
                 disposedValue = true;
             }
         }
 
-        // TODO: 仅当以上 Dispose(bool disposing) 拥有用于释放未托管资源的代码时才替代终结器。
         ~MediaDictionary()
         {
-            // 请勿更改此代码。将清理代码放入以上 Dispose(bool disposing) 中。
-            Dispose(false);
+            Dispose(disposing: false);
         }
 
-        // 添加此代码以正确实现可处置模式。
         public void Dispose()
         {
-            // 请勿更改此代码。将清理代码放入以上 Dispose(bool disposing) 中。
-            Dispose(true);
-            // TODO: 如果在以上内容中替代了终结器，则取消注释以下行。
+            Dispose(disposing: true);
             GC.SuppressFinalize(this);
-        }
-
-        #endregion
-
-        #region ICloneable
-
-        public MediaDictionary Clone()
-        {
-            MediaDictionary keyValuePairs = new MediaDictionary();
-            ffmpeg.av_dict_copy(keyValuePairs, *ppDictionary, (int)DictFlags.MultiKey);
-            return keyValuePairs;
-        }
-
-        object ICloneable.Clone()
-        {
-            return Clone();
-        }
-
-        #endregion
-
-        public override string ToString()
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            foreach (var item in KeyValues)
-                stringBuilder.Append(item);
-            return stringBuilder.ToString();
         }
     }
 
+
+    public unsafe static class AVDictionaryEntryEx
+    {
+
+        /// <summary>
+        /// convert <see cref="AVDictionaryEntry"/> to <see cref="KeyValuePair{TKey, TValue}"/>
+        /// </summary>
+        /// <param name="entry"></param>
+        /// <returns></returns>
+        public static KeyValuePair<string, string> GetEntry(this AVDictionaryEntry entry)
+        {
+            return new KeyValuePair<string, string>(entry.GetKey(), entry.GetValue());
+        }
+
+        /// <summary>
+        /// get AVDictionaryEntry key
+        /// </summary>
+        /// <param name="entry"></param>
+        /// <returns></returns>
+        public static string GetKey(this AVDictionaryEntry entry)
+        {
+            return ((IntPtr)entry.key).PtrToStringUTF8();
+        }
+
+        /// <summary>
+        /// get AVDictionaryEntry value
+        /// </summary>
+        /// <param name="entry"></param>
+        /// <returns></returns>
+        public static string GetValue(this AVDictionaryEntry entry)
+        {
+            return ((IntPtr)entry.value).PtrToStringUTF8();
+        }
+    }
+
+
     [Flags]
-    public enum DictFlags : int
+    public enum AVDictReadFlags : int
     {
         /// <summary>
-        /// Default is case insensitive.
+        /// case insensitive and exact match.
         /// </summary>
         None = 0,
 
         /// <summary>
-        /// Only get an entry with exact-case key match. Only relevant in get method.
-        /// <para>Add("k1","v1",DictFlags.AV_DICT_IGNORE_SUFFIX);</para>
-        /// <para>//get "k1" == "v1"</para>
-        /// <para>//get "K1" == null</para>
+        /// Only get an entry with exact-case key match. Only relevant in av_dict_get(). 
+        /// <para>{"k1","v1"}</para>
+        /// <para>//get "k1" is "v1"</para>
+        /// <para>//get "K1" is null</para>
         /// </summary>
         MatchCase = 1,
 
         /// <summary>
-        /// Return first entry in a dictionary whose first part corresponds to the search key,
-        /// ignoring the suffix of the found key string. Only relevant in get method.
-        /// <para>Add("k1","v1",DictFlags.AV_DICT_IGNORE_SUFFIX);</para>
-        /// <para>//get "k" == "v1"</para>
+        /// Return entry in a dictionary whose first part corresponds to the search key,
+        /// ignoring the suffix of the found key string. Only relevant in av_dict_get().
+        /// <para>{"k1","v1"}</para>
+        /// <para>{"k1","v2"}</para>
+        /// <para>{"k2","v3"}</para>
+        /// <para>get "k" is {"v1","v2","v3"}</para>
         /// </summary>
         IgnoreSuffix = 2,
+    }
 
-        //AV_DICT_DONT_STRDUP_KEY = 4, // Not suppord in managed code
-        //AV_DICT_DONT_STRDUP_VAL = 8, // Not suppord in managed code
+    [Flags]
+    public enum AVDictWriteFlags : int
+    {
+        /// <summary>
+        /// case insensitive and overwrite.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// Take ownership of a key that's been
+        /// allocated with av_malloc() or another memory allocation function.
+        /// </summary>
+        [Obsolete("Not suppord in managed code", true)]
+        DnotStrDupKey = 4,
+
+        /// <summary>
+        /// Take ownership of a value that's been
+        /// allocated with av_malloc() or another memory allocation function.
+        /// </summary>
+        [Obsolete("Not suppord in managed code", true)]
+        DontStrDupVal = 8,
 
         /// <summary>
         /// Don't overwrite existing key.
-        /// <para>Add("k1",v1);</para>
-        /// <para>Add("k1","v2",DictFlags.AV_DICT_DONT_OVERWRITE);</para>
-        /// <para>//"k1" == "v1"</para>
         /// </summary>
         DontOverwrite = 16,
 
         /// <summary>
         /// If the key already exists, append to it's value.
-        /// <para>Add("k1",v1);</para>
-        /// <para>Add("k1","v2",DictFlags.AV_DICT_APPEND);</para>
-        /// <para>//"k1" == "v1v2"</para>
         /// </summary>
         Append = 32,
 
         /// <summary>
         /// Allow to store several equal keys in the dictionary
-        /// <para>Add("k1",v1);</para>
-        /// <para>Add("k1","v2",DictFlags.AV_DICT_MULTIKEY);</para>
-        /// <para>//"k1" == {"v1","v2"}</para>
         /// </summary>
         MultiKey = 64,
-    }
-
-    public static class AVDictionaryEntryEx
-    {
-        public unsafe static KeyValuePair<string, string> ToKeyValuePair(this AVDictionaryEntry entry)
-        {
-            //ffmpeg.AV_DICT_APPEND
-            string key = ((IntPtr)entry.key).PtrToStringUTF8();
-            string value = ((IntPtr)entry.value).PtrToStringUTF8();
-            return new KeyValuePair<string, string>(key, value);
-        }
     }
 }
