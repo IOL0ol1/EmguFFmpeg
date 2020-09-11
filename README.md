@@ -89,20 +89,20 @@ using(MediaWriter writer = new MediaWriter("output.mp4"))
 
 ## Index
 
-1. [EmguFFmpeg](/EmguFFmpeg)    
+1. [EmguFFmpeg](/src)    
 	FFmpeg.AutoGen warpper
 	It's dependent on FFmpeg.AutoGen.    
 	for windows:
 	- nuget install EmguFFmpeg
 	- download the dll of ffmpeg with different licenses on your own.
-2. [EmguFFmpeg.EmguCV](/EmguFFmpeg.EmguCV)    
+2. [EmguFFmpeg.EmguCV](/extensions/EmguFFmpeg.EmguCV)    
 	Some extension methods for data exchange between EmguFFmpeg and [**EmguCV**](https://github.com/emgucv/emgucv).     
 	It's dependent on EmguFFmpeg and EmguCV.    
 	for windows: 
 	- nuget install EmguFFmpeg.EmguCV
 	- nuget install Emgu.CV.runtime.windows
 	- download the dll of ffmpeg with different licenses on your own.
-3. [EmguFFmpeg.OpenCvSharp](/EmguFFmpeg.OpenCvSharp)    
+3. [EmguFFmpeg.OpenCvSharp](/extensions/EmguFFmpeg.OpenCvSharp)    
 	Some extension methods for data exchange between EmguFFmpeg and [**OpenCvSharp**](https://github.com/shimat/opencvsharp).     
 	please read [**here**](https://github.com/shimat/opencvsharp) before use.    
 	It's dependent on EmguFFmpeg and OpenCvSharp.    
@@ -110,9 +110,9 @@ using(MediaWriter writer = new MediaWriter("output.mp4"))
 	- nuget install EmguFFmpeg.OpenCvSharp
 	- nuget install OpenCvSharp4.runtime.win
 	- download the dll of ffmpeg with different licenses on your own.
-4. [EmguFFmpeg.Bitmap](/EmguFFmpeg.Bitmap)    
+4. [EmguFFmpeg.Bitmap](/extensions/EmguFFmpeg.Bitmap)    
         Some extension methods for Bitmap. only supported video frame.
-5. [EmguFFmpeg.Example](/EmguFFmpeg.Example)    
+5. [EmguFFmpeg.Example](/examples/EmguFFmpeg.Example)    
 	EmguFFmpeg example.     
 
 ## TODO
