@@ -40,7 +40,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\..\ffmpeg\*.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  
+  <ItemGroup>
     <ProjectReference Include="..\..\src\EmguFFmpeg.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="..\..\ffmpeg\*.dll" Link="ffmpeg\%(Filename).dll" />
+  </ItemGroup>
+  
 </Project>
