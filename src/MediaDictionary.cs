@@ -17,6 +17,14 @@ namespace EmguFFmpeg
             pDictionary = null;
         }
 
+        public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
+        {
+            foreach (var item in dictionary)
+            {
+                Add(item, AVDictWriteFlags.MultiKey);
+            }
+        }
+
         /// <summary>
         /// <paramref name="ptr"/> will be free when <see cref="Dispose(bool)"/>
         /// </summary>
@@ -64,6 +72,11 @@ namespace EmguFFmpeg
             {
                 return ffmpeg.av_dict_set(pp, key, value, (int)flags).ThrowIfError();
             }
+        }
+
+        public int Add(KeyValuePair<string, string> item, AVDictWriteFlags flags)
+        {
+            return Add(item.Key, item.Value, flags);
         }
 
         public void Add(KeyValuePair<string, string> item)
