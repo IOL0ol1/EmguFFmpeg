@@ -140,7 +140,7 @@ namespace EmguFFmpeg.Example.Example
             {
                 lastAudioPts += audioFrame.NbSamples;
                 dstframe.Pts = lastAudioPts;
-                foreach (var packet in writer[videoIndex].WriteFrame(dstframe))
+                foreach (var packet in writer[audioIndex].WriteFrame(dstframe))
                 {
                     writer.WritePacket(packet);
                 }
