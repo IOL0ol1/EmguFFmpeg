@@ -1,9 +1,8 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -74,25 +73,14 @@ namespace EmguFFmpeg
             }
         }
 
-        /// <summary>
-        /// Add stream by encoder
-        /// </summary>
-        /// <param name="encode">Used to codec stream.
-        /// set null to add a data stream but no encoder,
-        /// then use <see cref="WritePacket(MediaPacket)"/> write data directly.
-        /// </param>
-        /// <returns></returns>
-        public MediaStream AddStream(MediaEncoder encode)
+
+        public MediaStream AddStream(MediaCodecContext codecContext, int streamid = -1, MediaCodec codec = null)
         {
-            AVStream* stream = ffmpeg.avformat_new_stream(pFormatContext, null);
-            stream->id = (int)(pFormatContext->nb_streams - 1);
-            // execute in sequence.
-            if (encode != null)
-            {
-                ffmpeg.avcodec_parameters_from_context(stream->codecpar, encode);
-                stream->time_base = encode.AVCodecContext.time_base;
-            }
-            streams.Add(new MediaStream(stream) { Codec = encode });
+            AVStream* stream = ffmpeg.avformat_new_stream(pFormatContext, codec);
+            stream->id = streamid < 0 ? (int)(pFormatContext->nb_streams - 1) : streamid;
+            ffmpeg.avcodec_parameters_from_context(stream->codecpar, codecContext).ThrowIfError();
+            stream->time_base = codecContext.AVCodecContext.time_base;
+            streams.Add(new MediaStream(stream));
             return streams.Last();
         }
 
@@ -143,7 +131,7 @@ namespace EmguFFmpeg
         public int WritePacket([In] MediaPacket packet)
         {
             int ret = ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
-            packet.Clear();
+            packet.Unref();
             return ret;
         }
 
@@ -209,6 +197,6 @@ namespace EmguFFmpeg
             }
         }
 
-        #endregion
+        #endregion IDisposable
     }
 }

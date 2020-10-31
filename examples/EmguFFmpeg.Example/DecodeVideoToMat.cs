@@ -1,14 +1,9 @@
-﻿
-
-
-using FFmpeg.AutoGen;
-
-using System.IO;
+﻿using System.IO;
 using System.Linq;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {
-
     namespace EmgucvExtern
     {
         internal class DecodeVideoToMat
@@ -39,5 +34,4 @@ namespace EmguFFmpeg.Example
             }
         }
     }
-
 }

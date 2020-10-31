@@ -1,14 +1,12 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
     public unsafe class MediaFilterContext
     {
         protected AVFilterContext* pFilterContext;
-
 
         public MediaFilterContext(IntPtr pAVFilterContext)
         {
@@ -87,7 +85,7 @@ namespace EmguFFmpeg
                         break;
                     ret.ThrowIfError();
                     yield return frame;
-                    frame.Clear();
+                    frame.Unref();
                 }
             }
         }

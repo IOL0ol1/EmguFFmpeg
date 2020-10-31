@@ -1,17 +1,11 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {
-    class Video2Frame2Video
+    internal class Video2Frame2Video
     {
-        public Video2Frame2Video(string inputFile,string outputFile)
+        public Video2Frame2Video(string inputFile, string outputFile)
         {
             using (MediaReader reader = new MediaReader(inputFile))
             using (MediaWriter writer = new MediaWriter(outputFile))

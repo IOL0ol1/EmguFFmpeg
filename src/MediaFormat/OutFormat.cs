@@ -1,7 +1,6 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -34,7 +33,6 @@ namespace EmguFFmpeg
             name = name.Trim().TrimStart('.');
             if (!string.IsNullOrEmpty(name))
             {
-
                 foreach (var format in Formats)
                 {
                     // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
@@ -87,11 +85,13 @@ namespace EmguFFmpeg
         }
 
         #region Safe wapper for IEnumerable
+
         private static IntPtr av_muxer_iterate_safe(IntPtr2Ptr ptr)
         {
             return (IntPtr)ffmpeg.av_muxer_iterate(ptr);
         }
-        #endregion
+
+        #endregion Safe wapper for IEnumerable
 
         public AVOutputFormat AVOutputFormat => *pOutputFormat;
 

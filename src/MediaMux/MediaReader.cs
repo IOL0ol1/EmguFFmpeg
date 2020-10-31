@@ -1,9 +1,8 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -144,7 +143,7 @@ namespace EmguFFmpeg
                     if (ret < 0 && ret != ffmpeg.AVERROR_EOF)
                         throw new FFmpegException(ret);
                     yield return packet;
-                    packet.Clear();
+                    packet.Unref();
                 } while (ret >= 0);
             }
         }
@@ -154,7 +153,7 @@ namespace EmguFFmpeg
             return ffmpeg.av_read_frame(pFormatContext, packet);
         }
 
-        #endregion
+        #endregion IEnumerable<MediaPacket>
 
         #region IDisposable
 
@@ -185,6 +184,6 @@ namespace EmguFFmpeg
             }
         }
 
-        #endregion
+        #endregion IDisposable
     }
 }

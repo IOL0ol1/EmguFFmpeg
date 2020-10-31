@@ -1,6 +1,5 @@
-﻿using FFmpeg.AutoGen;
-
-using System.Linq;
+﻿using System.Linq;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {

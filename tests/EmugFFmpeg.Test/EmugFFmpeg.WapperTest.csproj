@@ -52,7 +52,6 @@
     </Content>
   </ItemGroup>
 
-  
   <ItemGroup>
     <ProjectReference Include="..\..\src\EmguFFmpeg.csproj" />
   </ItemGroup>

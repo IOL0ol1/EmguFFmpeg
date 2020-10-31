@@ -1,16 +1,10 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {
     public class VideoChromekeyFilter
     {
-
         /// <summary>
         /// Make the specified color of <paramref name="input0"/> transparent and overlay it on the <paramref name="input1"/> video to <paramref name="output"/>
         /// <para>
@@ -27,12 +21,12 @@ namespace EmguFFmpeg.Example
         /// ┌──────┐     ┌──────┐                     │         │     └──────────┘     └──────┘
         /// │input1│-----│buffer│-------------------->│         │
         /// └──────┘     └──────┘                     └─────────┘
-        /// </summary> 
+        /// </summary>
         /// <param name="input0">foreground</param>
         /// <param name="input1">background</param>
         /// <param name="output">output</param>
         /// <param name="chromakeyOptions">rgb(green or 0x008000):similarity:blend, see http://ffmpeg.org/ffmpeg-filters.html#chromakey </param>
-        public VideoChromekeyFilter(string input0, string input1, string output,string chromakeyOptions = "green:0.1:0.0")
+        public VideoChromekeyFilter(string input0, string input1, string output, string chromakeyOptions = "green:0.1:0.0")
         {
             using (MediaReader reader0 = new MediaReader(input0))
             using (MediaReader reader1 = new MediaReader(input1))
@@ -57,7 +51,7 @@ namespace EmguFFmpeg.Example
                 MediaFilterGraph filterGraph = new MediaFilterGraph();
                 var in0 = filterGraph.AddVideoSrcFilter(new MediaFilter(MediaFilter.VideoSources.Buffer), width0, height0, (AVPixelFormat)format0, time_base0, sample_aspect_ratio0);
                 var in1 = filterGraph.AddVideoSrcFilter(new MediaFilter(MediaFilter.VideoSources.Buffer), width1, height1, (AVPixelFormat)format1, time_base1, sample_aspect_ratio1);
-                var chromakey = filterGraph.AddFilter(new MediaFilter("chromakey"), chromakeyOptions); 
+                var chromakey = filterGraph.AddFilter(new MediaFilter("chromakey"), chromakeyOptions);
                 var overlay = filterGraph.AddFilter(new MediaFilter("overlay"));
                 var out0 = filterGraph.AddVideoSinkFilter(new MediaFilter(MediaFilter.VideoSinks.Buffersink));
                 in0.LinkTo(0, chromakey, 0).LinkTo(0, overlay, 1).LinkTo(0, out0, 0);

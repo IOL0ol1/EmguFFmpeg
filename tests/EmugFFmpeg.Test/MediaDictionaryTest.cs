@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -15,7 +13,6 @@ namespace EmugFFmpeg.WapperTest
 {
     public unsafe class MediaDictionaryTest
     {
-
         protected readonly ITestOutputHelper Output;
 
         public MediaDictionaryTest(ITestOutputHelper testOutput)
@@ -24,7 +21,6 @@ namespace EmugFFmpeg.WapperTest
             /// just work in live unit testing
             FFmpegHelper.RegisterBinaries(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg"));
         }
-
 
         [Fact]
         public void TestNotSupported()
@@ -51,16 +47,16 @@ namespace EmugFFmpeg.WapperTest
             options.Add("k2", "v2");
             Assert.Equal(2, options.Count);
 
-            options.Add("K1", "v3",AVDictWriteFlags.MultiKey);
+            options.Add("K1", "v3", AVDictWriteFlags.MultiKey);
             Assert.Equal(3, options.Count);
-            Assert.Equal("v3",options["K1"]);
-            Assert.Equal("v1",options["k1"]);
+            Assert.Equal("v3", options["K1"]);
+            Assert.Equal("v1", options["k1"]);
 
-            options.Add("k2", "v4",AVDictWriteFlags.DontOverwrite);
+            options.Add("k2", "v4", AVDictWriteFlags.DontOverwrite);
             Assert.Equal(3, options.Count);
             Assert.Equal("v2", options["k2"]);
 
-            options.Add("k1", "v5",AVDictWriteFlags.Append);
+            options.Add("k1", "v5", AVDictWriteFlags.Append);
             Assert.Equal(3, options.Count);
             Assert.Equal("v1v5", options["k1"]);
         }

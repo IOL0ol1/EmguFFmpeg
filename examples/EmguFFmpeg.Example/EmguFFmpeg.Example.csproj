@@ -47,6 +47,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\extensions\EmguFFmpeg.Bitmap\EmguFFmpeg.Bitmap.csproj" />
     <ProjectReference Include="..\..\extensions\EmguFFmpeg.EmguCV\EmguFFmpeg.EmguCV.csproj" />
+    <ProjectReference Include="..\..\src\EmguFFmpeg.csproj" />
   </ItemGroup>
 
 

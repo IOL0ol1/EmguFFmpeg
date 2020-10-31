@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using FFmpeg.AutoGen;
@@ -76,38 +77,12 @@ namespace EmguFFmpeg
             return new string(psbyte, 0, length, Encoding.UTF8);
         }
 
-        /// <summary>
-        /// throw exception if error when it's true, otherwise return error code
-        /// </summary>
-        public static bool IsThrowIfError { get; set; } = true;
-
         internal static int ThrowIfError(this int error)
         {
-            return IsThrowIfError ? (error < 0 ? throw new FFmpegException(error) : error) : error;
+            return error < 0 ? throw new FFmpegException(error) : error;
         }
 
-        /// <summary>
-        /// Convert an <see cref="AVRational"/> to a double use <see cref="ffmpeg.av_q2d(AVRational)"/>.
-        /// <para>
-        /// NOTE: this will lose precision !!
-        /// </para>
-        /// </summary>
-        /// <param name="rational"></param>
-        /// <returns></returns>
-        public static double ToDouble(this AVRational rational)
-        {
-            return ffmpeg.av_q2d(rational);
-        }
 
-        /// <summary>
-        /// Invert a <see cref="AVRational"/> use <see cref="ffmpeg.av_inv_q(AVRational)"/>
-        /// </summary>
-        /// <param name="rational"></param>
-        /// <returns></returns>
-        public static AVRational ToInvert(this AVRational rational)
-        {
-            return ffmpeg.av_inv_q(rational);
-        }
 
         /// <summary>
         /// Return the number of channels in the channel layout use <see cref="ffmpeg.av_get_channel_layout_nb_channels(ulong)"/>
@@ -119,7 +94,7 @@ namespace EmguFFmpeg
             return ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout);
         }
 
-        #endregion
+        #endregion Extension
 
         /// <summary>
         /// Return default channel layout for a given number of channels use <see cref="ffmpeg.av_get_default_channel_layout(int)"/>
@@ -164,7 +139,7 @@ namespace EmguFFmpeg
         /// <summary>
         /// Batch copy <paramref name="src"/> unmanaged memory to <paramref name="dst"/> unmanaged memory.
         /// <para>
-        /// Copy "<paramref name="height"/>" number of lines in a row,"<paramref name="byteWidth"/>" bytes each. 
+        /// Copy "<paramref name="height"/>" number of lines in a row,"<paramref name="byteWidth"/>" bytes each.
         /// The <paramref name="dst"/> address increments by <paramref name="dstLineSize"/> bytes per line.
         /// The <paramref name="src"/> address increments by <paramref name="srcLineSize"/> bytes per line.
         /// </para>
@@ -180,7 +155,6 @@ namespace EmguFFmpeg
             ffmpeg.av_image_copy_plane((byte*)dst, dstLineSize, (byte*)src, srcLineSize, byteWidth, height);
         }
     }
-
 
     /// <summary>
     /// pointer to pointer (void**)
@@ -225,7 +199,6 @@ namespace EmguFFmpeg
         /// </summary>
         public IntPtr Ptr2Ptr { get; private set; }
 
-
         public static implicit operator IntPtr(IntPtr2Ptr ptr2ptr)
         {
             if (ptr2ptr == null) return IntPtr.Zero;
@@ -248,34 +221,42 @@ namespace EmguFFmpeg
         /// <see cref="ffmpeg.AV_LOG_MAX_OFFSET"/>
         /// </summary>
         All = ffmpeg.AV_LOG_MAX_OFFSET,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_TRACE"/>
         /// </summary>
         Trace = ffmpeg.AV_LOG_TRACE,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_DEBUG"/>
         /// </summary>
         Debug = ffmpeg.AV_LOG_DEBUG,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_VERBOSE"/>
         /// </summary>
         Verbose = ffmpeg.AV_LOG_VERBOSE,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_WARNING"/>
         /// </summary>
         Warning = ffmpeg.AV_LOG_WARNING,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_ERROR"/>
         /// </summary>
         Error = ffmpeg.AV_LOG_ERROR,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_FATAL"/>
         /// </summary>
         Fatal = ffmpeg.AV_LOG_FATAL,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_PANIC"/>
         /// </summary>
         Panic = ffmpeg.AV_LOG_PANIC,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_QUIET"/>
         /// </summary>
@@ -286,10 +267,12 @@ namespace EmguFFmpeg
     public enum LogFlags : int
     {
         None = 0,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_SKIP_REPEATED"/>
         /// </summary>
         SkipRepeated = ffmpeg.AV_LOG_SKIP_REPEATED,
+
         /// <summary>
         /// <see cref="ffmpeg.AV_LOG_PRINT_LEVEL"/>
         /// </summary>

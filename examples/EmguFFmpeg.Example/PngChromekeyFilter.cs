@@ -1,7 +1,5 @@
-﻿
+﻿using System.Linq;
 using FFmpeg.AutoGen;
-
-using System.Linq;
 
 namespace EmguFFmpeg.Example
 {
@@ -20,7 +18,7 @@ namespace EmguFFmpeg.Example
         /// <param name="input"></param>
         /// <param name="output"></param>
         /// <param name="chromakeyOptions">rgb(green or 0x008000):similarity:blend, see http://ffmpeg.org/ffmpeg-filters.html#chromakey </param>
-        public PngChromekeyFilter(string input, string output,string chromakeyOptions = "red:0.1:0.0")
+        public PngChromekeyFilter(string input, string output, string chromakeyOptions = "red:0.1:0.0")
         {
             using (MediaReader reader = new MediaReader(input))
             using (MediaWriter writer = new MediaWriter(output))
@@ -46,7 +44,6 @@ namespace EmguFFmpeg.Example
 
                 // init video frame format converter by dstcodec
                 PixelConverter pixelConverter = new PixelConverter(writer[0].Codec);
-
 
                 foreach (var srcPacket in reader.ReadPacket())
                 {

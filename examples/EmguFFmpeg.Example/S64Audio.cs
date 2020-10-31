@@ -1,15 +1,13 @@
 ﻿// TODO: move this part to extension
 
-
-using FFmpeg.AutoGen;
-
 using System;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {
     namespace EmgucvExtern
     {
-        class S64Audio
+        internal class S64Audio
         {
             public S64Audio()
             {
@@ -43,10 +41,8 @@ namespace EmguFFmpeg.Example
         }
     }
 
-
     //namespace OpenCvSharpExtern
     //{
-
     //    using OpenCvSharp;
 
     //    class S64Audio
@@ -57,13 +53,12 @@ namespace EmguFFmpeg.Example
     //            Packet();
     //        }
 
-
     //        private void Planar()
     //        {
     //            AudioFrame dblpPlanarFrame = new AudioFrame(AVSampleFormat.AV_SAMPLE_FMT_S64, 2, 1024, 44100);
     //            var cv64fH1C1 = dblpPlanarFrame.ToMat(); // Cv64F, width 1024, height 1, number of channel 2
     //            cv64fH1C1.GetRectangularArray<Vec2d>(out var data); // Vec*d, * is number of channel
-                
+
     //            var r0 = data.GetLength(0);
     //            var r1 = data.GetLength(1);
     //            var r2 = data[0, 0].Count(); // number of channel

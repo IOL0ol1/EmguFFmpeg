@@ -1,12 +1,10 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-
     /// <summary>
     /// Bitmap extension
     /// </summary>

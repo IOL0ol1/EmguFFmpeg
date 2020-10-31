@@ -1,8 +1,8 @@
-﻿using FFmpeg.AutoGen;
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example.Example
 {
@@ -160,7 +160,6 @@ namespace EmguFFmpeg.Example.Example
         {
             if (!disposedValue)
             {
-
                 writer.FlushMuxer();
                 writer.Dispose();
 
@@ -179,6 +178,6 @@ namespace EmguFFmpeg.Example.Example
             GC.SuppressFinalize(this);
         }
 
-        #endregion
+        #endregion IDisposable Support
     }
 }

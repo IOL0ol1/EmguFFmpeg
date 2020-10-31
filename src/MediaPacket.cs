@@ -1,12 +1,22 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
     public unsafe class MediaPacket : IDisposable, ICloneable
     {
         protected AVPacket* pPacket;
+
+        public MediaPacket Get(IntPtr pAVPacket, bool isDisposeByOwner = true)
+        {
+            if (pAVPacket == IntPtr.Zero) throw new FFmpegException(FFmpegException.NullReference);
+            return new MediaPacket((AVPacket*)pAVPacket) { disposedValue = !isDisposeByOwner };
+        }
+
+        internal MediaPacket(AVPacket* pPacket)
+        {
+            this.pPacket = pPacket;
+        }
 
         public MediaPacket()
         {
@@ -76,7 +86,7 @@ namespace EmguFFmpeg
         /// <summary>
         /// <see cref="ffmpeg.av_packet_unref(AVPacket*)"/>
         /// </summary>
-        public void Clear()
+        public void Unref()
         {
             ffmpeg.av_packet_unref(pPacket);
         }
@@ -135,6 +145,6 @@ namespace EmguFFmpeg
             GC.SuppressFinalize(this);
         }
 
-        #endregion
+        #endregion IDisposable Support
     }
 }

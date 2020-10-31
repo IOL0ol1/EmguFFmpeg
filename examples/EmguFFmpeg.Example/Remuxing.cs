@@ -1,10 +1,9 @@
-﻿using FFmpeg.AutoGen;
-
-using System.IO;
+﻿using System.IO;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {
-    public class Remuxing 
+    public class Remuxing
     {
         public Remuxing(string inputFile)
         {

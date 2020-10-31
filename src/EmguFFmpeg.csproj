@@ -52,6 +52,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="MediaFrame\AudioFrame.cs" />
+    <Compile Remove="MediaFrame\MediaFrameOld.cs" />
+    <Compile Remove="MediaFrame\VideoFrame.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="README.md" />
   </ItemGroup>
 

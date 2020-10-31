@@ -1,7 +1,6 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {

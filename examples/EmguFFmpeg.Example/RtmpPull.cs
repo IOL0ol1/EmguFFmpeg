@@ -1,10 +1,9 @@
-﻿using FFmpeg.AutoGen;
-
-using System.Linq;
+﻿using System.Linq;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {
-    public class RtmpPull 
+    public class RtmpPull
     {
         public RtmpPull(string input)
         {

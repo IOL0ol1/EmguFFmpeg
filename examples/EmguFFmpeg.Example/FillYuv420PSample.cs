@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EmguFFmpeg.Example
 {
@@ -23,12 +17,16 @@ namespace EmguFFmpeg.Example
         /// <param name="fps">video fps</param>
         public FillYuv420PSample(string outputFile, int width, int height, int fps)
         {
-
             var dir = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(outputFile), Path.GetFileNameWithoutExtension(outputFile))).FullName;
 
             using (MediaWriter writer = new MediaWriter(outputFile))
             {
-                writer.AddStream(MediaEncoder.CreateVideoEncode(writer.Format, width, height, fps));
+                //writer.AddStream(MediaEncoder.CreateVideoEncode(writer.Format, width, height, fps));
+                var codec = new MediaCodecContext()
+                {
+                    
+                };
+                //writer.AddStream();
                 writer.Initialize();
 
                 VideoFrame srcframe = new VideoFrame(width, height, FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_YUV420P);
@@ -69,7 +67,6 @@ namespace EmguFFmpeg.Example
                 b.Save(output);
             }
         }
-
 
         /// <summary>
         /// Fill frame

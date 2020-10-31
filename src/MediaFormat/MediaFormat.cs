@@ -7,6 +7,7 @@
         public abstract string LongName { get; }
         public abstract string Extensions { get; }
         public abstract string MimeType { get; }
+
         public override string ToString()
         {
             return Name;

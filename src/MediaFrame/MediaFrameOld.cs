@@ -5,56 +5,13 @@ using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaFrame : IDisposable
+    public unsafe abstract class MediaFrameOld : IDisposable
     {
         protected AVFrame* pFrame;
 
-        public static MediaFrame FromNative(IntPtr pAVFrame, bool isDisposeByOwner = true)
-        {
-            if (pAVFrame == IntPtr.Zero) throw new FFmpegException(FFmpegException.NullReference);
-            return new MediaFrame((AVFrame*)pAVFrame) { disposedValue = !isDisposeByOwner };
-        }
-
-        internal MediaFrame(AVFrame* pFrame)
-        {
-            this.pFrame = pFrame;
-        }
-
-        public MediaFrame()
+        public MediaFrameOld()
         {
             pFrame = ffmpeg.av_frame_alloc();
-        }
-
-
-        public static MediaFrame CreateVideoFrame(int width, int height, AVPixelFormat pixelFormat, int align = 0)
-        {
-            var f = new MediaFrame();
-            f.pFrame->format = (int)pixelFormat;
-            f.pFrame->width = width;
-            f.pFrame->height = height;
-            f.GetBuffer(align);
-            return f;
-        }
-
-        public static MediaFrame CreateAudioFrame(int channels, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
-        {
-            var f = new MediaFrame();
-            f.pFrame->format = (int)format;
-            f.pFrame->channels = channels;
-            f.pFrame->nb_samples = nbSamples;
-            f.pFrame->sample_rate = sampleRate;
-            f.GetBuffer(align);
-            return f;
-        }
-
-        public static MediaFrame CreateAudioFrame(AVChannelLayout channelLayout, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
-        {
-            return CreateAudioFrame(ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout), nbSamples, format, sampleRate, align);
-        }
-
-        private void GetBuffer(int align)
-        {
-            ffmpeg.av_frame_get_buffer(pFrame, align).ThrowIfError();
         }
 
         public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->channels > 0;
@@ -235,7 +192,7 @@ namespace EmguFFmpeg
             }
         }
 
-        ~MediaFrame()
+        ~MediaFrameOld()
         {
             Dispose(false);
         }
@@ -251,14 +208,16 @@ namespace EmguFFmpeg
         /// <summary>
         /// <see cref="ffmpeg.av_frame_unref(AVFrame*)"/>
         /// </summary>
-        public void Unref()
+        public void Clear()
         {
             ffmpeg.av_frame_unref(pFrame);
         }
 
+        public abstract MediaFrameOld Copy();
+
         public AVFrame AVFrame => *pFrame;
 
-        public static implicit operator AVFrame*(MediaFrame value)
+        public static implicit operator AVFrame*(MediaFrameOld value)
         {
             if (value == null) return null;
             return value.pFrame;

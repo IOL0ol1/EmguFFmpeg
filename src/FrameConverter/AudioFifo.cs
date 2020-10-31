@@ -1,6 +1,6 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
+using System.ComponentModel;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -9,7 +9,13 @@ namespace EmguFFmpeg
     /// </summary>
     public unsafe class AudioFifo : IDisposable
     {
-        private AVAudioFifo* pAudioFifo;
+        protected AVAudioFifo* pAudioFifo;
+
+        protected AudioFifo() { }
+        public static AudioFifo FromNative(IntPtr pAVAudioFifo, bool isDisposeByOwner = true)
+        {
+            return new AudioFifo() { pAudioFifo = (AVAudioFifo*)pAVAudioFifo, disposedValue = !isDisposeByOwner };
+        }
 
         /// <summary>
         /// alloc <see cref="AVAudioFifo"/>
@@ -139,6 +145,6 @@ namespace EmguFFmpeg
             GC.SuppressFinalize(this);
         }
 
-        #endregion
+        #endregion IDisposable Support
     }
 }

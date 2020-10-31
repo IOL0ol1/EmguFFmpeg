@@ -1,13 +1,11 @@
-﻿using Emgu.CV;
+﻿using System;
+using Emgu.CV;
 using Emgu.CV.Structure;
-
 using FFmpeg.AutoGen;
-
-using System;
 
 namespace EmguFFmpeg.Example
 {
-    public class EncodeVideoByMat 
+    public class EncodeVideoByMat
     {
         /// <summary>
         /// create a 60 / <paramref name="fps"/> second video
@@ -52,7 +50,6 @@ namespace EmguFFmpeg.Example
 
                 // flush cache
                 writer.FlushMuxer();
-
             }
         }
     }

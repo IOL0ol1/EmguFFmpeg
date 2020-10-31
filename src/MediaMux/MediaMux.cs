@@ -1,10 +1,9 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -71,7 +70,7 @@ namespace EmguFFmpeg
             }
         }
 
-        #endregion
+        #endregion Stream Support
 
         /// <summary>
         ///  Print detailed information about the format, such as duration,
@@ -109,7 +108,7 @@ namespace EmguFFmpeg
             return GetEnumerator();
         }
 
-        #endregion
+        #endregion IReadOnlyList<MediaStream>
 
         #region IDisposable Support
 
@@ -126,6 +125,6 @@ namespace EmguFFmpeg
 
         protected abstract void Dispose(bool disposing);
 
-        #endregion
+        #endregion IDisposable Support
     }
 }

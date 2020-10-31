@@ -1,7 +1,6 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Runtime.Serialization;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -45,8 +44,8 @@ namespace EmguFFmpeg
             : base(serializationInfo, streamingContext)
         { }
 
-
         #region custom error string
+
         public const string FFmpegError = "FFmpeg error";
         public const string NotSupportCodecId = "not supported codec id";
         public const string NotSupportSampleRate = "not supported sample rate";
@@ -71,6 +70,6 @@ namespace EmguFFmpeg
         public static string NotImplemented { get; } = new NotImplementedException().Message; // for i18n string
         public static string NullReference { get; } = new NullReferenceException().Message; // for i18n string
 
-        #endregion
+        #endregion custom error string
     }
 }

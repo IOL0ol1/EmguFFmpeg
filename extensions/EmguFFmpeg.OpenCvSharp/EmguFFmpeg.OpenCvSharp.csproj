@@ -56,11 +56,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\EmguFFmpeg.csproj" />
+    <None Include="..\..\icon.png" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\icon.png" Pack="true" Visible="false" PackagePath="" />
+    <ProjectReference Include="..\..\src\EmguFFmpeg.csproj" />
   </ItemGroup>
 
 </Project>

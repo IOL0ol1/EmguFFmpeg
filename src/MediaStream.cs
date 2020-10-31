@@ -1,8 +1,6 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -87,16 +85,22 @@ namespace EmguFFmpeg
         /// <param name="frame"></param>
         /// <exception cref="FFmpegException"/>
         /// <returns></returns>
+
         public IEnumerable<MediaPacket> WriteFrame(MediaFrame frame)
         {
             if (!HasEncoder)
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            foreach (var packet in (Codec as MediaEncoder).EncodeFrame(frame))
+            foreach (var packet in GetCodecContext().EncodeFrame(frame))
             {
                 PacketRescaleTs(packet);
                 packet.StreamIndex = Stream.index;
                 yield return packet;
             }
+        }
+
+        private MediaCodecContext GetCodecContext()
+        {
+            return MediaCodecContext.FromNative((IntPtr)pStream->codec, false);
         }
 
         /// <summary>
@@ -106,7 +110,7 @@ namespace EmguFFmpeg
         /// <param name="packet"></param>
         public void PacketRescaleTs(MediaPacket packet)
         {
-            ffmpeg.av_packet_rescale_ts(packet, Codec.AVCodecContext.time_base, Stream.time_base);
+            ffmpeg.av_packet_rescale_ts(packet, pStream->codec->time_base, Stream.time_base);
         }
 
         /// <summary>

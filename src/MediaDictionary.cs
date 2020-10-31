@@ -9,7 +9,6 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaDictionary : IDictionary<string, string>, IDisposable
     {
-
         private AVDictionary* pDictionary = null;
 
         public MediaDictionary()
@@ -120,6 +119,7 @@ namespace EmguFFmpeg
         }
 
         #region IEnumerator
+
         private static IntPtr av_dict_get_safe(MediaDictionary dict, string key, IntPtr prev, AVDictReadFlags flags)
         {
             return (IntPtr)ffmpeg.av_dict_get(dict.pDictionary, key, (AVDictionaryEntry*)prev, (int)flags);
@@ -131,7 +131,6 @@ namespace EmguFFmpeg
             return new KeyValuePair<string, string>(entry.GetKey(), entry.GetValue());
         }
 
-
         public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
         {
             IntPtr prev = IntPtr.Zero;
@@ -141,7 +140,7 @@ namespace EmguFFmpeg
             }
         }
 
-        #endregion
+        #endregion IEnumerator
 
         /// <summary>
         /// remove first match entry, can call multiple times to delete a entry with the same key
@@ -192,7 +191,6 @@ namespace EmguFFmpeg
             while ((prev = (AVDictionaryEntry*)av_dict_get_safe(this, key, (IntPtr)prev, flags)) != null)
             {
                 list.Add((*prev).GetValue());
-
             }
             values = list.ToArray();
             return values.Length > 0;
@@ -230,10 +228,8 @@ namespace EmguFFmpeg
         }
     }
 
-
     public unsafe static class AVDictionaryEntryEx
     {
-
         /// <summary>
         /// convert <see cref="AVDictionaryEntry"/> to <see cref="KeyValuePair{TKey, TValue}"/>
         /// </summary>
@@ -265,7 +261,6 @@ namespace EmguFFmpeg
         }
     }
 
-
     [Flags]
     public enum AVDictReadFlags : int
     {
@@ -275,7 +270,7 @@ namespace EmguFFmpeg
         None = 0,
 
         /// <summary>
-        /// Only get an entry with exact-case key match. Only relevant in av_dict_get(). 
+        /// Only get an entry with exact-case key match. Only relevant in av_dict_get().
         /// <para>{"k1","v1"}</para>
         /// <para>//get "k1" is "v1"</para>
         /// <para>//get "K1" is null</para>

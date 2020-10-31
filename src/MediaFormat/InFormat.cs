@@ -1,8 +1,6 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -71,7 +69,6 @@ namespace EmguFFmpeg
         {
             return (IntPtr)ffmpeg.av_demuxer_iterate(opaque);
         }
-
 
         public AVInputFormat AVInputFormat => *pInputFormat;
 

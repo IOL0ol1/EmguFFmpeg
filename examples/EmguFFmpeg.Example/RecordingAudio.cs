@@ -1,7 +1,6 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Linq;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {
@@ -10,7 +9,7 @@ namespace EmguFFmpeg.Example
         /// <summary>
         /// recording audio.
         /// <para>
-        /// first set inputDeviceName = null, you will get inputDeviceName list in vs output, 
+        /// first set inputDeviceName = null, you will get inputDeviceName list in vs output,
         /// </para>
         /// <para>
         /// then set inputDeviceName to your real device name and run again,you will get a audio output.

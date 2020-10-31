@@ -1,10 +1,8 @@
-﻿
-using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {
@@ -25,16 +23,15 @@ namespace EmguFFmpeg.Example
         /// <param name="scaleOptions">scale options see http://ffmpeg.org/ffmpeg-filters.html#scale-1 </param>
         public DecodeVideoWithCustomCodecScaledToMat(string inputFile, string outDirectory, string scaleOptions = "512:288")
         {
-
             using (MediaReader reader = new MediaReader(inputFile, null, null))
             {
-
                 var videoIndex = reader.First(_ => _.Codec.AVCodecContext.codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO).Index;
 
                 unsafe
                 {
                     // relpace the default vide decode
                     // !!! IMPORTANT NOTE: This sample won't work, if you haven't downloaded ffmpeg (GPL license, as it is more complete), and you don't have NVIDIA hardware (CUDA) !!!
+
                     reader[videoIndex].Codec = MediaDecoder.CreateDecoder("h264_cuvid", _ => ffmpeg.avcodec_parameters_to_context(_, reader[videoIndex].Stream.codecpar));
                 }
 

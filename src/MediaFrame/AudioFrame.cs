@@ -1,12 +1,11 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe class AudioFrame : MediaFrame
+    public unsafe class AudioFrame : MediaFrameOld
     {
         /// <summary>
         /// create a audio frame by codec's parames

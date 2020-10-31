@@ -1,12 +1,10 @@
-﻿using Emgu.CV;
-
+﻿using System.Linq;
+using Emgu.CV;
 using FFmpeg.AutoGen;
-
-using System.Linq;
 
 namespace EmguFFmpeg.Example
 {
-    public class DecodeAudioToMat  
+    public class DecodeAudioToMat
     {
         public DecodeAudioToMat(string inputFile)
         {

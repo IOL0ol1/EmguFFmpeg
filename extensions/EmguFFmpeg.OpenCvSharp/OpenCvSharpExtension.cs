@@ -1,8 +1,6 @@
-﻿using FFmpeg.AutoGen;
-
+﻿using System;
+using FFmpeg.AutoGen;
 using OpenCvSharp;
-
-using System;
 
 namespace EmguFFmpeg
 {
@@ -66,7 +64,6 @@ namespace EmguFFmpeg
 
         private static Mat AudioFrameToMat(AudioFrame frame)
         {
-
             int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)frame.AVFrame.format);
             int planes = planar != 0 ? frame.AVFrame.channels : 1;
             int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)frame.AVFrame.format) * (planar != 0 ? 1 : frame.AVFrame.channels);
@@ -268,7 +265,6 @@ namespace EmguFFmpeg
             ffmpeg.av_image_copy_plane((byte*)frame.Data[0], frame.AVFrame.linesize[0], mat.DataPointer, stride, bytewidth, frame.AVFrame.height);
             return frame;
         }
-
 
         /// <summary>
         /// Convert to <see cref="long"/> array use <see cref="BitConverter.DoubleToInt64Bits(double)"/>

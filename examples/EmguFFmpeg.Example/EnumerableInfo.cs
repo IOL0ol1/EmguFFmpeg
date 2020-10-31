@@ -1,10 +1,8 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.Example
 {
@@ -58,8 +56,6 @@ namespace EmguFFmpeg.Example
             log?.Invoke("---------------------");
             MediaFilter.Filters.ForEach(_ => log?.Invoke($"Filter {_}"));
         }
-
-
     }
 
     internal static class LinqForEach

@@ -1,10 +1,8 @@
-﻿using Emgu.CV;
+﻿using System;
+using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
-
 using FFmpeg.AutoGen;
-
-using System;
 
 namespace EmguFFmpeg
 {

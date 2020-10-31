@@ -1,7 +1,6 @@
-﻿using Emgu.CV;
-
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
+using Emgu.CV;
 
 namespace EmguFFmpeg.Example
 {

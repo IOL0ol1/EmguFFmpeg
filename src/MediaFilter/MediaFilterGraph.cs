@@ -1,8 +1,7 @@
-﻿using FFmpeg.AutoGen;
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
@@ -38,8 +37,8 @@ namespace EmguFFmpeg
                  ffmpeg.av_opt_set_q(_, "pixel_aspect", aspect, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                  ffmpeg.av_opt_set_q(_, "time_base", timebase, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                  if (framerate.den != 0) // if is default value(0/0), not set frame_rate.
-                         ffmpeg.av_opt_set_q(_, "frame_rate", framerate, ffmpeg.AV_OPT_SEARCH_CHILDREN); // not set is 0/1
-                     if (swsparam != null)
+                     ffmpeg.av_opt_set_q(_, "frame_rate", framerate, ffmpeg.AV_OPT_SEARCH_CHILDREN); // not set is 0/1
+                 if (swsparam != null)
                      ffmpeg.av_opt_set(_, "sws_param", swsparam, ffmpeg.AV_OPT_SEARCH_CHILDREN);
              }, contextName);
             if (filterContext.NbInputs > 0)
@@ -252,6 +251,6 @@ namespace EmguFFmpeg
             GC.SuppressFinalize(this);
         }
 
-        #endregion
+        #endregion IDisposable Support
     }
 }

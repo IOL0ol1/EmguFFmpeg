@@ -1,6 +1,4 @@
-﻿
-
-namespace EmguFFmpeg
+﻿namespace EmguFFmpeg
 {
 #if NET40
     using System.Collections.Generic;
