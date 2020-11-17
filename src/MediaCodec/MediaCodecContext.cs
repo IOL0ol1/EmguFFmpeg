@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
@@ -11,20 +12,37 @@ namespace EmguFFmpeg
         protected AVCodecContext* pCodecContext = null;
         private bool disposedValue;
 
+
+        public static implicit operator AVCodec*(MediaCodecContext value)
+        {
+            if (value == null || value.pCodecContext == null) return null;
+            return value.pCodecContext->codec;
+        }
+
         public static implicit operator AVCodecContext*(MediaCodecContext value)
         {
             if (value == null) return null;
             return value.pCodecContext;
         }
 
-        public static MediaCodecContext FromNative(IntPtr pCodecContext, bool isDisposeByOwner = true)
+        public static MediaCodecContext FromNative(AVCodecContext* pCodecContext, bool isDisposeByOwner = true)
         {
-            return new MediaCodecContext() { pCodecContext = (AVCodecContext*)pCodecContext, disposedValue = !isDisposeByOwner };
+            return new MediaCodecContext() { pCodecContext = pCodecContext, disposedValue = !isDisposeByOwner };
         }
 
-        public static MediaCodecContext Get(IntPtr pCodecContext, IntPtr pCodec, bool isDisposeByOwner = true)
+        public static MediaCodecContext FromNative(AVCodecContext* pCodecContext, AVCodec* pCodec, bool isDisposeByOwner = true)
         {
-            return new MediaCodecContext(MediaCodec.FromNative(pCodec)) { pCodecContext = (AVCodecContext*)pCodecContext, disposedValue = !isDisposeByOwner };
+            return new MediaCodecContext(MediaCodec.FromNative(pCodec)) { pCodecContext = pCodecContext, disposedValue = !isDisposeByOwner };
+        }
+
+        public static MediaCodecContext FromNative(IntPtr pCodecContext, bool isDisposeByOwner = true)
+        {
+            return FromNative((AVCodecContext*)pCodecContext, isDisposeByOwner);
+        }
+
+        public static MediaCodecContext FromNative(IntPtr pCodecContext, IntPtr pCodec, bool isDisposeByOwner = true)
+        {
+            return FromNative((AVCodecContext*)pCodecContext, (AVCodec*)pCodec, isDisposeByOwner);
         }
 
         public MediaCodecContext(MediaCodec codec = null)
@@ -36,6 +54,11 @@ namespace EmguFFmpeg
 
         public AVCodecContext AVCodecContext => *pCodecContext;
 
+        public AVMediaType CodecType
+        {
+            get => pCodecContext->codec_type;
+            set => pCodecContext->codec_type = value;
+        }
 
         public int Height
         {
@@ -48,7 +71,6 @@ namespace EmguFFmpeg
             get => pCodecContext->width;
             set => pCodecContext->width = value;
         }
-
 
         public MediaRational TimeBase
         {
@@ -66,6 +88,13 @@ namespace EmguFFmpeg
         {
             get => pCodecContext->bit_rate;
             set => pCodecContext->bit_rate = value;
+        }
+
+
+        public int Refs
+        {
+            get => pCodecContext->refs;
+            set => pCodecContext->refs = value;
         }
 
         public int SampleRate
@@ -98,6 +127,17 @@ namespace EmguFFmpeg
             set => pCodecContext->flags = value;
         }
 
+        public int Profile
+        {
+            get => pCodecContext->profile;
+            set => pCodecContext->profile = value;
+        }
+
+        public int Level
+        {
+            get => pCodecContext->level;
+            set => pCodecContext->level = value;
+        }
 
         public void Open(MediaCodec codec, MediaDictionary opts = null)
         {
@@ -241,6 +281,7 @@ namespace EmguFFmpeg
         public int ReceiveFrame([Out] MediaFrame frame) => ffmpeg.avcodec_receive_frame(pCodecContext, frame);
 
         #endregion safe wapper for IEnumerable
+
 
         protected virtual void Dispose(bool disposing)
         {

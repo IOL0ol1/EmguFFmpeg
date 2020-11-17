@@ -1,15 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
     public unsafe class MediaCodec
     {
+
+        public static MediaCodec FromNative(AVCodec* pCodec)
+        {
+            if (pCodec == null) throw new FFmpegException(FFmpegException.NullReference);
+            return new MediaCodec() { pCodec = pCodec };
+        }
+
         public static MediaCodec FromNative(IntPtr pCodec)
         {
-            if (pCodec == IntPtr.Zero) throw new FFmpegException(FFmpegException.NullReference);
-            return new MediaCodec() { pCodec = (AVCodec*)pCodec };
+            return FromNative((AVCodec*)pCodec);
         }
 
         /// <summary>

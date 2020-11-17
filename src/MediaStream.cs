@@ -100,7 +100,7 @@ namespace EmguFFmpeg
 
         private MediaCodecContext GetCodecContext()
         {
-            return MediaCodecContext.FromNative((IntPtr)pStream->codec, false);
+            return MediaCodecContext.FromNative(pStream->codec, false);
         }
 
         /// <summary>
