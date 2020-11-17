@@ -6,7 +6,17 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaStream
     {
-        public MediaCodec Codec { get; set; }
+        public MediaCodecContext Codec { get; set; }
+
+        public static MediaStream FromNative(IntPtr pAVStream)
+        {
+            return FromNative((AVStream*)pAVStream);
+        }
+
+        public  static MediaStream FromNative(AVStream* stream)
+        {
+            return new MediaStream(stream);
+        }
 
         internal MediaStream(AVStream* stream)
         {
@@ -71,7 +81,7 @@ namespace EmguFFmpeg
                 yield break;
             if (packet.StreamIndex != Index)
                 yield break;
-            foreach (var item in (Codec as MediaDecoder).DecodePacket(packet))
+            foreach (var item in Codec.DecodePacket(packet))
             {
                 yield return item;
             }

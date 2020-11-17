@@ -11,7 +11,7 @@ namespace EmguFFmpeg
         public static MediaCodec FromNative(AVCodec* pCodec)
         {
             if (pCodec == null) throw new FFmpegException(FFmpegException.NullReference);
-            return new MediaCodec() { pCodec = pCodec };
+            return new MediaCodec(pCodec);
         }
 
         public static MediaCodec FromNative(IntPtr pCodec)
@@ -29,7 +29,7 @@ namespace EmguFFmpeg
             AVCodec* pCodec;
             if ((pCodec = ffmpeg.avcodec_find_encoder_by_name(codecName)) == null)
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            return FromNative((IntPtr)pCodec);
+            return new MediaCodec(pCodec);
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace EmguFFmpeg
             AVCodec* pCodec;
             if ((pCodec = ffmpeg.avcodec_find_encoder(codecId)) == null && codecId != AVCodecID.AV_CODEC_ID_NONE)
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            return FromNative((IntPtr)pCodec);
+            return new MediaCodec(pCodec);
         }
 
         /// <summary>
@@ -56,7 +56,7 @@ namespace EmguFFmpeg
             AVCodec* pCodec;
             if ((pCodec = ffmpeg.avcodec_find_decoder_by_name(codecName)) == null)
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            return FromNative((IntPtr)pCodec);
+            return new MediaCodec(pCodec);
         }
 
         /// <summary>
@@ -70,11 +70,12 @@ namespace EmguFFmpeg
             AVCodec* pCodec;
             if ((pCodec = ffmpeg.avcodec_find_decoder(codecId)) == null && codecId != AVCodecID.AV_CODEC_ID_NONE)
                 throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            return FromNative((IntPtr)pCodec);
+            return new MediaCodec(pCodec);
         }
 
-        private MediaCodec()
+        internal MediaCodec(AVCodec* codec)
         {
+            pCodec = codec;
         }
 
         protected AVCodec* pCodec = null;
