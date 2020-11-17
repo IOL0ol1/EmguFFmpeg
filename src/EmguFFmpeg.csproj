@@ -66,6 +66,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen" Version="4.3.0.1" />
+    <PackageReference Include="FFmpeg.AutoGen" Version="4.3.1" />
   </ItemGroup>
 </Project>
