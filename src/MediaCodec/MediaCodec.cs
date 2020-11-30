@@ -7,20 +7,29 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaCodec
     {
-
+        /// <summary>
+        /// Get <see cref="MediaCodec"/> from <see cref="AVCodec"/>*
+        /// </summary>
+        /// <param name="pCodec"><see cref="AVCodec"/>*</param>
+        /// <returns></returns>
         public static MediaCodec FromNative(AVCodec* pCodec)
         {
             if (pCodec == null) throw new FFmpegException(FFmpegException.NullReference);
             return new MediaCodec(pCodec);
         }
 
+        /// <summary>
+        /// Get <see cref="MediaCodec"/> from <see cref="AVCodec"/>*
+        /// </summary>
+        /// <param name="pCodec"><see cref="AVCodec"/>*</param>
+        /// <returns></returns>
         public static MediaCodec FromNative(IntPtr pCodec)
         {
             return FromNative((AVCodec*)pCodec);
         }
 
         /// <summary>
-        /// <see cref="ffmpeg.avcodec_find_encoder_by_name(string)"/>
+        /// Get <see cref="MediaCodec"/> by <see cref="ffmpeg.avcodec_find_encoder_by_name(string)"/>
         /// </summary>
         /// <param name="codecName"></param>
         /// <returns></returns>
@@ -33,7 +42,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// <see cref="ffmpeg.avcodec_find_encoder(AVCodecID)"/>
+        /// Get <see cref="MediaCodec"/> by <see cref="ffmpeg.avcodec_find_encoder(AVCodecID)"/>
         /// </summary>
         /// <param name="codecId"></param>
         /// <returns></returns>
@@ -47,7 +56,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// <see cref="ffmpeg.avcodec_find_decoder_by_name(string)"/>
+        /// Get <see cref="MediaCodec"/> by <see cref="ffmpeg.avcodec_find_decoder_by_name(string)"/>
         /// </summary>
         /// <param name="codecName"></param>
         /// <returns></returns>
@@ -60,7 +69,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// <see cref="ffmpeg.avcodec_find_decoder(AVCodecID)"/>
+        /// Get <see cref="MediaCodec"/> by <see cref="ffmpeg.avcodec_find_decoder(AVCodecID)"/>
         /// </summary>
         /// <param name="codecId"></param>
         /// <returns></returns>
@@ -97,6 +106,9 @@ namespace EmguFFmpeg
             return (IntPtr)ffmpeg.av_codec_iterate(opaque);
         }
 
+        /// <summary>
+        /// Get all supported codec
+        /// </summary>
         public static IEnumerable<MediaCodec> Codecs
         {
             get
@@ -114,7 +126,7 @@ namespace EmguFFmpeg
 
         #region Supported
 
-        private static KeyValuePair<int, string>? av_get_profile_name_safe(MediaCodec codec, int i)
+        protected static KeyValuePair<int, string>? av_get_profile_name_safe(MediaCodec codec, int i)
         {
             var ptr = codec.pCodec->profiles + i;
             return ptr != null ?
@@ -134,7 +146,7 @@ namespace EmguFFmpeg
             }
         }
 
-        private static AVCodecHWConfig? avcodec_get_hw_config_safe(MediaCodec codec, int i)
+        protected static AVCodecHWConfig? avcodec_get_hw_config_safe(MediaCodec codec, int i)
         {
             var ptr = ffmpeg.avcodec_get_hw_config(codec, i);
             return ptr != null ? *ptr : (AVCodecHWConfig?)null;
@@ -152,7 +164,7 @@ namespace EmguFFmpeg
             }
         }
 
-        private static AVPixelFormat? pix_fmts_next_safe(MediaCodec codec, int i)
+        protected static AVPixelFormat? pix_fmts_next_safe(MediaCodec codec, int i)
         {
             var ptr = codec.pCodec->pix_fmts + i;
             return ptr != null ? *ptr : (AVPixelFormat?)null;
@@ -173,7 +185,7 @@ namespace EmguFFmpeg
             }
         }
 
-        private AVRational? supported_framerates_next_safe(MediaCodec codec, int i)
+        protected AVRational? supported_framerates_next_safe(MediaCodec codec, int i)
         {
             var ptr = codec.pCodec->supported_framerates + i;
             return ptr != null ? *ptr : (AVRational?)null;
@@ -194,7 +206,7 @@ namespace EmguFFmpeg
             }
         }
 
-        private AVSampleFormat? sample_fmts_next_safe(MediaCodec codec, int i)
+        protected AVSampleFormat? sample_fmts_next_safe(MediaCodec codec, int i)
         {
             var ptr = codec.pCodec->sample_fmts + i;
             return ptr != null ? *ptr : (AVSampleFormat?)null;
@@ -215,7 +227,7 @@ namespace EmguFFmpeg
             }
         }
 
-        private int? supported_samplerates_next_safe(MediaCodec codec, int i)
+        protected int? supported_samplerates_next_safe(MediaCodec codec, int i)
         {
             var ptr = codec.pCodec->supported_samplerates + i;
             return ptr != null ? *ptr : (int?)null;
@@ -236,7 +248,7 @@ namespace EmguFFmpeg
             }
         }
 
-        private ulong? channel_layouts_next_safe(MediaCodec codec, int i)
+        protected ulong? channel_layouts_next_safe(MediaCodec codec, int i)
         {
             var ptr = codec.pCodec->channel_layouts + i;
             return ptr != null ? *ptr : (ulong?)null;

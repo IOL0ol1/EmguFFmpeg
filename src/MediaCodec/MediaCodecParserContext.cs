@@ -23,7 +23,7 @@ namespace EmguFFmpeg
             return new MediaCodecParserContext(pAVCodecParserContext, bufferSize, !isDisposeByOwner);
         }
 
-        internal MediaCodecParserContext(AVCodecParserContext* pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
+        protected MediaCodecParserContext(AVCodecParserContext* pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
         {
             pCodecParserContext = pAVCodecParserContext;
             disposedValue = !isDisposeByOwner;
@@ -42,13 +42,13 @@ namespace EmguFFmpeg
         protected byte[] buffer;
 
         /// <summary>
-        /// TODO
+        /// TODO:
         /// </summary>
         /// <param name="codecContext"></param>
         /// <param name="stream"></param>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public IEnumerator<MediaPacket> Parser(MediaCodecContext codecContext, Stream stream, MediaPacket packet = null)
+        public IEnumerator<MediaPacket> ParserPacket(MediaCodecContext codecContext, Stream stream, MediaPacket packet = null)
         {
             //int dataSize;
             //while ((dataSize = stream.Read(buffer, 0, size)) != 0)
@@ -70,6 +70,18 @@ namespace EmguFFmpeg
             throw new NotImplementedException();
         }
 
+
+        /// <summary>
+        /// TODO:
+        /// </summary>
+        /// <param name="codecContext"></param>
+        /// <param name="stream"></param>
+        /// <param name="packet"></param>
+        /// <returns></returns>
+        public IEnumerable<MediaFrame> Parser(MediaCodecContext codecContext, Stream stream, MediaPacket packet = null)
+        {
+            throw new NotImplementedException();
+        }
 
         private bool disposedValue;
 

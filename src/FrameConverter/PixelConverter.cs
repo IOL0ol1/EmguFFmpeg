@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
@@ -18,7 +19,11 @@ namespace EmguFFmpeg
         private bool disposedValue;
 
 
-        protected PixelConverter() { }
+        protected PixelConverter(SwsContext* pSws, bool isDisposeByOwner = true)
+        {
+            pSwsContext = pSws;
+            disposedValue = !isDisposeByOwner;
+        }
 
         /// <summary>
         /// NOTE: must set <see cref="DstFrame"/> before use!!!
@@ -28,7 +33,12 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public static PixelConverter FromNative(IntPtr pSwsContext, bool isDisposeByOwner = true)
         {
-            return new PixelConverter() { pSwsContext = (SwsContext*)pSwsContext, disposedValue = !isDisposeByOwner };
+            return new PixelConverter((SwsContext*)pSwsContext, !isDisposeByOwner);
+        }
+
+        public static PixelConverter FromNative(SwsContext* pSwsContext, bool isDisposeByOwner = true)
+        {
+            return new PixelConverter(pSwsContext, !isDisposeByOwner);
         }
 
 
