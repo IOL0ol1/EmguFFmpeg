@@ -74,9 +74,9 @@ namespace EmguFFmpeg
         }
 
 
-        public MediaStream AddStream(MediaCodecContext codecContext, int streamid = -1, MediaCodec codec = null)
+        public MediaStream AddStream(MediaCodecContext codecContext, int streamid = -1)
         {
-            AVStream* stream = ffmpeg.avformat_new_stream(pFormatContext, codec);
+            AVStream* stream = ffmpeg.avformat_new_stream(pFormatContext, null);
             stream->id = streamid < 0 ? (int)(pFormatContext->nb_streams - 1) : streamid;
             ffmpeg.avcodec_parameters_from_context(stream->codecpar, codecContext).ThrowIfError();
             stream->time_base = codecContext.AVCodecContext.time_base;
