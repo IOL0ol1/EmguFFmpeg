@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\EmguFFmpeg.csproj" />
-    <ProjectReference Include="..\EmugFFmpeg.Test\EmugFFmpeg.WapperTest.csproj" />
   </ItemGroup>
 
 
