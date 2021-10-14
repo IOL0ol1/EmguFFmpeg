@@ -20,6 +20,9 @@ namespace EmguFFmpeg
             this.pFrame = pFrame;
         }
 
+        /// <summary>
+        /// <see cref="ffmpeg.av_frame_alloc()"/>
+        /// </summary>
         public MediaFrame()
         {
             pFrame = ffmpeg.av_frame_alloc();

@@ -9,33 +9,33 @@ namespace EmguFFmpeg.AppTest
         {
            
 
-            var outputFile = "111.mp4";
-            var width = 800;
-            var height = 600;
-            var fps = 60;
-            using (MediaWriter writer = new MediaWriter(outputFile))
-            {
-                writer.AddStream(MediaEncoder.CreateVideoEncode(writer.Format, width, height, fps));
-                writer.Initialize();
+            //var outputFile = "111.mp4";
+            //var width = 800;
+            //var height = 600;
+            //var fps = 60;
+            //using (MediaWriter writer = new MediaWriter(outputFile))
+            //{
+            //    writer.AddStream(MediaEncoder.CreateVideoEncode(writer.Format, width, height, fps));
+            //    writer.Initialize();
 
-                VideoFrame dstframe = VideoFrame.CreateFrameByCodec(writer[0].Codec);
+            //    VideoFrame dstframe = VideoFrame.CreateFrameByCodec(writer[0].Codec);
 
-                Random random = new Random();
-                for (int i = 0; i < 61; i++)
-                {
-                    // create a video frame by Mat
-                    FillYuv420P(dstframe, i);
+            //    Random random = new Random();
+            //    for (int i = 0; i < 61; i++)
+            //    {
+            //        // create a video frame by Mat
+            //        FillYuv420P(dstframe, i);
 
-                    dstframe.Pts = i;  
-                    foreach (var packet in writer[0].WriteFrame(dstframe))
-                    {
-                        writer.WritePacket(packet);
-                    }
-                }
+            //        dstframe.Pts = i;  
+            //        foreach (var packet in writer[0].WriteFrame(dstframe))
+            //        {
+            //            writer.WritePacket(packet);
+            //        }
+            //    }
 
-                // flush cache
-                writer.FlushMuxer();
-            }
+            //    // flush cache
+            //    writer.FlushMuxer();
+            //}
 
   
         }
@@ -46,7 +46,7 @@ namespace EmguFFmpeg.AppTest
         /// </summary>
         /// <param name="frame"></param>
         /// <param name="i"></param>
-        private static unsafe void FillYuv420P(VideoFrame frame, long i)
+        private static unsafe void FillYuv420P(MediaFrame frame, long i)
         {
             int linesize0 = frame.Linesize[0];
             int linesize1 = frame.Linesize[1];

@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmguFFmpeg", "src\EmguFFmpe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmguFFmpeg.AppTest", "tests\EmguFFmpeg.AppTest\EmguFFmpeg.AppTest.csproj", "{3397BD83-399D-4369-A529-F961A20015B8}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{135E7F95-93BF-49D7-A978-21E998E962E5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{03C19F6D-9868-481C-889F-B39A6DE812EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +48,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DF008297-94DF-4193-84D9-C91728E11CBD} = {135E7F95-93BF-49D7-A978-21E998E962E5}
+		{3397BD83-399D-4369-A529-F961A20015B8} = {03C19F6D-9868-481C-889F-B39A6DE812EE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {086F0E9E-A83E-4984-8DEB-F128DAB8C2D4}

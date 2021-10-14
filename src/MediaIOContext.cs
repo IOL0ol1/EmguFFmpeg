@@ -17,7 +17,7 @@ namespace EmguFFmpeg
 
         public MediaIOContext()
         {
-            pIOContext = ffmpeg.avio_alloc_context()
+            //pIOContext = ffmpeg.avio_alloc_context();
         }
 
         public override void Flush()

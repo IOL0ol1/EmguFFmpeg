@@ -76,7 +76,7 @@ namespace EmguFFmpeg
 
         public IEnumerable<MediaFrame> ReadFrame()
         {
-            using (MediaFrame frame = new VideoFrame())
+            using (MediaFrame frame = new MediaFrame())
             {
                 while (true)
                 {
