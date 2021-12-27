@@ -20,8 +20,8 @@ namespace EmguFFmpeg
         /// <param name="stream"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public MediaReader(Stream stream, InFormat iformat = null, MediaDictionary options = null)
-            : this(stream, 4096, iformat, options) { }
+        public MediaReader(Stream stream, InFormat iformat = null, MediaDictionary options = null, AVHWDeviceType HWDeviceType = AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
+            : this(stream, 4096, iformat, options, HWDeviceType) { }
 
         /// <summary>
         /// Load stream with buffersize
@@ -30,7 +30,7 @@ namespace EmguFFmpeg
         /// <param name="buffersize"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public MediaReader(Stream stream, int buffersize, InFormat iformat = null, MediaDictionary options = null)
+        public MediaReader(Stream stream, int buffersize, InFormat iformat = null, MediaDictionary options = null, AVHWDeviceType HWDeviceType = AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
         {
             baseStream = stream;
             bufferLength = buffersize;
@@ -52,6 +52,11 @@ namespace EmguFFmpeg
                 AVStream* pStream = pFormatContext->streams[i];
                 MediaDecoder codec = MediaDecoder.CreateDecoder(pStream->codecpar->codec_id, _ =>
                 {
+                    if (pStream->codecpar->codec_type is AVMediaType.AVMEDIA_TYPE_VIDEO && HWDeviceType != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
+                    {
+                        AVCodecContext* _pCodecContext = _;
+                        ffmpeg.av_hwdevice_ctx_create(&_pCodecContext->hw_device_ctx, HWDeviceType, null, null, 0).ThrowIfError();
+                    }
                     ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
                 });
                 streams.Add(new MediaStream(pStream) { Codec = codec });
@@ -64,7 +69,7 @@ namespace EmguFFmpeg
         /// <param name="url"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public MediaReader(string url, InFormat iformat = null, MediaDictionary options = null)
+        public MediaReader(string url, InFormat iformat = null, MediaDictionary options = null, AVHWDeviceType HWDeviceType = AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
         {
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
@@ -78,6 +83,11 @@ namespace EmguFFmpeg
                 AVStream* pStream = pFormatContext->streams[i];
                 MediaDecoder codec = MediaDecoder.CreateDecoder(pStream->codecpar->codec_id, _ =>
                 {
+                    if (pStream->codecpar->codec_type is AVMediaType.AVMEDIA_TYPE_VIDEO && HWDeviceType != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
+                    {
+                        AVCodecContext* _pCodecContext = _;
+                        ffmpeg.av_hwdevice_ctx_create(&_pCodecContext->hw_device_ctx, HWDeviceType, null, null, 0).ThrowIfError();
+                    }
                     ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
                 });
                 streams.Add(new MediaStream(pStream) { Codec = codec });

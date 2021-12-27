@@ -133,6 +133,18 @@ namespace EmguFFmpeg
         {
             if (pCodecContext == null)
                 throw new FFmpegException(FFmpegException.NotInitCodecContext);
+
+            if (pCodecContext->hw_device_ctx != null)
+            {
+                using (MediaFrame pFrame = new VideoFrame())
+                {
+                    int frameStatus = ffmpeg.avcodec_receive_frame(pCodecContext, pFrame);
+                    if (frameStatus < 0)
+                        return frameStatus;
+                    int status = ffmpeg.av_hwframe_transfer_data(frame, pFrame, 0);
+                    return status;
+                }
+            }
             return ffmpeg.avcodec_receive_frame(pCodecContext, frame);
         }
         #endregion
