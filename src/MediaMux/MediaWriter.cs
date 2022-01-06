@@ -2,13 +2,16 @@
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
     public unsafe class MediaWriter : MediaMux
     {
-        public new OutFormat Format => base.Format as OutFormat;
+        private bool disposedValue;
+
+        public OutFormat Format { get; protected set; }
 
         /// <summary>
         /// write to stream,default buffersize 4096
@@ -36,7 +39,7 @@ namespace EmguFFmpeg
             avio_Alloc_Context_Seek = SeekFunc;
             pFormatContext = ffmpeg.avformat_alloc_context();
             pFormatContext->oformat = oformat;
-            base.Format = oformat;
+            Format = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                 pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc((ulong)bufferLength), bufferLength, 1, null,
                     avio_Alloc_Context_Read_Packet, avio_Alloc_Context_Write_Packet, avio_Alloc_Context_Seek);
@@ -61,15 +64,51 @@ namespace EmguFFmpeg
                 ffmpeg.avio_open2(&pFormatContext->pb, file, ffmpeg.AVIO_FLAG_WRITE, null, options).ThrowIfError();
         }
 
+        private MediaWriter(AVFormatContext* formatContext, bool isOwner = true)
+        {
+            pFormatContext = formatContext;
+            disposedValue = !isOwner;
+        }
+
+        public static MediaWriter FromNative(AVFormatContext* pCodec, bool isOwner = true)
+        {
+            if (pCodec == null) throw new FFmpegException(FFmpegException.NullReference);
+            return new MediaWriter(pCodec, isOwner);
+        }
+
+        public static MediaWriter FromNative(IntPtr pCodec, bool isOwner = true)
+        {
+            if (pCodec == null) throw new FFmpegException(FFmpegException.NullReference);
+            return new MediaWriter((AVFormatContext*)pCodec, isOwner);
+        }
+
         /// <summary>
         /// Print detailed information about the output format, such as duration,
         ///     bitrate, streams, container, programs, metadata, side data, codec and time base.
         /// </summary>
-        public override void DumpFormat()
+        public void DumpFormat()
         {
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 ffmpeg.av_dump_format(pFormatContext, i, ((IntPtr)pFormatContext->url).PtrToStringUTF8(), 1);
+            }
+        }
+
+        /// <summary>
+        /// Get timing information for the data currently output.
+        /// <para>The exact meaning of "currently output" depends on the format. It is mostly relevant for devices that have an internal buffer and/or work in real time.</para>
+        /// <para>Note: some formats or devices may not allow to measure dts and wall atomically.</para>
+        /// </summary>
+        /// <param name="stream">stream in the media file</param>
+        /// <param name="dts">DTS of the last packet output for the stream, in stream time_base units</param>
+        /// <param name="wall">absolute time when that packet whas output, in microsecond</param>
+        /// <returns></returns>
+        public bool TryGetOutputTimeStamp(int stream, out long dts, out long wall)
+        {
+            fixed (long* pdts = &dts)
+            fixed (long* pwall = &wall)
+            {
+                return ffmpeg.av_get_output_timestamp(this, stream, pdts, pwall) == 0;
             }
         }
 
@@ -117,7 +156,8 @@ namespace EmguFFmpeg
         /// <see cref="ffmpeg.avformat_write_header(AVFormatContext*, AVDictionary**)"/>
         /// </summary>
         /// <param name="options"></param>
-        public int Initialize(MediaDictionary options = null)
+        /// <exception cref="FFmpegException"></exception>
+        public int WriteHeader(MediaDictionary options = null)
         {
             return ffmpeg.avformat_write_header(pFormatContext, options).ThrowIfError();
         }
@@ -136,12 +176,13 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// send null frame to flush encoder cache and write trailer
+        /// flush encoder cache and write trailer
         /// <para><see cref="MediaStream.WriteFrame(MediaFrame)"/></para>
         /// <para><see cref="WritePacket(MediaPacket)"/></para>
         /// <para><see cref="ffmpeg.av_write_trailer(AVFormatContext*)"/></para>
         /// </summary>
-        public int FlushMuxer()
+        /// <exception cref="FFmpegException"></exception>
+        public int WriteTrailer()
         {
             foreach (var stream in streams)
             {
@@ -167,35 +208,46 @@ namespace EmguFFmpeg
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            if (pFormatContext != null)
+            if (!disposedValue)
             {
-                try
+                if (disposing)
                 {
-                    // Close the output file.
-                    if ((pFormatContext->flags & ffmpeg.AVFMT_NOFILE) == 0)
+                    // TODO: 释放托管状态(托管对象)
+                }
+
+                if (pFormatContext != null)
+                {
+                    try
                     {
-                        if (baseStream == null)
+                        // Close the output file.
+                        if ((pFormatContext->flags & ffmpeg.AVFMT_NOFILE) == 0)
                         {
-                            ffmpeg.avio_closep(&pFormatContext->pb);
-                        }
-                        else
-                        {
-                            baseStream.Dispose();
-                            ffmpeg.av_freep(&pFormatContext->pb->buffer);
-                            ffmpeg.avio_context_free(&pFormatContext->pb);
+                            if (baseStream == null)
+                            {
+                                ffmpeg.avio_closep(&pFormatContext->pb);
+                            }
+                            else
+                            {
+                                baseStream.Dispose();
+                                ffmpeg.av_freep(&pFormatContext->pb->buffer);
+                                ffmpeg.avio_context_free(&pFormatContext->pb);
+                            }
                         }
                     }
+                    finally
+                    {
+                        ffmpeg.avformat_free_context(pFormatContext);
+                        avio_Alloc_Context_Read_Packet = null;
+                        avio_Alloc_Context_Write_Packet = null;
+                        avio_Alloc_Context_Seek = null;
+                        pFormatContext = null;
+                    }
                 }
-                finally
-                {
-                    ffmpeg.avformat_free_context(pFormatContext);
-                    avio_Alloc_Context_Read_Packet = null;
-                    avio_Alloc_Context_Write_Packet = null;
-                    avio_Alloc_Context_Seek = null;
-                    pFormatContext = null;
-                }
+                disposedValue = true;
             }
+
         }
+
 
         #endregion IDisposable
     }

@@ -18,7 +18,6 @@ namespace EmguFFmpeg
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
-        public MediaFormat Format { get; protected set; }
 
         public static implicit operator AVFormatContext*(MediaMux value)
         {
@@ -71,12 +70,6 @@ namespace EmguFFmpeg
         }
 
         #endregion Stream Support
-
-        /// <summary>
-        ///  Print detailed information about the format, such as duration,
-        ///     bitrate, streams, container, programs, metadata, side data, codec and time base.
-        /// </summary>
-        public abstract void DumpFormat();
 
         #region IReadOnlyList<MediaStream>
 

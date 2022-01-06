@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
@@ -11,7 +12,7 @@ namespace EmguFFmpeg
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
         /// </summary>
-        public new InFormat Format => base.Format as InFormat;
+        public InFormat Format { get; protected set; }
 
         /// <summary>
         /// Load stream, default buffer size is 4096
@@ -44,7 +45,7 @@ namespace EmguFFmpeg
                 ffmpeg.avformat_open_input(ppFormatContext, null, iformat, options).ThrowIfError();
             }
             ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowIfError();
-            base.Format = iformat ?? new InFormat(pFormatContext->iformat);
+            Format = iformat ?? new InFormat(pFormatContext->iformat);
 
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
@@ -87,7 +88,7 @@ namespace EmguFFmpeg
         /// Print detailed information about the input format, such as duration,
         ///     bitrate, streams, container, programs, metadata, side data, codec and time base.
         /// </summary>
-        public override void DumpFormat()
+        public void DumpFormat()
         {
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {

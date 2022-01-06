@@ -1,6 +1,6 @@
-﻿namespace EmguFFmpeg
+﻿#if NET40
+namespace EmguFFmpeg
 {
-#if NET40
     using System.Collections.Generic;
     using System.Collections;
 
@@ -29,5 +29,5 @@
         /// <returns></returns>
         T this[int index] { get; }
     }
-#endif
 }
+#endif

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -77,12 +78,10 @@ namespace EmguFFmpeg
             return new string(psbyte, 0, length, Encoding.UTF8);
         }
 
-        internal static int ThrowIfError(this int error)
+        internal static T ThrowIfError<T>(this T error) where T : struct, IComparable, IFormattable, IConvertible, IComparable<T>, IEquatable<T>
         {
-            return error < 0 ? throw new FFmpegException(error) : error;
+            return error.CompareTo(0) < 0 ? throw new FFmpegException(error.ToInt32(NumberFormatInfo.InvariantInfo)) : error;
         }
-
-
 
         /// <summary>
         /// Return the number of channels in the channel layout use <see cref="ffmpeg.av_get_channel_layout_nb_channels(ulong)"/>
