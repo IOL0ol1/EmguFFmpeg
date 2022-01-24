@@ -10,7 +10,7 @@ namespace EmguFFmpeg
     /// <summary>
     /// <see cref="AVFormatContext"/> wapper
     /// </summary>
-    public unsafe abstract class MediaMux : IDisposable, IReadOnlyList<MediaStream>
+    public unsafe abstract class MediaMux : IDisposable,  IReadOnlyList<MediaStream>
     {
         protected AVFormatContext* pFormatContext;
 

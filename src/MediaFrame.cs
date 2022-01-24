@@ -1,52 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
     public unsafe class MediaFrame : IDisposable
     {
-        protected AVFrame* pFrame;
-
-        public static MediaFrame FromNative(IntPtr pAVFrame, bool isDisposeByOwner = true)
+        protected AVFrame* _pFrame;
+ 
+        public MediaFrame(AVFrame* pFrame, bool isDisposeByOwner = true)
         {
-            if (pAVFrame == IntPtr.Zero) throw new FFmpegException(FFmpegException.NullReference);
-            return new MediaFrame((AVFrame*)pAVFrame) { disposedValue = !isDisposeByOwner };
+            Debug.Assert(pFrame != null);
+            _pFrame = pFrame;
+            disposedValue = !isDisposeByOwner;
         }
-
-        internal MediaFrame(AVFrame* pFrame)
-        {
-            this.pFrame = pFrame;
-        }
+        public MediaFrame(IntPtr pAVFrame, bool isDisposeByOwner = true)
+            : this((AVFrame*)pAVFrame, isDisposeByOwner)
+        { }
 
         /// <summary>
         /// <see cref="ffmpeg.av_frame_alloc()"/>
         /// </summary>
-        public MediaFrame()
-        {
-            pFrame = ffmpeg.av_frame_alloc();
-        }
-
+        public MediaFrame() : this(ffmpeg.av_frame_alloc(), true)
+        { }
 
         public static MediaFrame CreateVideoFrame(int width, int height, AVPixelFormat pixelFormat, int align = 0)
         {
             var f = new MediaFrame();
-            f.pFrame->format = (int)pixelFormat;
-            f.pFrame->width = width;
-            f.pFrame->height = height;
-            f.GetBuffer(align);
+            f._pFrame->format = (int)pixelFormat;
+            f._pFrame->width = width;
+            f._pFrame->height = height;
+            f.AllocateBuffer(align);
             return f;
         }
 
         public static MediaFrame CreateAudioFrame(int channels, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
         {
             var f = new MediaFrame();
-            f.pFrame->format = (int)format;
-            f.pFrame->channels = channels;
-            f.pFrame->nb_samples = nbSamples;
-            f.pFrame->sample_rate = sampleRate;
-            f.GetBuffer(align);
+            f._pFrame->format = (int)format;
+            f._pFrame->channels = channels;
+            f._pFrame->nb_samples = nbSamples;
+            f._pFrame->sample_rate = sampleRate;
+            f.AllocateBuffer(align);
             return f;
         }
 
@@ -55,14 +53,14 @@ namespace EmguFFmpeg
             return CreateAudioFrame(ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout), nbSamples, format, sampleRate, align);
         }
 
-        private void GetBuffer(int align)
+        private void AllocateBuffer(int align)
         {
-            ffmpeg.av_frame_get_buffer(pFrame, align).ThrowIfError();
+            ffmpeg.av_frame_get_buffer(_pFrame, align).ThrowIfError();
         }
 
-        public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->channels > 0;
+        public bool IsAudioFrame => _pFrame->nb_samples > 0 && _pFrame->channels > 0;
 
-        public bool IsVideoFrame => pFrame->width > 0 && pFrame->height > 0;
+        public bool IsVideoFrame => _pFrame->width > 0 && _pFrame->height > 0;
 
         #region Get Managed Copy Of Data
 
@@ -75,9 +73,9 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public byte[][] GetData()
         {
-            if (pFrame->width > 0 && pFrame->height > 0)
+            if (_pFrame->width > 0 && _pFrame->height > 0)
                 return GetVideoData();
-            else if (pFrame->nb_samples > 0 && pFrame->channels > 0)
+            else if (_pFrame->nb_samples > 0 && _pFrame->channels > 0)
                 return GetAudioData();
             throw new FFmpegException(FFmpegException.InvalidFrame);
         }
@@ -89,17 +87,17 @@ namespace EmguFFmpeg
         private byte[][] GetVideoData()
         {
             List<byte[]> result = new List<byte[]>();
-            AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)pFrame->format);
+            AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)_pFrame->format);
             if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
                 throw new FFmpegException(FFmpegException.NotSupportFrame);
 
             if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PSEUDOPAL) != 0)
             {
-                result.Add(GetVideoPlane((IntPtr)pFrame->data[0], pFrame->linesize[0], pFrame->width, pFrame->height));
-                if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 && pFrame->data[1] != null)
+                result.Add(GetVideoPlane((IntPtr)_pFrame->data[0], _pFrame->linesize[0], _pFrame->width, _pFrame->height));
+                if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 && _pFrame->data[1] != null)
                 {
                     byte[] line1 = new byte[4 * 256];
-                    Marshal.Copy((IntPtr)pFrame->data[1], line1, 0, line1.Length);
+                    Marshal.Copy((IntPtr)_pFrame->data[1], line1, 0, line1.Length);
                     result.Add(line1);
                 }
             }
@@ -110,12 +108,12 @@ namespace EmguFFmpeg
                     planes_nb = Math.Max(planes_nb, desc->comp[(uint)i].plane + 1);
                 for (i = 0; i < planes_nb; i++)
                 {
-                    int h = pFrame->height;
-                    int bwidth = ffmpeg.av_image_get_linesize((AVPixelFormat)pFrame->format, pFrame->width, i);
+                    int h = _pFrame->height;
+                    int bwidth = ffmpeg.av_image_get_linesize((AVPixelFormat)_pFrame->format, _pFrame->width, i);
                     bwidth.ThrowIfError();
                     if (i == 1 || i == 2)
-                        h = (int)Math.Ceiling((double)pFrame->height / (1 << desc->log2_chroma_h));
-                    result.Add(GetVideoPlane((IntPtr)pFrame->data[(uint)i], pFrame->linesize[(uint)i], bwidth, h));
+                        h = (int)Math.Ceiling((double)_pFrame->height / (1 << desc->log2_chroma_h));
+                    result.Add(GetVideoPlane((IntPtr)_pFrame->data[(uint)i], _pFrame->linesize[(uint)i], bwidth, h));
                 }
             }
             return result.ToArray();
@@ -138,12 +136,12 @@ namespace EmguFFmpeg
         private byte[][] GetAudioData()
         {
             List<byte[]> result = new List<byte[]>();
-            int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format);
-            int planes = planar != 0 ? pFrame->channels : 1;
-            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format) * (planar != 0 ? 1 : pFrame->channels);
-            int data_size = pFrame->nb_samples * block_align;
+            int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)_pFrame->format);
+            int planes = planar != 0 ? _pFrame->channels : 1;
+            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)_pFrame->format) * (planar != 0 ? 1 : _pFrame->channels);
+            int data_size = _pFrame->nb_samples * block_align;
             IntPtr intPtr;
-            for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)
+            for (uint i = 0; (intPtr = (IntPtr)_pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)
             {
                 byte[] line = new byte[data_size];
                 Marshal.Copy(intPtr, line, 0, data_size);
@@ -160,60 +158,60 @@ namespace EmguFFmpeg
             {
                 List<IntPtr> result = new List<IntPtr>();
                 IntPtr intPtr;
-                for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero; i++)
+                for (uint i = 0; (intPtr = (IntPtr)_pFrame->extended_data[i]) != IntPtr.Zero; i++)
                     result.Add(intPtr);
                 return result.ToArray();
             }
         }
 
-        public int[] Linesize => pFrame->linesize.ToArray();
+        public int[] Linesize => _pFrame->linesize.ToArray();
 
         public int Width
         {
-            get => pFrame->width;
-            set => pFrame->width = value;
+            get => _pFrame->width;
+            set => _pFrame->width = value;
         }
 
         public int Height
         {
-            get => pFrame->height;
-            set => pFrame->height = value;
+            get => _pFrame->height;
+            set => _pFrame->height = value;
         }
 
         public int NbSamples
         {
-            get => pFrame->nb_samples;
-            set => pFrame->nb_samples = value;
+            get => _pFrame->nb_samples;
+            set => _pFrame->nb_samples = value;
         }
 
         public long Pts
         {
-            get => pFrame->pts;
-            set => pFrame->pts = value;
+            get => _pFrame->pts;
+            set => _pFrame->pts = value;
         }
 
         public int SampleRate
         {
-            get => pFrame->sample_rate;
-            set => pFrame->sample_rate = value;
+            get => _pFrame->sample_rate;
+            set => _pFrame->sample_rate = value;
         }
 
         public ulong ChannelLayout
         {
-            get => pFrame->channel_layout;
-            set => pFrame->channel_layout = value;
+            get => _pFrame->channel_layout;
+            set => _pFrame->channel_layout = value;
         }
 
         public int Flags
         {
-            get => pFrame->flags;
-            set => pFrame->flags = value;
+            get => _pFrame->flags;
+            set => _pFrame->flags = value;
         }
 
         public int Channels
         {
-            get => pFrame->channels;
-            set => pFrame->channels = value;
+            get => _pFrame->channels;
+            set => _pFrame->channels = value;
         }
 
         #region IDisposable Support
@@ -229,7 +227,7 @@ namespace EmguFFmpeg
                     // TODO: dispose managed state (managed objects).
                 }
 
-                fixed (AVFrame** ppFrame = &pFrame)
+                fixed (AVFrame** ppFrame = &_pFrame)
                 {
                     ffmpeg.av_frame_free(ppFrame);
                 }
@@ -256,15 +254,15 @@ namespace EmguFFmpeg
         /// </summary>
         public void Unref()
         {
-            ffmpeg.av_frame_unref(pFrame);
+            ffmpeg.av_frame_unref(_pFrame);
         }
 
-        public AVFrame AVFrame => *pFrame;
+        public AVFrame AVFrame => *_pFrame;
 
         public static implicit operator AVFrame*(MediaFrame value)
         {
             if (value == null) return null;
-            return value.pFrame;
+            return value._pFrame;
         }
     }
 }

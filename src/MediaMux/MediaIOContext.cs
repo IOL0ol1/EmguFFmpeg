@@ -1,23 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaIOContext : Stream
+    public unsafe class MediaIOContext : MemoryStream
     {
-        protected AVIOContext* pIOContext;
-
-        public static implicit operator AVIOContext*(MediaIOContext value)
-        {
-            if (value == null) return null;
-            return value.pIOContext;
-        }
+        protected AVIOContext* _pIOContext;
 
         protected int bufferSize;
         protected byte[] buffer;
@@ -63,48 +55,41 @@ namespace EmguFFmpeg
         }
 
 
-        //public static AVIOContext* GetIOContext(Stream stream, int bufferSize, int writeFlag, void* opaque)
-        //{
-        //    var o = new MediaIOContext() { stream = stream, bufferSize = bufferSize, buffer = new byte[bufferSize], writeFlag = writeFlag, opaque = opaque };
-        //    o.avio_Alloc_Context_Read_Packet = o.ReadFunc;
-        //    o.avio_Alloc_Context_Write_Packet = o.WriteFunc;
-        //    o.avio_Alloc_Context_Seek = o.SeekFunc;
-        //    fixed (byte* buffer = o.buffer)
-        //    {
-        //        return ffmpeg.avio_alloc_context(buffer, bufferSize, writeFlag, opaque, o.avio_Alloc_Context_Read_Packet, o.avio_Alloc_Context_Write_Packet, o.avio_Alloc_Context_Seek);
-        //    }
-        //}
-
-        public static Stream CreateStream(AVIOContext* pIOContext, bool isDisposeByOwner = true)
+        public static implicit operator AVIOContext*(MediaIOContext value)
         {
-            return new MediaIOContext() { disposedValue = !isDisposeByOwner, pIOContext = pIOContext };
+            if (value == null) return null;
+            return value._pIOContext;
         }
 
-        public MediaIOContext()
+        public MediaIOContext(IntPtr pIOContext, bool isDisposeByOwner = true)
+            :this((AVIOContext*)pIOContext,isDisposeByOwner)
+        { }
+
+        public MediaIOContext(AVIOContext* pIOContext, bool isDisposeByOwner = true)
         {
-            //pIOContext = ffmpeg.avio_alloc_context()
+            Debug.Assert(pIOContext != null);
+            _pIOContext = pIOContext;
+            disposedValue = !isDisposeByOwner;
         }
 
-        public override bool CanRead => pIOContext->read_packet.Pointer != IntPtr.Zero;
+ 
+        public override bool CanRead => _pIOContext->read_packet.Pointer != IntPtr.Zero;
 
-        public override bool CanSeek => pIOContext->seekable != 0;
+        public override bool CanSeek => _pIOContext->seekable != 0;
 
-        public override bool CanWrite => pIOContext->write_packet.Pointer != IntPtr.Zero;
+        public override bool CanWrite => _pIOContext->write_packet.Pointer != IntPtr.Zero;
 
-        public override long Length => ffmpeg.avio_size(pIOContext);
+        public override long Length => ffmpeg.avio_size(_pIOContext);
 
-        public override long Position { get => ffmpeg.avio_tell(pIOContext).ThrowIfError(); set => Seek(value, SeekOrigin.Begin); }
+        public override long Position { get => ffmpeg.avio_tell(_pIOContext).ThrowIfError(); set => Seek(value, SeekOrigin.Begin); }
 
-        public override void Flush()
-        {
-            ffmpeg.avio_flush(pIOContext);
-        }
+        public override void Flush() => ffmpeg.avio_flush(_pIOContext);
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             fixed (byte* ptr = buffer)
             {
-                return ffmpeg.avio_read(pIOContext, ptr + offset, count).ThrowIfError();
+                return ffmpeg.avio_read(_pIOContext, ptr + offset, count).ThrowIfError();
             }
         }
 
@@ -125,7 +110,7 @@ namespace EmguFFmpeg
                 default:
                     break;
             }
-            return ffmpeg.avio_seek(pIOContext, offset, whence).ThrowIfError();
+            return ffmpeg.avio_seek(_pIOContext, offset, whence).ThrowIfError();
         }
 
         public override void SetLength(long value)
@@ -137,7 +122,7 @@ namespace EmguFFmpeg
         {
             fixed (byte* ptr = buffer)
             {
-                ffmpeg.avio_write(pIOContext, ptr + offset, count);
+                ffmpeg.avio_write(_pIOContext, ptr + offset, count);
             }
         }
 
@@ -147,7 +132,7 @@ namespace EmguFFmpeg
         {
             if (!disposedValue)
             {
-                fixed (AVIOContext** ptr = &pIOContext)
+                fixed (AVIOContext** ptr = &_pIOContext)
                 {
                     ffmpeg.avio_context_free(ptr);
                 }

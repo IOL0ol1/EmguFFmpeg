@@ -269,8 +269,6 @@ namespace EmguFFmpeg
             }
         }
 
-        public MediaCodec Next => FromNative((IntPtr)pCodec->next);
-
         #endregion Supported
 
         public override string ToString()
