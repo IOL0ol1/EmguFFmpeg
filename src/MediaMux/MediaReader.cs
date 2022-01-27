@@ -9,52 +9,35 @@ namespace EmguFFmpeg
 {
     public unsafe partial class MediaReader : MediaMux
     {
+        protected Stream _stream;
+
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
         /// </summary>
         public InFormat Format { get; protected set; }
 
         /// <summary>
-        /// Load stream, default buffer size is 4096
+        /// Load stream 
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public MediaReader(Stream stream, InFormat iformat = null, MediaDictionary options = null)
-            : this(stream, 4096, iformat, options) { }
-
-        /// <summary>
-        /// Load stream with buffersize
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="buffersize"></param>
-        /// <param name="iformat"></param>
-        /// <param name="options"></param>
-        public MediaReader(Stream stream, int buffersize, InFormat iformat = null, MediaDictionary options = null)
+        public MediaReader(MediaIOStream stream, InFormat iformat = null, MediaDictionary options = null)
         {
-            baseStream = stream;
-            bufferLength = buffersize;
-            buffer = new byte[bufferLength];
-            avio_Alloc_Context_Read_Packet = ReadFunc;
-            avio_Alloc_Context_Seek = SeekFunc;
+            _stream = stream;
             pFormatContext = ffmpeg.avformat_alloc_context();
-            pFormatContext->pb = ffmpeg.avio_alloc_context((byte*)ffmpeg.av_malloc((ulong)bufferLength), bufferLength, 0, null,
-                avio_Alloc_Context_Read_Packet, null, avio_Alloc_Context_Seek);
+            pFormatContext->pb = stream;
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
                 ffmpeg.avformat_open_input(ppFormatContext, null, iformat, options).ThrowIfError();
             }
-            ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowIfError();
+            ffmpeg.avformat_find_stream_info(pFormatContext, options).ThrowIfError();
             Format = iformat ?? new InFormat(pFormatContext->iformat);
 
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 AVStream* pStream = pFormatContext->streams[i];
-                MediaDecoder codec = MediaDecoder.CreateDecoder(pStream->codecpar->codec_id, _ =>
-                {
-                    ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
-                });
-                streams.Add(new MediaStream(pStream) { Codec = codec });
+                // TODO
             }
         }
 
@@ -70,19 +53,27 @@ namespace EmguFFmpeg
             {
                 ffmpeg.avformat_open_input(ppFormatContext, url, iformat, options).ThrowIfError();
             }
-            ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowIfError();
-            base.Format = iformat ?? new InFormat(pFormatContext->iformat);
+            ffmpeg.avformat_find_stream_info(pFormatContext, options).ThrowIfError();
+            Format = iformat ?? new InFormat(pFormatContext->iformat);
 
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 AVStream* pStream = pFormatContext->streams[i];
-                MediaDecoder codec = MediaDecoder.CreateDecoder(pStream->codecpar->codec_id, _ =>
-                {
-                    ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
-                });
-                streams.Add(new MediaStream(pStream) { Codec = codec });
+                // TODO
             }
         }
+
+
+        public MediaReader(AVFormatContext* formatContext, bool isOwner = true)
+        {
+            if (formatContext == null) throw new FFmpegException(FFmpegException.NullReference);
+            pFormatContext = formatContext;
+            disposedValue = !isOwner;
+        }
+
+        public MediaReader(IntPtr formatContext, bool isOwner = true)
+            : this((AVFormatContext*)formatContext, isOwner)
+        { }
 
         /// <summary>
         /// Print detailed information about the input format, such as duration,
@@ -104,21 +95,23 @@ namespace EmguFFmpeg
         /// <param name="streamIndex"></param>
         public int Seek(long timestamp, int streamIndex = -1)
         {
-            if (streamIndex >= 0)
-                timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), streams[streamIndex].TimeBase);
-            var ret = ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, long.MaxValue, 0).ThrowIfError();
-            if (streamIndex >= 0)
-            {
-                ffmpeg.avcodec_flush_buffers(streams[streamIndex].Codec);
-            }
-            else
-            {
-                foreach (var stream in streams)
-                {
-                    ffmpeg.avcodec_flush_buffers(stream.Codec);
-                }
-            }
-            return ret;
+            // TODO
+            //if (streamIndex >= 0)
+            //    timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), streams[streamIndex].TimeBase);
+            //var ret = ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, long.MaxValue, 0).ThrowIfError();
+            //if (streamIndex >= 0)
+            //{
+            //    ffmpeg.avcodec_flush_buffers(streams[streamIndex].Codec);
+            //}
+            //else
+            //{
+            //    foreach (var stream in streams)
+            //    {
+            //        ffmpeg.avcodec_flush_buffers(stream.Codec);
+            //    }
+            //}
+            //return ret;
+            return 0;
         }
 
         /// <summary>
@@ -133,7 +126,7 @@ namespace EmguFFmpeg
 
         #region IEnumerable<MediaPacket>
 
-        public IEnumerable<MediaPacket> ReadPacket()
+        public IEnumerable<MediaPacket> ReadPackets()
         {
             using (MediaPacket packet = new MediaPacket())
             {
@@ -157,31 +150,25 @@ namespace EmguFFmpeg
         #endregion IEnumerable<MediaPacket>
 
         #region IDisposable
+        protected bool disposedValue;
 
         protected override void Dispose(bool disposing)
         {
-            if (pFormatContext != null)
+            if (!disposedValue)
             {
-                fixed (AVFormatContext** ppFormatContext = &pFormatContext)
+                if (_stream != null)
+                    _stream.Dispose();
+                if (pFormatContext != null)
                 {
-                    try
+                    fixed (AVFormatContext** ppFormatContext = &pFormatContext)
                     {
-                        if (baseStream != null)
-                        {
-                            baseStream.Dispose();
-                            ffmpeg.av_freep(&pFormatContext->pb->buffer);
-                            ffmpeg.avio_context_free(&pFormatContext->pb);
-                        }
-                    }
-                    finally
-                    {
+                        ffmpeg.av_freep(&pFormatContext->pb->buffer);
+                        ffmpeg.avio_context_free(&pFormatContext->pb);
                         ffmpeg.avformat_close_input(ppFormatContext);
-                        avio_Alloc_Context_Read_Packet = null;
-                        avio_Alloc_Context_Write_Packet = null;
-                        avio_Alloc_Context_Seek = null;
-                        pFormatContext = null;
                     }
+                    pFormatContext = null;
                 }
+                disposedValue = true;
             }
         }
 

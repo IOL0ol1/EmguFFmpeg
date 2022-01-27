@@ -10,7 +10,7 @@ namespace EmguFFmpeg
     public unsafe class MediaFrame : IDisposable
     {
         protected AVFrame* _pFrame;
- 
+
         public MediaFrame(AVFrame* pFrame, bool isDisposeByOwner = true)
         {
             Debug.Assert(pFrame != null);
@@ -91,7 +91,7 @@ namespace EmguFFmpeg
             if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
                 throw new FFmpegException(FFmpegException.NotSupportFrame);
 
-            if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PSEUDOPAL) != 0)
+            if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0)
             {
                 result.Add(GetVideoPlane((IntPtr)_pFrame->data[0], _pFrame->linesize[0], _pFrame->width, _pFrame->height));
                 if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 && _pFrame->data[1] != null)

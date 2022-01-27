@@ -11,7 +11,7 @@ namespace EmguFFmpeg
     {
         protected AVInputFormat* pInputFormat = null;
 
-        internal InFormat(AVInputFormat* iformat)
+        public InFormat(AVInputFormat* iformat)
             : this((IntPtr)iformat) { }
 
         /// <summary>
@@ -79,7 +79,6 @@ namespace EmguFFmpeg
         }
 
         public int RawCodecId => pInputFormat->raw_codec_id;
-        public InFormat Next => pInputFormat->next == null ? null : new InFormat(pInputFormat->next);
         public override int Flags => pInputFormat->flags;
         public override string Name => ((IntPtr)pInputFormat->name).PtrToStringUTF8();
         public override string LongName => ((IntPtr)pInputFormat->long_name).PtrToStringUTF8();

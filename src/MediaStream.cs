@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 using FFmpeg.AutoGen;
 
@@ -6,19 +7,13 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaStream
     {
+        public MediaStream(IntPtr stream)
+            : this((AVStream*)stream)
+        { }
 
-        public static MediaStream FromNative(IntPtr pAVStream)
+        public MediaStream(AVStream* stream)
         {
-            return FromNative((AVStream*)pAVStream);
-        }
-
-        public static MediaStream FromNative(AVStream* stream)
-        {
-            return new MediaStream(stream);
-        }
-
-        internal MediaStream(AVStream* stream)
-        {
+            Debug.Assert(stream != null);
             pStream = stream;
         }
 
@@ -39,19 +34,7 @@ namespace EmguFFmpeg
             get => pStream->duration;
             set => pStream->duration = value;
         }
-
-        public long FirstDts
-        {
-            get => pStream->first_dts;
-            set => pStream->first_dts = value;
-        }
-
-        public long CurDts
-        {
-            get => pStream->cur_dts;
-            set => pStream->cur_dts = value;
-        }
-
+ 
         public AVStream Stream => *pStream;
 
         /// <summary>
@@ -59,7 +42,7 @@ namespace EmguFFmpeg
         /// </summary>
         public int Index => pStream->index;
 
-  
+
 
         /// <summary>
         /// Convert to TimeSpan use <see cref="TimeBase"/>.

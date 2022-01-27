@@ -1,43 +1,48 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaIOContext : MemoryStream
+    public unsafe class MediaIOStream : Stream
     {
         protected AVIOContext* _pIOContext;
 
-        protected int bufferSize;
-        protected byte[] buffer;
-        protected int writeFlag;
-        protected void* opaque;
-        protected avio_alloc_context_read_packet avio_Alloc_Context_Read_Packet;
-        protected avio_alloc_context_write_packet avio_Alloc_Context_Write_Packet;
-        protected avio_alloc_context_seek avio_Alloc_Context_Seek;
+        protected bool _createByOpen;
+        protected Stream _stream;
+        protected avio_alloc_context_read_packet _readfunc;
+        protected avio_alloc_context_write_packet _writefunc;
+        protected avio_alloc_context_seek _seekfunc;
 
-        [AllowReversePInvokeCalls]
+
         protected int WriteFunc(void* opaque, byte* buf, int buf_size)
         {
-            buf_size = Math.Min(buf_size, bufferSize);
-            Marshal.Copy((IntPtr)buf, buffer, 0, buf_size);
-            Write(buffer, 0, buf_size);
+#if NET40 || NETSTANDARD2_0
+            var buffer = new byte[buf_size];
+            System.Runtime.InteropServices.Marshal.Copy((IntPtr)buf, buffer, 0, buf_size);
+            _stream.Write(buffer, 0, buf_size);
+#else
+            var buffer = new Span<byte>(buf, buf_size);
+            _stream.Write(buffer);
+#endif
             return buf_size;
         }
 
-        [AllowReversePInvokeCalls]
         protected int ReadFunc(void* opaque, byte* buf, int buf_size)
         {
-            buf_size = Math.Min(buf_size, bufferSize);
-            int length = Read(buffer, 0, buf_size);
-            Marshal.Copy(buffer, 0, (IntPtr)buf, length);
-            return length;
+#if NET40 || NETSTANDARD2_0
+            var buffer = new byte[buf_size];
+            var count = _stream.Read(buffer, 0, buf_size);
+            System.Runtime.InteropServices.Marshal.Copy(buffer, 0, (IntPtr)buf, count);
+#else
+            var buffer = new Span<byte>(buf, buf_size);
+            var count = _stream.Read(buffer);
+#endif
+            return count;
         }
 
-        [AllowReversePInvokeCalls]
         protected long SeekFunc(void* opaque, long offset, int whence)
         {
             if (whence == ffmpeg.AVSEEK_SIZE)
@@ -55,29 +60,47 @@ namespace EmguFFmpeg
         }
 
 
-        public static implicit operator AVIOContext*(MediaIOContext value)
+        public static implicit operator AVIOContext*(MediaIOStream value)
         {
             if (value == null) return null;
             return value._pIOContext;
         }
 
-        public MediaIOContext(IntPtr pIOContext, bool isDisposeByOwner = true)
-            :this((AVIOContext*)pIOContext,isDisposeByOwner)
+        public MediaIOStream(IntPtr pIOContext, bool isDisposeByOwner = true)
+            : this((AVIOContext*)pIOContext, isDisposeByOwner)
         { }
 
-        public MediaIOContext(AVIOContext* pIOContext, bool isDisposeByOwner = true)
+        public MediaIOStream(AVIOContext* pIOContext, bool isDisposeByOwner = true)
         {
             Debug.Assert(pIOContext != null);
             _pIOContext = pIOContext;
             disposedValue = !isDisposeByOwner;
         }
 
- 
+        public MediaIOStream(Stream stream, int bufferSize)
+        {
+            _stream = stream;
+            var _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
+            Debug.Assert(_buffer != null);
+            _readfunc = stream.CanRead ? ReadFunc : (avio_alloc_context_read_packet)null;
+            _writefunc = stream.CanWrite ? WriteFunc : (avio_alloc_context_write_packet)null;
+            _seekfunc = stream.CanSeek ? SeekFunc : (avio_alloc_context_seek)null;
+            _pIOContext = ffmpeg.avio_alloc_context(_buffer, bufferSize, stream.CanWrite ? 1 : 0, null, _readfunc, _writefunc, _seekfunc);
+            Debug.Assert(_pIOContext != null);
+        }
+
+        public static MediaIOStream Open(string url, int flags, MediaDictionary options = null)
+        {
+            AVIOContext* pIOContext = null;
+            ffmpeg.avio_open2(&pIOContext, url, flags, null, options).ThrowIfError();
+            return new MediaIOStream(pIOContext, true) { _createByOpen = true };
+        }
+
         public override bool CanRead => _pIOContext->read_packet.Pointer != IntPtr.Zero;
 
         public override bool CanSeek => _pIOContext->seekable != 0;
 
-        public override bool CanWrite => _pIOContext->write_packet.Pointer != IntPtr.Zero;
+        public override bool CanWrite => _pIOContext->write_flag != 0;
 
         public override long Length => ffmpeg.avio_size(_pIOContext);
 
@@ -115,7 +138,7 @@ namespace EmguFFmpeg
 
         public override void SetLength(long value)
         {
-            throw new NotImplementedException();
+            _pIOContext->buffer = (byte*)ffmpeg.av_realloc(_pIOContext->buffer, (ulong)value);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -132,8 +155,13 @@ namespace EmguFFmpeg
         {
             if (!disposedValue)
             {
+                if (_stream != null)
+                    _stream.Dispose();
+                ffmpeg.av_free(_pIOContext->buffer);
                 fixed (AVIOContext** ptr = &_pIOContext)
                 {
+                    if (_createByOpen)
+                        ffmpeg.avio_closep(ptr);
                     ffmpeg.avio_context_free(ptr);
                 }
                 disposedValue = true;

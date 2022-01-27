@@ -25,52 +25,6 @@ namespace EmguFFmpeg
             return value.pFormatContext;
         }
 
-        #region Stream Support
-
-        protected Stream baseStream;
-        protected int bufferLength;
-        protected byte[] buffer;
-        protected avio_alloc_context_read_packet avio_Alloc_Context_Read_Packet;
-        protected avio_alloc_context_write_packet avio_Alloc_Context_Write_Packet;
-        protected avio_alloc_context_seek avio_Alloc_Context_Seek;
-
-        [AllowReversePInvokeCalls]
-        protected int WriteFunc(void* opaque, byte* buf, int buf_size)
-        {
-            buf_size = Math.Min(buf_size, bufferLength);
-            Marshal.Copy((IntPtr)buf, buffer, 0, buf_size);
-            baseStream.Write(buffer, 0, buf_size);
-            return buf_size;
-        }
-
-        [AllowReversePInvokeCalls]
-        protected int ReadFunc(void* opaque, byte* buf, int buf_size)
-        {
-            buf_size = Math.Min(buf_size, bufferLength);
-            int length = baseStream.Read(buffer, 0, buf_size);
-            Marshal.Copy(buffer, 0, (IntPtr)buf, length);
-            return length;
-        }
-
-        [AllowReversePInvokeCalls]
-        protected long SeekFunc(void* opaque, long offset, int whence)
-        {
-            if (whence == ffmpeg.AVSEEK_SIZE)
-            {
-                return baseStream.Length;
-            }
-            else if (whence < 3)
-            {
-                return baseStream.Seek(offset, (SeekOrigin)whence);
-            }
-            else
-            {
-                return -1;
-            }
-        }
-
-        #endregion Stream Support
-
         #region IReadOnlyList<MediaStream>
 
         protected List<MediaStream> streams = new List<MediaStream>();
@@ -78,14 +32,14 @@ namespace EmguFFmpeg
         /// <summary>
         /// stream count in mux.
         /// </summary>
-        public int Count => streams.Count;
+        public int Count => (int)pFormatContext->nb_streams;
 
         /// <summary>
         /// get stream
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
-        public MediaStream this[int index] => streams[index];
+        public MediaStream this[int index] => new MediaStream(pFormatContext->streams[index]);
 
         /// <summary>
         /// enum stream

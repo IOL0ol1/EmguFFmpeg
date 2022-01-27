@@ -11,7 +11,7 @@ namespace EmguFFmpeg
     {
         protected AVOutputFormat* pOutputFormat = null;
 
-        internal OutFormat(AVOutputFormat* oformat)
+        public OutFormat(AVOutputFormat* oformat)
             : this((IntPtr)oformat) { }
 
         /// <summary>
@@ -105,7 +105,6 @@ namespace EmguFFmpeg
         public AVCodecID AudioCodec => pOutputFormat->audio_codec;
         public AVCodecID DataCodec => pOutputFormat->data_codec;
         public AVCodecID SubtitleCodec => pOutputFormat->subtitle_codec;
-        public OutFormat Next => pOutputFormat->next == null ? null : new OutFormat(pOutputFormat->next);
         public override int Flags => pOutputFormat->flags;
         public override string Name => ((IntPtr)pOutputFormat->name).PtrToStringUTF8();
         public override string LongName => ((IntPtr)pOutputFormat->long_name).PtrToStringUTF8();
