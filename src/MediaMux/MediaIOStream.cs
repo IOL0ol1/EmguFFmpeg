@@ -72,7 +72,7 @@ namespace EmguFFmpeg
 
         public MediaIOStream(AVIOContext* pIOContext, bool isDisposeByOwner = true)
         {
-            Debug.Assert(pIOContext != null);
+            if (pIOContext != null) throw new FFmpegException(FFmpegException.NullReference);
             _pIOContext = pIOContext;
             disposedValue = !isDisposeByOwner;
         }
