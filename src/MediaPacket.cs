@@ -14,13 +14,6 @@ namespace EmguFFmpeg
         }
 
         public AVPacket AVPacket => *pPacket;
-
-        public long ConvergenceDuration
-        {
-            get => pPacket->convergence_duration;
-            set => pPacket->convergence_duration = value;
-        }
-
         public long Dts
         {
             get => pPacket->dts;

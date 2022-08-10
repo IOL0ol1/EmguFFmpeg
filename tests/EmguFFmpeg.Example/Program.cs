@@ -18,9 +18,9 @@ namespace EmguFFmpeg.Example
 
             //new S64Audio();
 
-            //var output = "output.mp4";
+            var output = "output.mp4";
             //new FillYuv420PSample(output, 800, 600, 30);
-            //new EncodeVideoByMat(output, 800, 600, 1);
+            new EncodeVideoByMat(output, 800, 600, 1);
             //Process.Start(output);
 
             //new DecodeVideoToMat(output, "images");

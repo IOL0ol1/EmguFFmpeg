@@ -15,7 +15,7 @@ namespace EmguFFmpeg
             pFrame = ffmpeg.av_frame_alloc();
         }
 
-        public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->channels > 0;
+        public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0;
 
         public bool IsVideoFrame => pFrame->width > 0 && pFrame->height > 0;
 
@@ -32,7 +32,7 @@ namespace EmguFFmpeg
         {
             if (pFrame->width > 0 && pFrame->height > 0)
                 return GetVideoData();
-            else if (pFrame->nb_samples > 0 && pFrame->channels > 0)
+            else if (pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0)
                 return GetAudioData();
             throw new FFmpegException(FFmpegException.InvalidFrame);
         }
@@ -48,7 +48,7 @@ namespace EmguFFmpeg
             if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
                 throw new FFmpegException(FFmpegException.NotSupportFrame);
 
-            if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PSEUDOPAL) != 0)
+            if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0)
             {
                 result.Add(GetVideoPlane((IntPtr)pFrame->data[0], pFrame->linesize[0], pFrame->width, pFrame->height));
                 if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 && pFrame->data[1] != null)
@@ -94,8 +94,8 @@ namespace EmguFFmpeg
         {
             List<byte[]> result = new List<byte[]>();
             int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format);
-            int planes = planar != 0 ? pFrame->channels : 1;
-            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format) * (planar != 0 ? 1 : pFrame->channels);
+            int planes = planar != 0 ? pFrame->ch_layout.nb_channels : 1;
+            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format) * (planar != 0 ? 1 : pFrame->ch_layout.nb_channels);
             int data_size = pFrame->nb_samples * block_align;
             IntPtr intPtr;
             for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)
@@ -153,22 +153,16 @@ namespace EmguFFmpeg
             set => pFrame->sample_rate = value;
         }
 
-        public ulong ChannelLayout
+        public AVChannelLayout ChLayout
         {
-            get => pFrame->channel_layout;
-            set => pFrame->channel_layout = value;
+            get => pFrame->ch_layout;
+            set => pFrame->ch_layout = value;
         }
 
         public int Flags
         {
             get => pFrame->flags;
             set => pFrame->flags = value;
-        }
-
-        public int Channels
-        {
-            get => pFrame->channels;
-            set => pFrame->channels = value;
         }
 
         #region IDisposable Support

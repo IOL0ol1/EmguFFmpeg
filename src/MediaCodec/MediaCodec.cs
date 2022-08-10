@@ -208,6 +208,29 @@ namespace EmguFFmpeg
             }
         }
 
+        private AVChannelLayout? ch_layouts_next_safe(MediaCodec codec, int i)
+        {
+            var ptr = codec.pCodec->ch_layouts + i;
+            return ptr != null && codec.pCodec->channel_layouts != null && codec.Id != AVCodecID.AV_CODEC_ID_AAC ? *ptr : (AVChannelLayout?)null;
+        }
+
+        public IEnumerable<AVChannelLayout> SupportedChLayout
+        {
+            get
+            {
+                ThrowIfNull();
+                AVChannelLayout? p;
+                for (int i = 0; (p = ch_layouts_next_safe(this, i)) != null; i++)
+                {
+                    if (p.Value.nb_channels == 0)
+                        yield break;
+                    else
+                        yield return p.Value;
+                }
+            }
+        }
+
+
         #endregion
 
         public override string ToString()

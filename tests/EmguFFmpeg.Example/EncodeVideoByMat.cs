@@ -4,6 +4,7 @@ using Emgu.CV.Structure;
 using FFmpeg.AutoGen;
 
 using System;
+using System.Linq;
 
 namespace EmguFFmpeg.Example
 {
@@ -16,11 +17,18 @@ namespace EmguFFmpeg.Example
         /// <param name="width">video width</param>
         /// <param name="height">video height</param>
         /// <param name="fps">video fps</param>
-        public EncodeVideoByMat(string outputFile, int width, int height, int fps)
+        public unsafe EncodeVideoByMat(string outputFile, int width, int height, int fps)
         {
             using (MediaWriter writer = new MediaWriter(outputFile))
             {
-                writer.AddStream(MediaEncoder.CreateVideoEncode(writer.Format, width, height, fps));
+                writer.AddStream(MediaEncoder.CreateEncode(writer.Format.VideoCodec, writer.Format.Flags, _ =>
+                {
+                    AVCodecContext* pCodecContext = _;
+                    pCodecContext->width = width;
+                    pCodecContext->height = height;
+                    pCodecContext->time_base = new AVRational { num = 100, den = 2997 }; // your fps
+                    pCodecContext->pix_fmt = _.SupportedPixelFmts.First();  
+                }));
                 writer.Initialize();
 
                 VideoFrame dstframe = VideoFrame.CreateFrameByCodec(writer[0].Codec);
@@ -52,7 +60,6 @@ namespace EmguFFmpeg.Example
 
                 // flush cache
                 writer.FlushMuxer();
-
             }
         }
     }

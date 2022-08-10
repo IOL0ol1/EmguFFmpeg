@@ -104,11 +104,11 @@ namespace EmguFFmpeg
             }
 
             int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)frame.AVFrame.format);
-            int planes = planar != 0 ? frame.AVFrame.channels : 1;
-            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)frame.AVFrame.format) * (planar != 0 ? 1 : frame.AVFrame.channels);
+            int planes = planar != 0 ? frame.AVFrame.ch_layout.nb_channels : 1;
+            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)frame.AVFrame.format) * (planar != 0 ? 1 : frame.AVFrame.ch_layout.nb_channels);
             int stride = frame.AVFrame.nb_samples * block_align;
 
-            Mat mat = new Mat(planes, frame.AVFrame.nb_samples, dstType, (planar != 0 ? 1 : frame.AVFrame.channels));
+            Mat mat = new Mat(planes, frame.AVFrame.nb_samples, dstType, (planar != 0 ? 1 : frame.AVFrame.ch_layout.nb_channels));
             for (int i = 0; i < planes; i++)
             {
                 FFmpegHelper.CopyMemory(frame.Data[i], mat.DataPointer + i * stride, stride);

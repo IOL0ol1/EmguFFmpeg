@@ -62,14 +62,14 @@ namespace EmguFFmpeg
             });
         }
 
-        public static MediaEncoder CreateAudioEncode(OutFormat Oformat, ulong channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        public static MediaEncoder CreateAudioEncode(OutFormat Oformat, AVChannelLayout channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
             return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, channelLayout, sampleRate, bitRate, format);
         }
 
         public static MediaEncoder CreateAudioEncode(OutFormat Oformat, int channels, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
-            return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, (ulong)ffmpeg.av_get_default_channel_layout(channels), sampleRate, bitRate, format);
+            return CreateAudioEncode(Oformat.AudioCodec, Oformat.Flags, FFmpegHelper.GetChannelLayout(channels), sampleRate, bitRate, format);
         }
 
         public static MediaEncoder CreateAudioEncode(AVCodecID audioCodec, int flags, int channels, int sampleRate = 0, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
@@ -87,12 +87,12 @@ namespace EmguFFmpeg
         /// <param name="bitRate">default is auto bit rate, must be greater than or equal to 0</param>
         /// <param name="format">default is first supported pixel format</param>
         /// <returns></returns>
-        public static MediaEncoder CreateAudioEncode(AVCodecID audioCodec, int flags, ulong channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        public static MediaEncoder CreateAudioEncode(AVCodecID audioCodec, int flags, AVChannelLayout channelLayout, int sampleRate, long bitRate = 0, AVSampleFormat format = AVSampleFormat.AV_SAMPLE_FMT_NONE)
         {
             return CreateEncode(audioCodec, flags, _ =>
             {
                 AVCodecContext* pCodecContext = _;
-                if (channelLayout <= 0 || sampleRate <= 0 || bitRate < 0)
+                if (channelLayout.nb_channels <= 0 || sampleRate <= 0 || bitRate < 0)
                     throw new FFmpegException(FFmpegException.NonNegative);
                 if (_.SupportedSampelFmts.Count() <= 0 || _.SupportedSampleRates.Count() <= 0)
                     throw new FFmpegException(FFmpegException.NotSupportCodecId);
@@ -108,12 +108,12 @@ namespace EmguFFmpeg
                     throw new FFmpegException(FFmpegException.NotSupportFormat);
                 // check channelLayout when SupportedChannelLayout.Count() > 0
                 if (_.SupportedChannelLayout.Count() > 0
-                     && _.SupportedChannelLayout.Where(__ => __ == channelLayout).Count() <= 0)
+                     && _.SupportedChannelLayout.Where(__ =>
+                     __ == channelLayout.u.mask).Count() <= 0)
                     throw new FFmpegException(FFmpegException.NotSupportChLayout);
                 pCodecContext->sample_rate = sampleRate;
-                pCodecContext->channel_layout = channelLayout;
+                pCodecContext->ch_layout = channelLayout;
                 pCodecContext->sample_fmt = format;
-                pCodecContext->channels = ffmpeg.av_get_channel_layout_nb_channels(pCodecContext->channel_layout);
                 pCodecContext->bit_rate = bitRate;
             });
         }

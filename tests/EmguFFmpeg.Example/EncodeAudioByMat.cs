@@ -17,7 +17,7 @@ namespace EmguFFmpeg.Example
                 AudioFrame dstFrame = AudioFrame.CreateFrameByCodec(writer[0].Codec);
                 SampleConverter converter = new SampleConverter(dstFrame);
 
-                using (Mat mat = CreateMat(writer[0].Codec.AVCodecContext.channels))
+                using (Mat mat = CreateMat(writer[0].Codec.AVCodecContext.ch_layout.nb_channels))
                 {
                     long pts = 0;
                     for (int i = 0; i < 1000; i++)

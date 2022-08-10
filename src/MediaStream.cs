@@ -32,19 +32,6 @@ namespace EmguFFmpeg
             get => pStream->duration;
             set => pStream->duration = value;
         }
-
-        public long FirstDts
-        {
-            get => pStream->first_dts;
-            set => pStream->first_dts = value;
-        }
-
-        public long CurDts
-        {
-            get => pStream->cur_dts;
-            set => pStream->cur_dts = value;
-        }
-
         public AVStream Stream => *pStream;
 
         /// <summary>
