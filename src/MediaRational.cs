@@ -10,9 +10,15 @@ namespace EmguFFmpeg
 
         private AVRational rational;
 
-        public static MediaRational FromFPS(int fps)
+        /// <summary>
+        /// Convert a double precision floating point number to a rational.
+        /// </summary>
+        /// <param name="d">`double` to convert</param>
+        /// <param name="max">Maximum allowed numerator and denominator</param>
+        /// <returns></returns>
+        public static MediaRational ToRational(double d, int max)
         {
-            return new MediaRational(1, fps);
+            return ffmpeg.av_d2q(d, max);
         }
 
         public int CompareTo(MediaRational other)

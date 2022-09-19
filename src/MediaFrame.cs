@@ -41,7 +41,7 @@ namespace EmguFFmpeg
         {
             var f = new MediaFrame();
             f._pFrame->format = (int)format;
-            f._pFrame->channels = channels;
+            ffmpeg.av_channel_layout_default(&f._pFrame->ch_layout,channels);
             f._pFrame->nb_samples = nbSamples;
             f._pFrame->sample_rate = sampleRate;
             f.AllocateBuffer(align);
@@ -50,7 +50,7 @@ namespace EmguFFmpeg
 
         public static MediaFrame CreateAudioFrame(AVChannelLayout channelLayout, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
         {
-            return CreateAudioFrame(ffmpeg.av_get_channel_layout_nb_channels((ulong)channelLayout), nbSamples, format, sampleRate, align);
+            return CreateAudioFrame(channelLayout.nb_channels, nbSamples, format, sampleRate, align);
         }
 
         private void AllocateBuffer(int align)
@@ -58,7 +58,7 @@ namespace EmguFFmpeg
             ffmpeg.av_frame_get_buffer(_pFrame, align).ThrowIfError();
         }
 
-        public bool IsAudioFrame => _pFrame->nb_samples > 0 && _pFrame->channels > 0;
+        public bool IsAudioFrame => _pFrame->nb_samples > 0 && _pFrame->ch_layout.nb_channels > 0;
 
         public bool IsVideoFrame => _pFrame->width > 0 && _pFrame->height > 0;
 
@@ -75,7 +75,7 @@ namespace EmguFFmpeg
         {
             if (_pFrame->width > 0 && _pFrame->height > 0)
                 return GetVideoData();
-            else if (_pFrame->nb_samples > 0 && _pFrame->channels > 0)
+            else if (_pFrame->nb_samples > 0 && _pFrame->ch_layout.nb_channels > 0)
                 return GetAudioData();
             throw new FFmpegException(FFmpegException.InvalidFrame);
         }
@@ -137,7 +137,7 @@ namespace EmguFFmpeg
         {
             List<byte[]> result = new List<byte[]>();
             int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)_pFrame->format);
-            int planes = planar != 0 ? _pFrame->channels : 1;
+            int planes = planar != 0 ? _pFrame->ch_layout.nb_channels : 1;
             int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)_pFrame->format) * (planar != 0 ? 1 : _pFrame->channels);
             int data_size = _pFrame->nb_samples * block_align;
             IntPtr intPtr;
@@ -196,22 +196,16 @@ namespace EmguFFmpeg
             set => _pFrame->sample_rate = value;
         }
 
-        public ulong ChannelLayout
+        public AVChannelLayout ChLayout
         {
-            get => _pFrame->channel_layout;
-            set => _pFrame->channel_layout = value;
+            get => _pFrame->ch_layout;
+            set => _pFrame->ch_layout = value;
         }
 
         public int Flags
         {
             get => _pFrame->flags;
             set => _pFrame->flags = value;
-        }
-
-        public int Channels
-        {
-            get => _pFrame->channels;
-            set => _pFrame->channels = value;
         }
 
         #region IDisposable Support
