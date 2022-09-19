@@ -8,7 +8,7 @@ using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaWriter : MediaMux
+    public unsafe class MediaWriter : MediaFormatContext
     {
         private bool disposedValue;
 

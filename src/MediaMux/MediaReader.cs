@@ -7,7 +7,7 @@ using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe partial class MediaReader : MediaMux
+    public unsafe partial class MediaReader : MediaFormatContext
     {
         protected Stream _stream;
 
@@ -38,6 +38,14 @@ namespace EmguFFmpeg
             {
                 AVStream* pStream = pFormatContext->streams[i];
                 // TODO
+            }
+        }
+
+        public MediaDecoder[] DefaultDecoders
+        {
+            get
+            {
+                return null;
             }
         }
 

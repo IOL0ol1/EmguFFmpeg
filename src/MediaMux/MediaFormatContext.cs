@@ -10,7 +10,7 @@ namespace EmguFFmpeg
     /// <summary>
     /// <see cref="AVFormatContext"/> wapper
     /// </summary>
-    public unsafe abstract class MediaMux : IDisposable,  IReadOnlyList<MediaStream>
+    public unsafe abstract class MediaFormatContext : IDisposable,  IReadOnlyList<MediaStream>
     {
         protected AVFormatContext* pFormatContext;
 
@@ -19,7 +19,7 @@ namespace EmguFFmpeg
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
 
-        public static implicit operator AVFormatContext*(MediaMux value)
+        public static implicit operator AVFormatContext*(MediaFormatContext value)
         {
             if (value == null) return null;
             return value.pFormatContext;
@@ -65,7 +65,7 @@ namespace EmguFFmpeg
             GC.SuppressFinalize(this);
         }
 
-        ~MediaMux()
+        ~MediaFormatContext()
         {
             Dispose(false);
         }
