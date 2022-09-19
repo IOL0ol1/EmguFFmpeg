@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 
 using FFmpeg.AutoGen;
@@ -19,7 +18,7 @@ namespace EmguFFmpeg
 
         protected int WriteFunc(void* opaque, byte* buf, int buf_size)
         {
-#if NET40 || NETSTANDARD2_0
+#if NETSTANDARD2_0
             var buffer = new byte[buf_size];
             System.Runtime.InteropServices.Marshal.Copy((IntPtr)buf, buffer, 0, buf_size);
             _stream.Write(buffer, 0, buf_size);
@@ -32,7 +31,7 @@ namespace EmguFFmpeg
 
         protected int ReadFunc(void* opaque, byte* buf, int buf_size)
         {
-#if NET40 || NETSTANDARD2_0
+#if NETSTANDARD2_0
             var buffer = new byte[buf_size];
             var count = _stream.Read(buffer, 0, buf_size);
             System.Runtime.InteropServices.Marshal.Copy(buffer, 0, (IntPtr)buf, count);
