@@ -72,7 +72,7 @@ namespace EmguFFmpeg
 
         public MediaIOStream(AVIOContext* pIOContext, bool isDisposeByOwner = true)
         {
-            if (pIOContext != null) throw new FFmpegException(FFmpegException.NullReference);
+            if (pIOContext != null) throw new NullReferenceException();
             _pIOContext = pIOContext;
             disposedValue = !isDisposeByOwner;
         }
@@ -81,12 +81,12 @@ namespace EmguFFmpeg
         { 
             _stream = stream;
             var _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
-            if (_buffer != null) throw new FFmpegException(FFmpegException.NullReference);
+            if (_buffer != null) throw new NullReferenceException();
             _readfunc = stream.CanRead ? ReadFunc : (avio_alloc_context_read_packet)null;
             _writefunc = stream.CanWrite ? WriteFunc : (avio_alloc_context_write_packet)null;
             _seekfunc = stream.CanSeek ? SeekFunc : (avio_alloc_context_seek)null;
             _pIOContext = ffmpeg.avio_alloc_context(_buffer, bufferSize, stream.CanWrite ? 1 : 0, null, _readfunc, _writefunc, _seekfunc);
-            if (_pIOContext != null) throw new FFmpegException(FFmpegException.NullReference);
+            if (_pIOContext != null) throw new NullReferenceException();
         }
 
         public static MediaIOStream Open(string url, int flags, MediaDictionary options = null)

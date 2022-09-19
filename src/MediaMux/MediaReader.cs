@@ -66,7 +66,7 @@ namespace EmguFFmpeg
 
         public MediaReader(AVFormatContext* formatContext, bool isOwner = true)
         {
-            if (formatContext == null) throw new FFmpegException(FFmpegException.NullReference);
+            if (formatContext == null) throw new NullReferenceException();
             pFormatContext = formatContext;
             disposedValue = !isOwner;
         }

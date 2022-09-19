@@ -45,7 +45,7 @@ namespace EmguFFmpeg
         {
             pCodecContext = ffmpeg.avcodec_alloc_context3(codec);
             if (pCodecContext == null)
-                throw new FFmpegException(FFmpegException.NullReference);
+                throw new NullReferenceException();
         }
 
         public AVCodecContext AVCodecContext => *pCodecContext;
@@ -99,10 +99,10 @@ namespace EmguFFmpeg
             set => pCodecContext->sample_rate = value;
         }
 
-        public ulong ChannelLayout
+        public AVChannelLayout ChLayout
         {
-            get => pCodecContext->channel_layout;
-            set => pCodecContext->channel_layout = value;
+            get => pCodecContext->ch_layout;
+            set => pCodecContext->ch_layout = value;
         }
 
         public AVSampleFormat SampleFmt
@@ -110,13 +110,7 @@ namespace EmguFFmpeg
             get => pCodecContext->sample_fmt;
             set => pCodecContext->sample_fmt = value;
         }
-
-        public int Channels
-        {
-            get => pCodecContext->channels;
-            set => pCodecContext->channels = value;
-        }
-
+ 
         public int Flag
         {
             get => pCodecContext->flags;

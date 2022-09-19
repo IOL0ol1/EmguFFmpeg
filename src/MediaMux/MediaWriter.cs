@@ -53,7 +53,7 @@ namespace EmguFFmpeg
 
         public MediaWriter(AVFormatContext* formatContext, bool isOwner = true)
         {
-            if (formatContext == null) throw new FFmpegException(FFmpegException.NullReference);
+            if (formatContext == null) throw new NullReferenceException();
             pFormatContext = formatContext;
             disposedValue = !isOwner;
         }
@@ -159,7 +159,6 @@ namespace EmguFFmpeg
 
         /// <summary>
         /// flush encoder cache and write trailer
-        /// <para><see cref="MediaStream.WriteFrame(MediaFrame)"/></para>
         /// <para><see cref="WritePacket(MediaPacket)"/></para>
         /// <para><see cref="ffmpeg.av_write_trailer(AVFormatContext*)"/></para>
         /// </summary>

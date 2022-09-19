@@ -77,7 +77,7 @@ namespace EmguFFmpeg
                 return GetVideoData();
             else if (_pFrame->nb_samples > 0 && _pFrame->ch_layout.nb_channels > 0)
                 return GetAudioData();
-            throw new FFmpegException(FFmpegException.InvalidFrame);
+            throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
         }
 
         /// <summary>
@@ -89,7 +89,7 @@ namespace EmguFFmpeg
             List<byte[]> result = new List<byte[]>();
             AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)_pFrame->format);
             if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
-                throw new FFmpegException(FFmpegException.NotSupportFrame);
+                throw new FFmpegException(ffmpeg.FFERRTAG('I','N','D','A'));
 
             if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0)
             {
@@ -122,7 +122,7 @@ namespace EmguFFmpeg
         private byte[] GetVideoPlane(IntPtr srcData, int linesize, int bytewidth, int height)
         {
             if (linesize < bytewidth)
-                throw new FFmpegException(FFmpegException.LineSizeError);
+                throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
             byte[] result = new byte[height * linesize];
             for (int i = 0; i < height; i++)
                 Marshal.Copy(srcData + i * linesize, result, i * linesize, bytewidth);
@@ -138,7 +138,7 @@ namespace EmguFFmpeg
             List<byte[]> result = new List<byte[]>();
             int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)_pFrame->format);
             int planes = planar != 0 ? _pFrame->ch_layout.nb_channels : 1;
-            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)_pFrame->format) * (planar != 0 ? 1 : _pFrame->channels);
+            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)_pFrame->format) * (planar != 0 ? 1 : _pFrame->ch_layout.nb_channels);
             int data_size = _pFrame->nb_samples * block_align;
             IntPtr intPtr;
             for (uint i = 0; (intPtr = (IntPtr)_pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)

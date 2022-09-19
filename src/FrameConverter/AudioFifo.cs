@@ -114,7 +114,7 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Clear tha <see cref="AVFifoBuffer"/> buffer
+        /// Clear tha <see cref="AVAudioFifo"/> buffer
         /// </summary>
         public void Reset()
         {

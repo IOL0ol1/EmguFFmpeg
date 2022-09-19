@@ -20,7 +20,7 @@ namespace EmguFFmpeg
         /// <param name="pAVOutputFormat"></param>
         public OutFormat(IntPtr pAVOutputFormat)
         {
-            if (pAVOutputFormat == IntPtr.Zero) throw new FFmpegException(FFmpegException.NullReference);
+            if (pAVOutputFormat == IntPtr.Zero) throw new NullReferenceException();
             pOutputFormat = (AVOutputFormat*)pAVOutputFormat;
         }
 

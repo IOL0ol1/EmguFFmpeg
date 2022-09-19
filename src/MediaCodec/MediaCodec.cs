@@ -14,7 +14,7 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public static MediaCodec FromNative(AVCodec* pCodec)
         {
-            if (pCodec == null) throw new FFmpegException(FFmpegException.NullReference);
+            if (pCodec == null) throw new NullReferenceException();
             return new MediaCodec(pCodec);
         }
 

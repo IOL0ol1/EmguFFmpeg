@@ -20,7 +20,6 @@ namespace EmguFFmpeg
         /// <param name="pAVInputFormat"></param>
         public InFormat(IntPtr pAVInputFormat)
         {
-            if (pAVInputFormat == IntPtr.Zero) throw new FFmpegException(FFmpegException.NullReference);
             pInputFormat = (AVInputFormat*)pAVInputFormat;
         }
 

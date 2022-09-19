@@ -78,7 +78,7 @@ namespace EmguFFmpeg
         public static SampleConverter CreateByCodeContext(MediaCodecContext dstCodec)
         {
             if (dstCodec.AVCodecContext.codec_type != AVMediaType.AVMEDIA_TYPE_AUDIO)
-                throw new FFmpegException(FFmpegException.CodecTypeError);
+                throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
             var DstFormat = dstCodec.AVCodecContext.sample_fmt;
             var DstNbSamples = dstCodec.AVCodecContext.frame_size;
             var DstSampleRate = dstCodec.AVCodecContext.sample_rate;

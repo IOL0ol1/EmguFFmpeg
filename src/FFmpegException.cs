@@ -44,32 +44,6 @@ namespace EmguFFmpeg
             : base(serializationInfo, streamingContext)
         { }
 
-        #region custom error string
-
-        public const string FFmpegError = "FFmpeg error";
-        public const string NotSupportCodecId = "not supported codec id";
-        public const string NotSupportSampleRate = "not supported sample rate";
-        public const string NotSupportFormat = "not supported format";
-        public const string NotSupportChLayout = "not supported channle layout";
-        public const string NotSupportFrame = "not supported frame";
-        public const string NonNegative = "argument must be non-negative";
-        public const string CodecTypeError = "codec type error";
-        public const string MediaTypeError = "media type error";
-        public const string LineSizeError = "line size error";
-        public const string PtsOutOfRange = "pts out of range";
-        public const string InvalidVideoFrame = "invalid video frame";
-        public const string InvalidAudioFrame = "invalid audio frame";
-        public const string InvalidFrame = "invalid frame";
-        public const string NotInitCodecContext = "not init codec context";
-        public const string TooManyChannels = "too many channels";
-        public const string FilterHasInit = "filter has init by other graph";
-        public const string NeedAddToGraph = "filter need add to graph";
-        public const string FilterTypeError = "filter type error";
-        public const string NotSourcesFilter = "not sources filter";
-        public const string NotSinksFilter = "not sinks filter";
-        public static string NotImplemented { get; } = new NotImplementedException().Message; // for i18n string
-        public static string NullReference { get; } = new NullReferenceException().Message; // for i18n string
-
-        #endregion custom error string
+        private const string FFmpegError = "FFmpeg error";
     }
 }

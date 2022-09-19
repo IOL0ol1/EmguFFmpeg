@@ -66,7 +66,8 @@ namespace EmguFFmpeg
         public static PixelConverter CreateByCodeContext(MediaCodecContext dstCodec, int flags = ffmpeg.SWS_BILINEAR)
         {
             if (dstCodec.AVCodecContext.codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO)
-                throw new FFmpegException(FFmpegException.CodecTypeError);
+                
+                throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
             return new PixelConverter(dstCodec.AVCodecContext.pix_fmt, dstCodec.AVCodecContext.width, dstCodec.AVCodecContext.height, flags);
         }
 
@@ -77,7 +78,7 @@ namespace EmguFFmpeg
         /// <param name="flags"></param>
         public static PixelConverter CreateByDstFrame(MediaFrame dstFrame, int flags = ffmpeg.SWS_BILINEAR)
         {
-            if (!dstFrame.IsVideoFrame) throw new FFmpegException(FFmpegException.InvalidVideoFrame);
+            if (!dstFrame.IsVideoFrame) throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
             return new PixelConverter((AVPixelFormat)dstFrame.AVFrame.format, dstFrame.AVFrame.width, dstFrame.AVFrame.height, flags);
         }
 

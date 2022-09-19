@@ -9,7 +9,7 @@ namespace EmguFFmpeg
 
         public MediaPacket Get(IntPtr pAVPacket, bool isDisposeByOwner = true)
         {
-            if (pAVPacket == IntPtr.Zero) throw new FFmpegException(FFmpegException.NullReference);
+            if (pAVPacket == IntPtr.Zero) throw new NullReferenceException();
             return new MediaPacket((AVPacket*)pAVPacket) { disposedValue = !isDisposeByOwner };
         }
 
