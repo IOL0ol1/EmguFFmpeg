@@ -35,10 +35,8 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public static MediaCodec GetEncoder(string codecName)
         {
-            AVCodec* pCodec;
-            if ((pCodec = ffmpeg.avcodec_find_encoder_by_name(codecName)) == null)
-                throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            return new MediaCodec(pCodec);
+            AVCodec* pCodec = ffmpeg.avcodec_find_encoder_by_name(codecName);
+            return pCodec == null ? null : new MediaCodec(pCodec);
         }
 
         /// <summary>
@@ -49,10 +47,8 @@ namespace EmguFFmpeg
 
         public static MediaCodec GetEncoder(AVCodecID codecId)
         {
-            AVCodec* pCodec;
-            if ((pCodec = ffmpeg.avcodec_find_encoder(codecId)) == null && codecId != AVCodecID.AV_CODEC_ID_NONE)
-                throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            return new MediaCodec(pCodec);
+            AVCodec* pCodec = ffmpeg.avcodec_find_encoder(codecId);
+            return pCodec == null ? null : new MediaCodec(pCodec);
         }
 
         /// <summary>
@@ -62,10 +58,8 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public static MediaCodec GetDecoder(string codecName)
         {
-            AVCodec* pCodec;
-            if ((pCodec = ffmpeg.avcodec_find_decoder_by_name(codecName)) == null)
-                throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            return new MediaCodec(pCodec);
+            AVCodec* pCodec = ffmpeg.avcodec_find_decoder_by_name(codecName);
+            return pCodec == null ? null : new MediaCodec(pCodec);
         }
 
         /// <summary>
@@ -76,10 +70,8 @@ namespace EmguFFmpeg
 
         public static MediaCodec GetDecoder(AVCodecID codecId)
         {
-            AVCodec* pCodec;
-            if ((pCodec = ffmpeg.avcodec_find_decoder(codecId)) == null && codecId != AVCodecID.AV_CODEC_ID_NONE)
-                throw new FFmpegException(ffmpeg.AVERROR_ENCODER_NOT_FOUND);
-            return new MediaCodec(pCodec);
+            AVCodec* pCodec = ffmpeg.avcodec_find_decoder(codecId);
+            return pCodec == null ? null : new MediaCodec(pCodec);
         }
 
         internal MediaCodec(AVCodec* codec)

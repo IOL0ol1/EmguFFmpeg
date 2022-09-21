@@ -7,47 +7,17 @@ using FFmpeg.AutoGen;
 namespace EmguFFmpeg
 {
 
-    public unsafe class MediaCodecContext : IDisposable
+    public unsafe class MediaCodecContextSettings
     {
         protected AVCodecContext* pCodecContext = null;
-        private bool disposedValue;
 
+        protected MediaCodecContextSettings() { }
 
-        public static implicit operator AVCodec*(MediaCodecContext value)
-        {
-            if (value == null || value.pCodecContext == null) return null;
-            return value.pCodecContext->codec;
-        }
-
-        public static implicit operator AVCodecContext*(MediaCodecContext value)
+        public static implicit operator AVCodecContext*(MediaCodecContextSettings value)
         {
             if (value == null) return null;
             return value.pCodecContext;
         }
-
-        public static MediaCodecContext FromNative(AVCodecContext* pCodecContext, bool isDisposeByOwner = true)
-        {
-            return new MediaCodecContext(pCodecContext, !isDisposeByOwner);
-        }
-
-        public static MediaCodecContext FromNative(IntPtr pCodecContext, bool isDisposeByOwner = true)
-        {
-            return new MediaCodecContext((AVCodecContext*)pCodecContext, !isDisposeByOwner);
-        }
-
-        protected MediaCodecContext(AVCodecContext* codecContext, bool isDisposeByOwner = true)
-        {
-            pCodecContext = codecContext;
-            disposedValue = !isDisposeByOwner;
-        }
-
-        public MediaCodecContext(MediaCodec codec = null)
-        {
-            pCodecContext = ffmpeg.avcodec_alloc_context3(codec);
-            if (pCodecContext == null)
-                throw new NullReferenceException();
-        }
-
         public AVCodecContext AVCodecContext => *pCodecContext;
 
         public AVMediaType CodecType
@@ -110,7 +80,7 @@ namespace EmguFFmpeg
             get => pCodecContext->sample_fmt;
             set => pCodecContext->sample_fmt = value;
         }
- 
+
         public int Flag
         {
             get => pCodecContext->flags;
@@ -128,15 +98,47 @@ namespace EmguFFmpeg
             get => pCodecContext->level;
             set => pCodecContext->level = value;
         }
+    }
+
+    public unsafe class MediaCodecContext : MediaCodecContextSettings, IDisposable
+    {
+        private bool disposedValue;
+
+        public static MediaCodecContext FromNative(AVCodecContext* pCodecContext, bool isDisposeByOwner = true)
+        {
+            return new MediaCodecContext(pCodecContext, !isDisposeByOwner);
+        }
+
+        public static MediaCodecContext FromNative(IntPtr pCodecContext, bool isDisposeByOwner = true)
+        {
+
+            return new MediaCodecContext((AVCodecContext*)pCodecContext, !isDisposeByOwner);
+        }
+
+        protected MediaCodecContext(AVCodecContext* codecContext, bool isDisposeByOwner = true)
+        {
+            pCodecContext = codecContext;
+            disposedValue = !isDisposeByOwner;
+        }
+
+        public MediaCodecContext(MediaCodec codec = null)
+        {
+            pCodecContext = ffmpeg.avcodec_alloc_context3(codec);
+            if (pCodecContext == null)
+                throw new NullReferenceException();
+        }
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_open2(AVCodecContext*, AVCodec*, AVDictionary**)"/>
         /// </summary>
+        /// <param name="beforeOpenSetting"></param>
         /// <param name="codec"></param>
         /// <param name="opts"></param>
-        public void Open(MediaCodec codec, MediaDictionary opts = null)
+        public MediaCodecContext Open(Action<MediaCodecContextSettings> beforeOpenSetting, MediaCodec codec = null, MediaDictionary opts = null)
         {
+            beforeOpenSetting?.Invoke(this);
             ffmpeg.avcodec_open2(pCodecContext, codec, opts).ThrowIfError();
+            return this;
         }
 
         /// <summary>
@@ -206,14 +208,20 @@ namespace EmguFFmpeg
         {
             if (SendPacket(packet) >= 0)
             {
-                using (MediaFrame frame = new MediaFrame())
+                using (var frame = new MediaFrame())
                 {
                     while (true)
                     {
                         int ret = ReceiveFrame(frame);
-                        if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
-                            yield break;
-                        ret.ThrowIfError();
+                        if (ret < 0)
+                        {
+                            // those two return values are special and mean there is no output
+                            // frame available, but there were no errors during decoding
+                            if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
+                                yield break;
+                            else
+                                break;
+                        }
                         yield return frame;
                     }
                 }
