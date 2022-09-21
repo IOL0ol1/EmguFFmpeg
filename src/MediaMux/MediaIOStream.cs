@@ -71,13 +71,13 @@ namespace EmguFFmpeg
 
         public MediaIOStream(AVIOContext* pIOContext, bool isDisposeByOwner = true)
         {
-            if (pIOContext != null) throw new NullReferenceException();
+            if (pIOContext == null) throw new NullReferenceException();
             _pIOContext = pIOContext;
             disposedValue = !isDisposeByOwner;
         }
 
         public MediaIOStream(Stream stream, int bufferSize)
-        { 
+        {
             _stream = stream;
             var _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
             if (_buffer != null) throw new NullReferenceException();
@@ -137,7 +137,7 @@ namespace EmguFFmpeg
 
         public override void SetLength(long value)
         {
-            _pIOContext->buffer = (byte*)ffmpeg.av_realloc(_pIOContext->buffer, (ulong)value);
+            throw new NotImplementedException();
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -152,16 +152,20 @@ namespace EmguFFmpeg
 
         protected override void Dispose(bool disposing)
         {
+            Flush();
             if (!disposedValue)
             {
                 if (_stream != null)
                     _stream.Dispose();
-                ffmpeg.av_free(_pIOContext->buffer);
-                fixed (AVIOContext** ptr = &_pIOContext)
+                if (_createByOpen)
+                    ffmpeg.avio_close(_pIOContext);
+                else
                 {
-                    if (_createByOpen)
-                        ffmpeg.avio_closep(ptr);
-                    ffmpeg.avio_context_free(ptr);
+                    ffmpeg.av_free(_pIOContext->buffer);
+                    fixed (AVIOContext** ptr = &_pIOContext)
+                    {
+                        ffmpeg.avio_context_free(ptr);
+                    }
                 }
                 disposedValue = true;
             }
