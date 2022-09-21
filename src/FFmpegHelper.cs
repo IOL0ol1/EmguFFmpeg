@@ -78,12 +78,17 @@ namespace EmguFFmpeg
             return new string(psbyte, 0, length, Encoding.UTF8);
         }
 
+
         internal static T ThrowIfError<T>(this T error) where T : struct, IComparable, IFormattable, IConvertible, IComparable<T>, IEquatable<T>
         {
-            return error.CompareTo(0) < 0 ? throw new FFmpegException(error.ToInt32(NumberFormatInfo.InvariantInfo)) : error;
+            if (error is int _int)
+                return _int < 0 ? throw new FFmpegException(_int) : error;
+            else if (error is long _long)
+                return _long < 0 ? throw new FFmpegException((int)_long) : error;
+            else
+                return error.CompareTo(default(T)) < 0 ? throw new FFmpegException(error.ToInt32(NumberFormatInfo.InvariantInfo)) : error;
         }
 
- 
         #endregion Extension
 
         /// <summary>
@@ -251,5 +256,5 @@ namespace EmguFFmpeg
         PrintLevel = ffmpeg.AV_LOG_PRINT_LEVEL,
     }
 
- 
+
 }
