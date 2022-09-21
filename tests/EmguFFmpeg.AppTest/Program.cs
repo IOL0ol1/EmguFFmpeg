@@ -1,20 +1,28 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
+using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.AppTest
 {
-    internal class Program
+    internal unsafe class Program
     {
         private static void Main(string[] args)
         {
             var version = FFmpegHelper.RegisterBinaries(@"E:\\Projects\\EmguFFmpeg\\tests\\EmguFFmpeg.AppTest\\bin\\Debug\\netcoreapp3.1\\bin");
             Console.WriteLine(version);
 
-            var outputFile = "111.mp4";
-            var width = 800;
-            var height = 600;
-            var fps = 60;
 
-
+            using (var demuxer = new MediaReader(@"C:\path-to-your.mp4"))
+            {
+                foreach (var packet in demuxer.ReadPackets())
+                {
+                    foreach (var frame in demuxer.Codecs[packet.StreamIndex].DecodePacket(packet))
+                    {
+                        Trace.TraceInformation($"{demuxer.Codecs[packet.StreamIndex].CodecType}\t{frame.Pts}\t{frame.Height}\t{frame.Width}\t{frame.NbSamples}");
+                    }
+                }
+            }
 
         }
 
