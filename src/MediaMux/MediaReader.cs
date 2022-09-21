@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
 using FFmpeg.AutoGen;
@@ -41,14 +42,6 @@ namespace EmguFFmpeg
             }
         }
 
-        public MediaDecoder[] DefaultDecoders
-        {
-            get
-            {
-                return null;
-            }
-        }
-
         /// <summary>
         /// Load path
         /// </summary>
@@ -64,12 +57,21 @@ namespace EmguFFmpeg
             ffmpeg.avformat_find_stream_info(pFormatContext, options).ThrowIfError();
             Format = iformat ?? new InFormat(pFormatContext->iformat);
 
+            Codecs = new MediaCodecContext[pFormatContext->nb_streams];
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 AVStream* pStream = pFormatContext->streams[i];
-                // TODO
+                streams.Add(new MediaStream(pStream));
+                var codec = MediaCodec.GetDecoder(pStream->codecpar->codec_id);
+                // TODO: If so AV_CODEC_ID_NONE what to do 
+                Codecs[i] = codec == null ? null : new MediaCodecContext(codec).Open(_ =>
+                {
+                    ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar).ThrowIfError();
+                });
             }
         }
+
+        public MediaCodecContext[] Codecs { get; protected set; }
 
 
         public MediaReader(AVFormatContext* formatContext, bool isOwner = true)
@@ -134,14 +136,19 @@ namespace EmguFFmpeg
 
         #region IEnumerable<MediaPacket>
 
+        /// <summary>
+        /// Read packets from media
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="FFmpegException"></exception>
         public IEnumerable<MediaPacket> ReadPackets()
         {
-            using (MediaPacket packet = new MediaPacket())
+            using (var packet = new MediaPacket())
             {
                 int ret;
                 do
                 {
-                    ret = ReadPacket(packet);
+                    ret = ReadPacketSafe(packet);
                     if (ret < 0 && ret != ffmpeg.AVERROR_EOF)
                         throw new FFmpegException(ret);
                     yield return packet;
@@ -150,7 +157,23 @@ namespace EmguFFmpeg
             }
         }
 
-        public int ReadPacket([Out] MediaPacket packet)
+        private IEnumerator<MediaPacket> packets;
+        public bool TryReadNextPacket(out MediaPacket packet)
+        {
+            if (packets == null) packets = ReadPackets().GetEnumerator();
+            if (packets.MoveNext())
+            {
+                packet = packets.Current;
+                return true;
+            }
+            else
+            {
+                packet = null;
+                return false;
+            }
+        }
+
+        protected int ReadPacketSafe(MediaPacket packet)
         {
             return ffmpeg.av_read_frame(pFormatContext, packet);
         }
