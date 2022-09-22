@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg.AppTest
@@ -12,16 +13,25 @@ namespace EmguFFmpeg.AppTest
             var version = FFmpegHelper.RegisterBinaries(@"E:\\Projects\\EmguFFmpeg\\tests\\EmguFFmpeg.AppTest\\bin\\Debug\\netcoreapp3.1\\bin");
             Console.WriteLine(version);
 
+            using (var muxer = new MediaWriter(@"C:\path-to-your.mp4"))
+            {
+                muxer.AddStream()
+            }
 
             using (var demuxer = new MediaReader(@"C:\path-to-your.mp4"))
             {
+                var coders = demuxer.Select(_ => MediaReader.CreateDefaultCodecContext(_)).ToList();
                 foreach (var packet in demuxer.ReadPackets())
                 {
-                    foreach (var frame in demuxer.Codecs[packet.StreamIndex].DecodePacket(packet))
+                    if (coders[packet.StreamIndex] != null)
                     {
-                        Trace.TraceInformation($"{demuxer.Codecs[packet.StreamIndex].CodecType}\t{frame.Pts}\t{frame.Height}\t{frame.Width}\t{frame.NbSamples}");
+                        foreach (var frame in coders[packet.StreamIndex].DecodePacket(packet))
+                        {
+                            Trace.TraceInformation($"{coders[packet.StreamIndex].CodecType}\t{frame.Pts}\t{frame.Height}\t{frame.Width}\t{frame.NbSamples}");
+                        }
                     }
                 }
+                coders.ForEach(_ => _?.Dispose());
             }
 
         }
