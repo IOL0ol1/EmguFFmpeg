@@ -4,7 +4,7 @@ using System.Text;
 
 namespace EmguFFmpeg
 {
-    public class MediaEncoder
+    public class MediaEncoder: MediaCodecContext
     {
     }
 }

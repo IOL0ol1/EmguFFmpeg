@@ -6,100 +6,6 @@ using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-
-    public unsafe class MediaCodecContextSettings
-    {
-        protected AVCodecContext* pCodecContext = null;
-
-        protected MediaCodecContextSettings() { }
-
-        public static implicit operator AVCodecContext*(MediaCodecContextSettings value)
-        {
-            if (value == null) return null;
-            return value.pCodecContext;
-        }
-        public AVCodecContext AVCodecContext => *pCodecContext;
-
-        public AVMediaType CodecType
-        {
-            get => pCodecContext->codec_type;
-            set => pCodecContext->codec_type = value;
-        }
-
-        public int Height
-        {
-            get => pCodecContext->height;
-            set => pCodecContext->height = value;
-        }
-
-        public int Width
-        {
-            get => pCodecContext->width;
-            set => pCodecContext->width = value;
-        }
-
-        public MediaRational TimeBase
-        {
-            get => pCodecContext->time_base;
-            set => pCodecContext->time_base = value;
-        }
-
-        public AVPixelFormat PixFmt
-        {
-            get => pCodecContext->pix_fmt;
-            set => pCodecContext->pix_fmt = value;
-        }
-
-        public long BitRate
-        {
-            get => pCodecContext->bit_rate;
-            set => pCodecContext->bit_rate = value;
-        }
-
-
-        public int Refs
-        {
-            get => pCodecContext->refs;
-            set => pCodecContext->refs = value;
-        }
-
-        public int SampleRate
-        {
-            get => pCodecContext->sample_rate;
-            set => pCodecContext->sample_rate = value;
-        }
-
-        public AVChannelLayout ChLayout
-        {
-            get => pCodecContext->ch_layout;
-            set => pCodecContext->ch_layout = value;
-        }
-
-        public AVSampleFormat SampleFmt
-        {
-            get => pCodecContext->sample_fmt;
-            set => pCodecContext->sample_fmt = value;
-        }
-
-        public int Flag
-        {
-            get => pCodecContext->flags;
-            set => pCodecContext->flags = value;
-        }
-
-        public int Profile
-        {
-            get => pCodecContext->profile;
-            set => pCodecContext->profile = value;
-        }
-
-        public int Level
-        {
-            get => pCodecContext->level;
-            set => pCodecContext->level = value;
-        }
-    }
-
     public unsafe class MediaCodecContext : MediaCodecContextSettings, IDisposable
     {
         private bool disposedValue;
@@ -312,4 +218,97 @@ namespace EmguFFmpeg
             GC.SuppressFinalize(this);
         }
     }
+
+    public unsafe abstract class MediaCodecContextSettings
+    {
+        protected AVCodecContext* pCodecContext = null;
+
+        public static implicit operator AVCodecContext*(MediaCodecContextSettings value)
+        {
+            if (value == null) return null;
+            return value.pCodecContext;
+        }
+        public AVCodecContext AVCodecContext => *pCodecContext;
+
+        public AVMediaType CodecType
+        {
+            get => pCodecContext->codec_type;
+            set => pCodecContext->codec_type = value;
+        }
+
+        public int Height
+        {
+            get => pCodecContext->height;
+            set => pCodecContext->height = value;
+        }
+
+        public int Width
+        {
+            get => pCodecContext->width;
+            set => pCodecContext->width = value;
+        }
+
+        public MediaRational TimeBase
+        {
+            get => pCodecContext->time_base;
+            set => pCodecContext->time_base = value;
+        }
+
+        public AVPixelFormat PixFmt
+        {
+            get => pCodecContext->pix_fmt;
+            set => pCodecContext->pix_fmt = value;
+        }
+
+        public long BitRate
+        {
+            get => pCodecContext->bit_rate;
+            set => pCodecContext->bit_rate = value;
+        }
+
+
+        public int Refs
+        {
+            get => pCodecContext->refs;
+            set => pCodecContext->refs = value;
+        }
+
+        public int SampleRate
+        {
+            get => pCodecContext->sample_rate;
+            set => pCodecContext->sample_rate = value;
+        }
+
+        public AVChannelLayout ChLayout
+        {
+            get => pCodecContext->ch_layout;
+            set => pCodecContext->ch_layout = value;
+        }
+
+        public AVSampleFormat SampleFmt
+        {
+            get => pCodecContext->sample_fmt;
+            set => pCodecContext->sample_fmt = value;
+        }
+
+        public int Flag
+        {
+            get => pCodecContext->flags;
+            set => pCodecContext->flags = value;
+        }
+
+        public int Profile
+        {
+            get => pCodecContext->profile;
+            set => pCodecContext->profile = value;
+        }
+
+        public int Level
+        {
+            get => pCodecContext->level;
+            set => pCodecContext->level = value;
+        }
+    }
+
+
 }
