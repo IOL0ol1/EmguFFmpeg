@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-
+using System.Runtime.InteropServices.ComTypes;
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
     public unsafe partial class MediaReader : MediaFormatContext
     {
-        protected Stream _stream;
+        protected MediaIOStream _stream;
 
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
@@ -23,11 +23,11 @@ namespace EmguFFmpeg
         /// <param name="stream"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public MediaReader(MediaIOStream stream, InFormat iformat = null, MediaDictionary options = null)
+        public MediaReader(Stream stream, InFormat iformat = null, MediaDictionary options = null)
         {
-            _stream = stream;
+            _stream = new MediaIOStream(stream);
             pFormatContext = ffmpeg.avformat_alloc_context();
-            pFormatContext->pb = stream;
+            pFormatContext->pb = _stream;
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
                 ffmpeg.avformat_open_input(ppFormatContext, null, iformat, options).ThrowIfError();
@@ -38,7 +38,7 @@ namespace EmguFFmpeg
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 AVStream* pStream = pFormatContext->streams[i];
-                // TODO
+                streams.Add(new MediaStream(pStream));
             }
         }
 
@@ -57,22 +57,24 @@ namespace EmguFFmpeg
             ffmpeg.avformat_find_stream_info(pFormatContext, options).ThrowIfError();
             Format = iformat ?? new InFormat(pFormatContext->iformat);
 
-            Codecs = new MediaCodecContext[pFormatContext->nb_streams];
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 AVStream* pStream = pFormatContext->streams[i];
                 streams.Add(new MediaStream(pStream));
-                var codec = MediaCodec.GetDecoder(pStream->codecpar->codec_id);
-                // TODO: If so AV_CODEC_ID_NONE what to do 
-                Codecs[i] = codec == null ? null : new MediaCodecContext(codec).Open(_ =>
-                {
-                    ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar).ThrowIfError();
-                });
             }
         }
 
-        public MediaCodecContext[] Codecs { get; protected set; }
 
+        public static MediaCodecContext CreateDefaultCodecContext(MediaStream stream)
+        {
+            AVStream* pStream = stream;
+            var codec = MediaCodec.GetDecoder(pStream->codecpar->codec_id);
+            // TODO: If so AV_CODEC_ID_NONE what to do 
+            return codec == null ? null : new MediaCodecContext(codec).Open(_ =>
+            {
+                ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar).ThrowIfError();
+            });
+        }
 
         public MediaReader(AVFormatContext* formatContext, bool isOwner = true)
         {
@@ -105,23 +107,10 @@ namespace EmguFFmpeg
         /// <param name="streamIndex"></param>
         public int Seek(long timestamp, int streamIndex = -1)
         {
-            // TODO
-            //if (streamIndex >= 0)
-            //    timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), streams[streamIndex].TimeBase);
-            //var ret = ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, long.MaxValue, 0).ThrowIfError();
-            //if (streamIndex >= 0)
-            //{
-            //    ffmpeg.avcodec_flush_buffers(streams[streamIndex].Codec);
-            //}
-            //else
-            //{
-            //    foreach (var stream in streams)
-            //    {
-            //        ffmpeg.avcodec_flush_buffers(stream.Codec);
-            //    }
-            //}
-            //return ret;
-            return 0;
+            if (streamIndex >= 0)
+                timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), streams[streamIndex].TimeBase);
+            var ret = ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, timestamp, 0).ThrowIfError();
+            return ret;
         }
 
         /// <summary>
@@ -185,6 +174,10 @@ namespace EmguFFmpeg
 
         protected override void Dispose(bool disposing)
         {
+            for (int i = 0; _codecs != null && i < _codecs.Length; i++)
+            {
+                _codecs[i]?.Dispose();
+            }
             if (!disposedValue)
             {
                 if (_stream != null)

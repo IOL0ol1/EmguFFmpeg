@@ -76,7 +76,7 @@ namespace EmguFFmpeg
             disposedValue = !isDisposeByOwner;
         }
 
-        public MediaIOStream(Stream stream, int bufferSize)
+        public MediaIOStream(Stream stream, int bufferSize = 4096)
         {
             _stream = stream;
             var _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
