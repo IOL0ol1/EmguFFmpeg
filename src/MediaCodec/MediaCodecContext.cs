@@ -48,33 +48,21 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// pre process frame
-        /// </summary>
-        /// <param name="frame"></param>
-        private void RemoveSideData(MediaFrame frame)
-        {
-            if (frame != null)
-            {
-                // Make sure Closed Captions will not be duplicated
-                if (AVCodecContext.codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
-                    ffmpeg.av_frame_remove_side_data(frame, AVFrameSideDataType.AV_FRAME_DATA_A53_CC);
-            }
-        }
-
-        /// <summary>
         /// TODO: add SubtitleFrame support
         /// </summary>
         /// <param name="frame"></param>
         /// <returns></returns>
         public IEnumerable<MediaPacket> EncodeFrame(MediaFrame frame)
         {
-            SendFrame(frame);
-            RemoveSideData(frame);
+            int ret = SendFrame(frame);
+            if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
+                yield break;
+            ret.ThrowIfError();
             using (MediaPacket packet = new MediaPacket())
             {
                 while (true)
                 {
-                    int ret = ReceivePacket(packet);
+                    ret = ReceivePacket(packet);
                     if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
                         yield break;
                     ret.ThrowIfError();
@@ -85,11 +73,13 @@ namespace EmguFFmpeg
 
         public IEnumerable<MediaPacket> EncodeFrame(MediaFrame frame, MediaPacket packet)
         {
-            SendFrame(frame);
-            RemoveSideData(frame);
+            int ret = SendFrame(frame);
+            if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
+                yield break;
+            ret.ThrowIfError();
             while (true)
             {
-                int ret = ReceivePacket(packet);
+                ret = ReceivePacket(packet);
                 if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
                     yield break;
                 try
@@ -159,39 +149,46 @@ namespace EmguFFmpeg
             }
         }
 
-        #region safe wapper for IEnumerable
+        #region Safe wapper for IEnumerable
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_send_frame(AVCodecContext*, AVFrame*)"/>
         /// </summary>
         /// <param name="frame"></param>
-        /// <returns></returns>
-        public int SendFrame([In] MediaFrame frame) => ffmpeg.avcodec_send_frame(pCodecContext, frame);
+        /// <returns>
+        /// 0 on success, otherwise negative error code: AVERROR(EAGAIN): input is not accepted
+        /// in the current state - user must read output with avcodec_receive_packet() (once
+        /// all output is read, the packet should be resent, and the call will not fail with
+        /// EAGAIN). AVERROR_EOF: the encoder has been flushed, and no new frames can be
+        /// sent to it AVERROR(EINVAL): codec not opened, it is a decoder, or requires flush
+        /// AVERROR(ENOMEM): failed to add packet to internal queue, or similar other errors:
+        /// legitimate encoding errors</returns>
+        public int SendFrame(MediaFrame frame) => ffmpeg.avcodec_send_frame(pCodecContext, frame);
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_receive_packet(AVCodecContext*, AVPacket*)"/>
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public int ReceivePacket([Out] MediaPacket packet) => ffmpeg.avcodec_receive_packet(pCodecContext, packet);
+        public int ReceivePacket(MediaPacket packet) => ffmpeg.avcodec_receive_packet(pCodecContext, packet);
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public int SendPacket([In] MediaPacket packet) => ffmpeg.avcodec_send_packet(pCodecContext, packet);
+        public int SendPacket(MediaPacket packet) => ffmpeg.avcodec_send_packet(pCodecContext, packet);
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_receive_frame(AVCodecContext*, AVFrame*)"/>
         /// </summary>
         /// <param name="frame"></param>
         /// <returns></returns>
-        public int ReceiveFrame([Out] MediaFrame frame) => ffmpeg.avcodec_receive_frame(pCodecContext, frame);
+        public int ReceiveFrame(MediaFrame frame) => ffmpeg.avcodec_receive_frame(pCodecContext, frame);
 
         #endregion safe wapper for IEnumerable
 
-
+        #region IDisposable
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -217,6 +214,7 @@ namespace EmguFFmpeg
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+        #endregion
     }
 
     public unsafe abstract class MediaCodecContextSettings
@@ -248,10 +246,16 @@ namespace EmguFFmpeg
             set => pCodecContext->width = value;
         }
 
-        public MediaRational TimeBase
+        public AVRational TimeBase
         {
             get => pCodecContext->time_base;
             set => pCodecContext->time_base = value;
+        }
+
+        public AVRational FrameRate
+        {
+            get=> pCodecContext->framerate;
+            set=> pCodecContext->framerate = value;
         }
 
         public AVPixelFormat PixFmt
