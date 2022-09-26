@@ -7,13 +7,22 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaStream
     {
+        public MediaCodecContext CreateDefaultCodecContext()
+        {
+            var codec = MediaCodec.GetDecoder(pStream->codecpar->codec_id);
+            // If codec_id is AV_CODEC_ID_NONE return null
+            return codec == null ? null : new MediaCodecContext(codec).Open(_ =>
+            {
+                ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar).ThrowIfError();
+            });
+        }
+
         public MediaStream(IntPtr stream)
             : this((AVStream*)stream)
         { }
 
         public MediaStream(AVStream* stream)
         {
-            Debug.Assert(stream != null);
             pStream = stream;
         }
 
@@ -41,8 +50,6 @@ namespace EmguFFmpeg
         /// stream index in AVFormatContext
         /// </summary>
         public int Index => pStream->index;
-
-
 
         /// <summary>
         /// Convert to TimeSpan use <see cref="TimeBase"/>.
