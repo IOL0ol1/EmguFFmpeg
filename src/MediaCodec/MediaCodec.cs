@@ -126,15 +126,15 @@ namespace EmguFFmpeg
                 (KeyValuePair<int, string>?)null;
         }
 
-        public IEnumerable<KeyValuePair<int, string>> Profiles
+        public IEnumerable<KeyValuePair<int, string>> GetProfiles()
         {
-            get
+            KeyValuePair<int, string>? profile;
+            for (int i = 0; (profile = av_get_profile_name_safe(this, i)) != null; i++)
             {
-                KeyValuePair<int, string>? profile;
-                for (int i = 0; (profile = av_get_profile_name_safe(this, i)) != null; i++)
-                {
+                if (profile.Value.Key == ffmpeg.FF_PROFILE_UNKNOWN)
+                    yield break;
+                else
                     yield return profile.Value;
-                }
             }
         }
 
@@ -144,15 +144,12 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (AVCodecHWConfig?)null;
         }
 
-        public IEnumerable<AVCodecHWConfig> SupportedHardware
+        public IEnumerable<AVCodecHWConfig> GetSupportedHardware()
         {
-            get
+            AVCodecHWConfig? config;
+            for (int i = 0; (config = avcodec_get_hw_config_safe(this, i)) != null; i++)
             {
-                AVCodecHWConfig? config;
-                for (int i = 0; (config = avcodec_get_hw_config_safe(this, i)) != null; i++)
-                {
-                    yield return config.Value;
-                }
+                yield return config.Value;
             }
         }
 
@@ -162,18 +159,15 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (AVPixelFormat?)null;
         }
 
-        public IEnumerable<AVPixelFormat> SupportedPixelFmts
+        public IEnumerable<AVPixelFormat> GetSupportedPixelFmts()
         {
-            get
+            AVPixelFormat? p;
+            for (int i = 0; (p = pix_fmts_next_safe(this, i)) != null; i++)
             {
-                AVPixelFormat? p;
-                for (int i = 0; (p = pix_fmts_next_safe(this, i)) != null; i++)
-                {
-                    if (p == AVPixelFormat.AV_PIX_FMT_NONE)
-                        yield break;
-                    else
-                        yield return p.Value;
-                }
+                if (p == AVPixelFormat.AV_PIX_FMT_NONE)
+                    yield break;
+                else
+                    yield return p.Value;
             }
         }
 
@@ -183,18 +177,15 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (AVRational?)null;
         }
 
-        public IEnumerable<AVRational> SupportedFrameRates
+        public IEnumerable<AVRational> GetSupportedFrameRates()
         {
-            get
+            AVRational? p;
+            for (int i = 0; (p = supported_framerates_next_safe(this, i)) != null; i++)
             {
-                AVRational? p;
-                for (int i = 0; (p = supported_framerates_next_safe(this, i)) != null; i++)
-                {
-                    if (p.Value.num != 0)
-                        yield return p.Value;
-                    else
-                        yield break;
-                }
+                if (p.Value.num != 0)
+                    yield return p.Value;
+                else
+                    yield break;
             }
         }
 
@@ -204,18 +195,15 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (AVSampleFormat?)null;
         }
 
-        public IEnumerable<AVSampleFormat> SupportedSampelFmts
+        public IEnumerable<AVSampleFormat> GetSupportedSampelFmts()
         {
-            get
+            AVSampleFormat? p;
+            for (int i = 0; (p = sample_fmts_next_safe(this, i)) != null; i++)
             {
-                AVSampleFormat? p;
-                for (int i = 0; (p = sample_fmts_next_safe(this, i)) != null; i++)
-                {
-                    if (p == AVSampleFormat.AV_SAMPLE_FMT_NONE)
-                        yield break;
-                    else
-                        yield return p.Value;
-                }
+                if (p == AVSampleFormat.AV_SAMPLE_FMT_NONE)
+                    yield break;
+                else
+                    yield return p.Value;
             }
         }
 
@@ -225,39 +213,33 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (int?)null;
         }
 
-        public IEnumerable<int> SupportedSampleRates
+        public IEnumerable<int> GetSupportedSampleRates()
         {
-            get
+            int? p;
+            for (int i = 0; (p = supported_samplerates_next_safe(this, i)) != null; i++)
             {
-                int? p;
-                for (int i = 0; (p = supported_samplerates_next_safe(this, i)) != null; i++)
-                {
-                    if (p == 0)
-                        yield break;
-                    else
-                        yield return p.Value;
-                }
+                if (p == 0)
+                    yield break;
+                else
+                    yield return p.Value;
             }
         }
 
-        protected ulong? channel_layouts_next_safe(MediaCodec codec, int i)
+        protected AVChannelLayout? ch_layouts_next_safe(MediaCodec codec, int i)
         {
-            var ptr = codec.pCodec->channel_layouts + i;
-            return ptr != null ? *ptr : (ulong?)null;
+            var ptr = codec.pCodec->ch_layouts + i;
+            return ptr != null ? *ptr : (AVChannelLayout?)null;
         }
 
-        public IEnumerable<ulong> SupportedChannelLayout
+        public IEnumerable<AVChannelLayout> GetSupportedChLayout()
         {
-            get
+            AVChannelLayout? p;
+            for (int i = 0; (p = ch_layouts_next_safe(this, i)) != null; i++)
             {
-                ulong? p;
-                for (int i = 0; (p = channel_layouts_next_safe(this, i)) != null; i++)
-                {
-                    if (p == 0)
-                        yield break;
-                    else
-                        yield return p.Value;
-                }
+                if (p.Value.Equals(default(AVChannelLayout)))
+                    yield break;
+                else
+                    yield return p.Value;
             }
         }
 
