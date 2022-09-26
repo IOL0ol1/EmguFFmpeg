@@ -65,16 +65,7 @@ namespace EmguFFmpeg
         }
 
 
-        public static MediaCodecContext CreateDefaultCodecContext(MediaStream stream)
-        {
-            AVStream* pStream = stream;
-            var codec = MediaCodec.GetDecoder(pStream->codecpar->codec_id);
-            // TODO: If so AV_CODEC_ID_NONE what to do 
-            return codec == null ? null : new MediaCodecContext(codec).Open(_ =>
-            {
-                ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar).ThrowIfError();
-            });
-        }
+
 
         public MediaReader(AVFormatContext* formatContext, bool isOwner = true)
         {
@@ -174,10 +165,6 @@ namespace EmguFFmpeg
 
         protected override void Dispose(bool disposing)
         {
-            for (int i = 0; _codecs != null && i < _codecs.Length; i++)
-            {
-                _codecs[i]?.Dispose();
-            }
             if (!disposedValue)
             {
                 if (_stream != null)
