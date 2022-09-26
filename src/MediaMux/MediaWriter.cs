@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
@@ -91,10 +93,20 @@ namespace EmguFFmpeg
             }
         }
 
-
-        public MediaStream AddStream(MediaCodecContext codecContext)
+        /// <summary>
+        /// Add a new stream to a media file.
+        /// <see cref="ffmpeg.avformat_new_stream(AVFormatContext*, AVCodec*)"/>.
+        /// </summary>
+        /// <param name="codecContext">
+        /// if <paramref name="codecContext"/> is not null, then call 
+        /// <see cref="ffmpeg.avcodec_parameters_from_context(AVCodecParameters*, AVCodecContext*)"/>
+        /// </param>
+        /// <returns>newly created stream or null on error.</returns>
+        public MediaStream AddStream(MediaCodecContext codecContext = null)
         {
             AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
+            pStream->id = (int)(pFormatContext->nb_streams - 1);
+            if (pStream == null) return null;
             if (codecContext != null)
             {
                 ffmpeg.avcodec_parameters_from_context(pStream->codecpar, codecContext).ThrowIfError();
@@ -106,38 +118,38 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Add stream by copy <see cref="ffmpeg.avcodec_parameters_copy(AVCodecParameters*, AVCodecParameters*)"/>,
+        /// Add a new stream to a media file.
+        /// <see cref="ffmpeg.avformat_new_stream(AVFormatContext*, AVCodec*)"/>.
         /// </summary>
-        /// <param name="stream"></param>
-        /// <returns></returns>
-        public MediaStream AddStream(MediaStream stream)
+        /// <param name="codecpar">
+        /// <see cref="ffmpeg.avcodec_parameters_copy(AVCodecParameters*, AVCodecParameters*)"/>
+        /// </param>
+        /// <param name="timebase">stream's timebase</param>
+        /// <returns>newly created stream or null on error.</returns>
+        public MediaStream AddStream(AVCodecParameters codecpar, AVRational timebase)
         {
             AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
-            ffmpeg.avcodec_parameters_copy(pStream->codecpar, stream.Stream.codecpar);
-            pStream->codecpar->codec_tag = 0;
-            pStream->time_base = stream.Stream.r_frame_rate.ToInvert(); //
-
-            var s = new MediaStream(pStream);
-            streams.Add(s);
-            return s;
+            if (pStream == null) return null;
+            ffmpeg.avcodec_parameters_copy(pStream->codecpar, &codecpar).ThrowIfError();
+            pStream->time_base = timebase;
+            var stream = new MediaStream(pStream);
+            streams.Add(stream);
+            return stream;
         }
-
-        //public MediaStream AddStream(AVCodecParameters parameters, AVRational timeBase)
-        //{
-        //    AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
-        //    ffmpeg.avcodec_parameters_copy(pStream->codecpar, &parameters);
-        //    pStream->codecpar->codec_tag = 0;
-        //    pStream->time_base = timeBase.ToInvert();
-
-        //    var s = new MediaStream(pStream);
-        //    streams.Add(s);
-        //    return s;
-        //}
 
         /// <summary>
         /// <see cref="ffmpeg.avformat_write_header(AVFormatContext*, AVDictionary**)"/>
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">
+        /// An AVDictionary filled with AVFormatContext and muxer-private options. On return
+        /// this parameter will be destroyed and replaced with a dict containing options
+        /// that were not found. May be NULL.</param>
+        /// <returns>
+        /// AVSTREAM_INIT_IN_WRITE_HEADER on success if the codec had not already been fully
+        /// initialized in avformat_init, AVSTREAM_INIT_IN_INIT_OUTPUT on success if the
+        /// codec had already been fully initialized in avformat_init, negative AVERROR on
+        /// failure.
+        /// </returns>
         /// <exception cref="FFmpegException"></exception>
         public int WriteHeader(MediaDictionary options = null)
         {
@@ -149,34 +161,37 @@ namespace EmguFFmpeg
         /// <para><see cref="ffmpeg.av_packet_unref"/></para>
         /// </summary>
         /// <param name="packet"></param>
+        /// <param name="codecTimeBase"><see cref="AVCodecContext.time_base"/></param>
         /// <returns></returns>
-        public int WritePacket([In] MediaPacket packet)
+        public int WritePacket(MediaPacket packet, AVRational? codecTimeBase = null)
         {
+            if (codecTimeBase != null)
+                ffmpeg.av_packet_rescale_ts(packet, codecTimeBase.Value, this[packet.StreamIndex].TimeBase);
             int ret = ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
             packet.Unref();
             return ret;
         }
 
         /// <summary>
-        /// flush encoder cache and write trailer
+        /// Write the stream trailer to an output media file and free the file private data.
+        /// May only be called after a successful call to avformat_write_header.
+        /// <para><see cref="MediaCodecContext.EncodeFrame(MediaFrame)"/></para>
         /// <para><see cref="WritePacket(MediaPacket)"/></para>
         /// <para><see cref="ffmpeg.av_write_trailer(AVFormatContext*)"/></para>
         /// </summary>
-        /// <exception cref="FFmpegException"></exception>
-        public int WriteTrailer()
+        /// <param name="mediaCodecs">Flush encode list</param>
+        public int WriteTrailer(IEnumerable<MediaCodecContext> mediaCodecs = null)
         {
-            foreach (var stream in streams)
+            if (mediaCodecs != null)
             {
-                // TODO
-                //try
-                //{
-                //    foreach (var packet in stream.WriteFrame(null))
-                //    {
-                //        try { WritePacket(packet); }
-                //        catch (FFmpegException) { break; }
-                //    }
-                //}
-                //catch (FFmpegException) { }
+                foreach (var mediaCodec in mediaCodecs
+                    .Where(_ => (((AVCodecContext*)_)->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0))
+                {
+                    foreach (var packet in mediaCodec.EncodeFrame(null))
+                    {
+                        WritePacket(packet);
+                    }
+                }
             }
             return ffmpeg.av_write_trailer(pFormatContext).ThrowIfError();
         }
@@ -194,7 +209,7 @@ namespace EmguFFmpeg
             {
                 if (disposing)
                 {
-                    // TODO: 释放托管状态(托管对象)
+                    // nothing
                 }
 
                 if (pFormatContext != null)
