@@ -10,28 +10,69 @@ namespace EmguFFmpeg.AppTest
     {
         private static void Main(string[] args)
         {
-            var version = FFmpegHelper.RegisterBinaries(@"E:\\Projects\\EmguFFmpeg\\tests\\EmguFFmpeg.AppTest\\bin\\Debug\\netcoreapp3.1\\bin");
-            Console.WriteLine(version);
-
-            using (var muxer = new MediaWriter(@"C:\path-to-your.mp4"))
+            using (var muxer = new MediaWriter(@"E:\path-to-your.mp4"))
             {
-                muxer.AddStream()
+                using (var video = MediaEncoder.CreateVideoEncoder(muxer.Format, 800, 600, 30))
+                {
+                    AVStream* vStream = muxer.AddStream(video);
+
+                    muxer.WriteHeader();
+
+                    using (var vFrame = MediaFrame.CreateVideoFrame(800, 600, video.PixFmt))
+                    {
+                        for (int i = 0; i < 3000; i++)
+                        {
+                            ffmpeg.av_frame_make_writable(vFrame);
+                            FillYuv420P(vFrame, i);
+                            foreach (var packet in video.EncodeFrame(vFrame))
+                            {
+                                packet.StreamIndex = vStream->index;
+                                muxer.WritePacket(packet);
+                            }
+                        }
+
+                        ///* encode a single tone sound */
+                        //var t = 0d;
+                        //var tincr = 2 * Math.PI * 440.0 / audio.SampleRate;
+                        //for (int i = 0; i < 200; i++)
+                        //{
+                        //    ffmpeg.av_frame_make_writable(aFrame);
+                        //    AVFrame* frame = aFrame;
+                        //    byte* samples = frame->data[0];
+
+                        //    for (int j = 0; j < audio.AVCodecContext.frame_size; j++)
+                        //    {
+                        //        samples[2 * j] = (byte)(Math.Sin(t) * 10000);
+
+                        //        for (int k = 1; k < audio.AVCodecContext.ch_layout.nb_channels; k++)
+                        //            samples[2 * j + k] = samples[2 * j];
+                        //        t += tincr;
+                        //    }
+                        //    foreach (var packet in audio.EncodeFrame(aFrame))
+                        //    {
+                        //        packet.StreamIndex = aStream->index;
+                        //        muxer.WritePacket(packet);
+                        //    }
+                        //}
+                    }
+                    muxer.WriteTrailer(new[] { video });
+                }
             }
 
-            using (var demuxer = new MediaReader(@"C:\path-to-your.mp4"))
+            using (var demuxer = new MediaReader(@"E:\path-to-your.mp4"))
             {
-                var coders = demuxer.Select(_ => MediaReader.CreateDefaultCodecContext(_)).ToList();
+                var codecs = demuxer.Select(_ => _.CreateDefaultCodecContext()).ToList();
                 foreach (var packet in demuxer.ReadPackets())
                 {
-                    if (coders[packet.StreamIndex] != null)
+                    if (codecs[packet.StreamIndex] != null)
                     {
-                        foreach (var frame in coders[packet.StreamIndex].DecodePacket(packet))
+                        foreach (var frame in codecs[packet.StreamIndex].DecodePacket(packet))
                         {
-                            Trace.TraceInformation($"{coders[packet.StreamIndex].CodecType}\t{frame.Pts}\t{frame.Height}\t{frame.Width}\t{frame.NbSamples}");
+                            Trace.TraceInformation($"{codecs[packet.StreamIndex].CodecType}\t{frame.Pts}\t{frame.Height}\t{frame.Width}\t{frame.NbSamples}");
                         }
                     }
                 }
-                coders.ForEach(_ => _?.Dispose());
+                codecs.ForEach(_ => _?.Dispose());
             }
 
         }
