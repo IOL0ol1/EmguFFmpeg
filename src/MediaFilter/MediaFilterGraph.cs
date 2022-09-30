@@ -49,6 +49,16 @@ namespace EmguFFmpeg
             return filterContext;
         }
 
+        public MediaFilterContext AddVideoSrcFilter(MediaFilter filter,  string options = null, string contextName = null)
+        {
+            MediaFilterContext filterContext = AddFilter(filter, options, contextName);
+            if (filterContext.NbInputs > 0)
+                throw new FFmpegException(FFmpegException.NotSourcesFilter);
+            if (ffmpeg.avfilter_pad_get_type(filterContext.AVFilterContext.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
+                throw new FFmpegException(FFmpegException.FilterTypeError);
+            return filterContext;
+        }
+
         public MediaFilterContext AddVideoSinkFilter(MediaFilter filter, AVPixelFormat[] formats = null, string contextName = null)
         {
             MediaFilterContext filterContext = AddFilter(filter, _ =>
@@ -82,11 +92,16 @@ namespace EmguFFmpeg
                     ffmpeg.av_opt_set_int(_, "sample_rate", samplerate, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                 }
             }, contextName);
-            if (filterContext.NbOutputs > 0)
+            if (filterContext.NbInputs > 0)
                 throw new FFmpegException(FFmpegException.NotSourcesFilter);
             if (ffmpeg.avfilter_pad_get_type(filterContext.AVFilterContext.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException(FFmpegException.FilterTypeError);
             return filterContext;
+        }
+
+        public MediaFilterContext AddAudioSrcFilter(MediaFilter filter, string options = null, string contextName = null)
+        {
+            return AddVideoSrcFilter(filter, options, contextName);
         }
 
         public MediaFilterContext AddAudioSinkFilter(MediaFilter filter, AVSampleFormat[] formats = null, int[] sampleRates = null, ulong[] channelLayouts = null, int[] channelCounts = null, int allChannelCounts = 0, string contextName = null)

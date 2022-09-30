@@ -50,10 +50,12 @@ namespace EmguFFmpeg
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 AVStream* pStream = pFormatContext->streams[i];
-                MediaDecoder codec = MediaDecoder.CreateDecoder(pStream->codecpar->codec_id, _ =>
-                {
-                    ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
-                });
+                var codecId = pStream->codecpar->codec_id;
+                var codec = codecId != AVCodecID.AV_CODEC_ID_NONE
+                    ? MediaDecoder.CreateDecoder(
+                        codecId,
+                        _ => ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar))
+                    : null;
                 streams.Add(new MediaStream(pStream) { Codec = codec });
             }
         }
@@ -76,10 +78,12 @@ namespace EmguFFmpeg
             for (int i = 0; i < pFormatContext->nb_streams; i++)
             {
                 AVStream* pStream = pFormatContext->streams[i];
-                MediaDecoder codec = MediaDecoder.CreateDecoder(pStream->codecpar->codec_id, _ =>
-                {
-                    ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar);
-                });
+                var codecId = pStream->codecpar->codec_id;
+                var codec = codecId != AVCodecID.AV_CODEC_ID_NONE
+                                    ? MediaDecoder.CreateDecoder(
+                                        codecId,
+                                        _ => ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar))
+                                    : null;
                 streams.Add(new MediaStream(pStream) { Codec = codec });
             }
         }

@@ -119,6 +119,16 @@ namespace EmguFFmpeg
             }
         }
 
+        public MediaDictionary Copy()
+        {
+            MediaDictionary result = new MediaDictionary();
+            foreach (KeyValuePair<string, string> entry in this)
+            {
+                result.Add(entry.Key, entry.Value);
+            }
+            return result;
+        }
+
         #region IEnumerator
         private static IntPtr av_dict_get_safe(MediaDictionary dict, string key, IntPtr prev, AVDictReadFlags flags)
         {
