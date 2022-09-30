@@ -147,6 +147,18 @@ namespace EmguFFmpeg
             set => pFrame->pts = value;
         }
 
+        public long Dts
+        {
+            get => pFrame->pkt_dts;
+            set => pFrame->pkt_dts = value;
+        }
+
+        public long Duration
+        {
+            get => pFrame->pkt_duration;
+            set => pFrame->pkt_duration = value;
+        }
+
         public int SampleRate
         {
             get => pFrame->sample_rate;
