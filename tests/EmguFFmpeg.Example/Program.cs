@@ -11,7 +11,7 @@ namespace EmguFFmpeg.Example
         private static void Main(string[] args)
         {
             FFmpegHelper.RegisterBinaries();
-            FFmpegHelper.SetupLogging(logWrite: _ => Trace.Write(_));
+            FFmpegHelper.SetupLogging(logWrite: (_,_1) => Trace.Write(_));
             Console.WriteLine("Hello FFmpeg!");
 
             new EnumerableInfo(_ => Console.WriteLine(_));
