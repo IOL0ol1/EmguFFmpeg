@@ -1,17 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
     public unsafe class MediaWriter : MediaFormatContext
     {
-        private bool disposedValue;
+        protected bool disposedValue;
+        protected bool hasWriteHeader; // Fixed: use ffmpeg's flag is better.
+        protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
 
         protected MediaIOStream _stream;
 
@@ -153,6 +152,7 @@ namespace EmguFFmpeg
         /// <exception cref="FFmpegException"></exception>
         public int WriteHeader(MediaDictionary options = null)
         {
+            hasWriteHeader = true;
             return ffmpeg.avformat_write_header(pFormatContext, options).ThrowIfError();
         }
 
@@ -173,14 +173,12 @@ namespace EmguFFmpeg
         }
 
         /// <summary>
-        /// Write the stream trailer to an output media file and free the file private data.
-        /// May only be called after a successful call to avformat_write_header.
-        /// <para><see cref="MediaCodecContext.EncodeFrame(MediaFrame)"/></para>
-        /// <para><see cref="WritePacket(MediaPacket)"/></para>
-        /// <para><see cref="ffmpeg.av_write_trailer(AVFormatContext*)"/></para>
+        /// Flush codecs cache.
+        /// <para><see cref="MediaCodecContext.EncodeFrame(MediaFrame, MediaPacket)"/></para>
+        /// <para><see cref="WritePacket(MediaPacket, AVRational?)"/></para> 
         /// </summary>
         /// <param name="mediaCodecs">Flush encode list</param>
-        public int WriteTrailer(IEnumerable<MediaCodecContext> mediaCodecs = null)
+        public void FlushCodecs(IEnumerable<MediaCodecContext> mediaCodecs = null)
         {
             if (mediaCodecs != null)
             {
@@ -189,10 +187,20 @@ namespace EmguFFmpeg
                 {
                     foreach (var packet in mediaCodec.EncodeFrame(null))
                     {
-                        WritePacket(packet);
+                        WritePacket(packet, mediaCodec.AVCodecContext.time_base);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Write the stream trailer to an output media file and free the file private data.
+        /// May only be called after a successful call to avformat_write_header. 
+        /// <para><see cref="ffmpeg.av_write_trailer(AVFormatContext*)"/></para>
+        /// </summary>
+        public int WriteTrailer()
+        {
+            hasWriteTrailer = true;
             return ffmpeg.av_write_trailer(pFormatContext).ThrowIfError();
         }
 
@@ -214,6 +222,9 @@ namespace EmguFFmpeg
 
                 if (pFormatContext != null)
                 {
+                    // maybe error if no call avformat_write_header, so don't check result.
+                    if (hasWriteHeader&&!hasWriteTrailer)
+                        ffmpeg.av_write_trailer(pFormatContext);
                     if (_stream != null)
                         _stream.Dispose();
                     ffmpeg.avformat_free_context(pFormatContext);
