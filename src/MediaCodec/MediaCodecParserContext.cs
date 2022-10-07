@@ -12,18 +12,12 @@ namespace EmguFFmpeg
     {
         protected AVCodecParserContext* pCodecParserContext;
 
-
-        public static MediaCodecParserContext FromNative(IntPtr pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
-        {
-            return new MediaCodecParserContext((AVCodecParserContext*)pAVCodecParserContext, bufferSize, !isDisposeByOwner);
+        public MediaCodecParserContext(IntPtr pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
+            : this((AVCodecParserContext*)pAVCodecParserContext, bufferSize, isDisposeByOwner)
+        { 
         }
 
-        public static MediaCodecParserContext FromNative(AVCodecParserContext* pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
-        {
-            return new MediaCodecParserContext(pAVCodecParserContext, bufferSize, !isDisposeByOwner);
-        }
-
-        protected MediaCodecParserContext(AVCodecParserContext* pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
+        public MediaCodecParserContext(AVCodecParserContext* pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
         {
             pCodecParserContext = pAVCodecParserContext;
             disposedValue = !isDisposeByOwner;

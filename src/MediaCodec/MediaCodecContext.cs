@@ -1,29 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaCodecContext : MediaCodecContextSettings, IDisposable
+    public unsafe partial class MediaCodecContext : MediaCodecContextSettings, IDisposable
     {
         private bool disposedValue;
 
-        public static MediaCodecContext FromNative(AVCodecContext* pCodecContext, bool isDisposeByOwner = true)
+        public MediaCodecContext(IntPtr pAVCodecContext, bool isDisposeByOwner = true)
         {
-            return new MediaCodecContext(pCodecContext, !isDisposeByOwner);
+            pCodecContext = (AVCodecContext*)pAVCodecContext;
+            disposedValue = !isDisposeByOwner;
         }
 
-        public static MediaCodecContext FromNative(IntPtr pCodecContext, bool isDisposeByOwner = true)
+        public MediaCodecContext(AVCodecContext* pAVCodecContext, bool isDisposeByOwner = true)
         {
-
-            return new MediaCodecContext((AVCodecContext*)pCodecContext, !isDisposeByOwner);
-        }
-
-        protected MediaCodecContext(AVCodecContext* codecContext, bool isDisposeByOwner = true)
-        {
-            pCodecContext = codecContext;
+            pCodecContext = pAVCodecContext;
             disposedValue = !isDisposeByOwner;
         }
 
@@ -46,81 +40,38 @@ namespace EmguFFmpeg
             ffmpeg.avcodec_open2(pCodecContext, codec, opts).ThrowIfError();
             return this;
         }
-
+        
         /// <summary>
-        /// TODO: add SubtitleFrame support
+        /// encode frame to packet
         /// </summary>
         /// <param name="frame"></param>
+        /// <param name="inPacket"></param>
         /// <returns></returns>
-        public IEnumerable<MediaPacket> EncodeFrame(MediaFrame frame)
+        public IEnumerable<MediaPacket> EncodeFrame(MediaFrame frame, MediaPacket inPacket = null)
         {
             int ret = SendFrame(frame);
             if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
                 yield break;
             ret.ThrowIfError();
-            using (MediaPacket packet = new MediaPacket())
+            MediaPacket packet = inPacket ?? new MediaPacket();
+            try
             {
                 while (true)
                 {
                     ret = ReceivePacket(packet);
                     if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
                         yield break;
-                    ret.ThrowIfError();
-                    yield return packet;
-                }
-            }
-        }
-
-        public IEnumerable<MediaPacket> EncodeFrame(MediaFrame frame, MediaPacket packet)
-        {
-            int ret = SendFrame(frame);
-            if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
-                yield break;
-            ret.ThrowIfError();
-            while (true)
-            {
-                ret = ReceivePacket(packet);
-                if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
-                    yield break;
-                try
-                {
-                    ret.ThrowIfError();
-                    yield return packet;
-                }
-                finally { packet.Unref(); }
-            }
-        }
-
-        /// <summary>
-        /// decode packet to get frame.
-        /// TODO: add SubtitleFrame support
-        /// <para>
-        /// <see cref="SendPacket(MediaPacket)"/> and <see cref="ReceiveFrame(MediaFrame)"/>
-        /// </para>
-        /// </summary>
-        /// <param name="packet"></param>
-        /// <returns></returns>
-        public IEnumerable<MediaFrame> DecodePacket(MediaPacket packet)
-        {
-            if (SendPacket(packet) >= 0)
-            {
-                using (var frame = new MediaFrame())
-                {
-                    while (true)
+                    try
                     {
-                        int ret = ReceiveFrame(frame);
-                        if (ret < 0)
-                        {
-                            // those two return values are special and mean there is no output
-                            // frame available, but there were no errors during decoding
-                            if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
-                                yield break;
-                            else
-                                break;
-                        }
-                        yield return frame;
+                        ret.ThrowIfError();
+                        yield return packet;
                     }
+                    finally { packet.Unref(); }
                 }
+            }
+            finally
+            {
+                if (inPacket == null) packet.Dispose();
             }
         }
 
@@ -132,23 +83,35 @@ namespace EmguFFmpeg
         /// </para>
         /// </summary>
         /// <param name="packet"></param>
-        /// <param name="frame"></param>
+        /// <param name="inFrame"></param>
         /// <returns></returns>
-        public IEnumerable<MediaFrame> DecodePacket(MediaPacket packet, MediaFrame frame)
+        public IEnumerable<MediaFrame> DecodePacket(MediaPacket packet, MediaFrame inFrame = null)
         {
-            if (SendPacket(packet) >= 0)
+            int ret = SendPacket(packet);
+            if (ret < 0 && ret != ffmpeg.AVERROR(ffmpeg.EAGAIN) && ret != ffmpeg.AVERROR_EOF)
+                ret.ThrowIfError();
+            MediaFrame frame = inFrame ?? new MediaFrame();
+            try
             {
                 while (true)
                 {
-                    int ret = ReceiveFrame(frame);
-                    if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
-                        yield break;
-                    ret.ThrowIfError();
+                    ret = ReceiveFrame(frame);
+                    if (ret < 0)
+                    {
+                        // those two return values are special and mean there is no output
+                        // frame available, but there were no errors during decoding
+                        if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
+                            yield break;
+                        else
+                            break;
+                    }
                     yield return frame;
                 }
             }
+            finally { if (inFrame == null) frame.Dispose(); }
         }
 
+        
         #region Safe wapper for IEnumerable
 
         /// <summary>
@@ -254,8 +217,14 @@ namespace EmguFFmpeg
 
         public AVRational FrameRate
         {
-            get=> pCodecContext->framerate;
-            set=> pCodecContext->framerate = value;
+            get => pCodecContext->framerate;
+            set => pCodecContext->framerate = value;
+        }
+
+        public int FrameSize
+        {
+            get => pCodecContext->frame_size;
+            set => pCodecContext->frame_size = value;
         }
 
         public AVPixelFormat PixFmt

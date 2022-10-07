@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Sockets;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
@@ -121,36 +118,25 @@ namespace EmguFFmpeg
         /// </summary>
         /// <returns></returns>
         /// <exception cref="FFmpegException"></exception>
-        public IEnumerable<MediaPacket> ReadPackets()
+        public IEnumerable<MediaPacket> ReadPackets(MediaPacket inPacket = null)
         {
-            using (var packet = new MediaPacket())
+            MediaPacket packet = inPacket ?? new MediaPacket();
+            try
             {
                 int ret;
                 do
                 {
                     ret = ReadPacketSafe(packet);
-                    if (ret < 0 && ret != ffmpeg.AVERROR_EOF)
-                        throw new FFmpegException(ret);
-                    yield return packet;
-                    packet.Unref();
+                    try
+                    {
+                        if (ret < 0 && ret != ffmpeg.AVERROR_EOF)
+                            ret.ThrowIfError();
+                        yield return packet;
+                    }
+                    finally { packet.Unref(); }
                 } while (ret >= 0);
             }
-        }
-
-        private IEnumerator<MediaPacket> packets;
-        public bool TryReadNextPacket(out MediaPacket packet)
-        {
-            if (packets == null) packets = ReadPackets().GetEnumerator();
-            if (packets.MoveNext())
-            {
-                packet = packets.Current;
-                return true;
-            }
-            else
-            {
-                packet = null;
-                return false;
-            }
+            finally { if (inPacket == null) packet.Dispose(); }
         }
 
         protected int ReadPacketSafe(MediaPacket packet)
