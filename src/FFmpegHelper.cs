@@ -25,7 +25,7 @@ namespace EmguFFmpeg
         /// <param name="logLevel">log level</param>
         /// <param name="logFlags">log flags, support &amp; operator </param>
         /// <param name="logWrite">set <see langword="null"/> to use default log output</param>
-        public static void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string> logWrite = null)
+        public static void SetupLogging(LogLevel logLevel = LogLevel.Verbose, LogFlags logFlags = LogFlags.PrintLevel, Action<string,int> logWrite = null)
         {
             ffmpeg.av_log_set_level((int)logLevel);
             ffmpeg.av_log_set_flags((int)logFlags);
@@ -43,7 +43,7 @@ namespace EmguFFmpeg
                     var printPrefix = 1;
                     var lineBuffer = stackalloc byte[lineSize];
                     ffmpeg.av_log_format_line(p0, level, format, vl, lineBuffer, lineSize, &printPrefix);
-                    logWrite.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8());
+                    logWrite.Invoke(((IntPtr)lineBuffer).PtrToStringUTF8(),level);
                 };
             }
             ffmpeg.av_log_set_callback(logCallback);

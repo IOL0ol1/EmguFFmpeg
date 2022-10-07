@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 
 using FFmpeg.AutoGen;
 
@@ -7,15 +6,6 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaStream
     {
-        public MediaCodecContext CreateDefaultCodecContext()
-        {
-            var codec = MediaCodec.GetDecoder(pStream->codecpar->codec_id);
-            // If codec_id is AV_CODEC_ID_NONE return null
-            return codec == null ? null : new MediaCodecContext(codec).Open(_ =>
-            {
-                ffmpeg.avcodec_parameters_to_context(_, pStream->codecpar).ThrowIfError();
-            });
-        }
 
         public MediaStream(IntPtr stream)
             : this((AVStream*)stream)
@@ -24,6 +14,18 @@ namespace EmguFFmpeg
         public MediaStream(AVStream* stream)
         {
             pStream = stream;
+        }
+
+        public AVCodecParameters* Codecpar
+        {
+            get => pStream->codecpar;
+            set => pStream->codecpar = value;
+        }
+
+        public IntPtr CodecparSafe
+        {
+            get => (IntPtr)pStream->codecpar;
+            set => pStream->codecpar = (AVCodecParameters*)value;
         }
 
         public AVRational TimeBase

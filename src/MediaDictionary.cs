@@ -196,6 +196,14 @@ namespace EmguFFmpeg
             return values.Length > 0;
         }
 
+        public MediaDictionary Copy(int flags = 0)
+        {
+            var output = new MediaDictionary();
+            ffmpeg.av_dict_copy(output, pDictionary, flags);
+            return output;
+        }
+
+
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public static implicit operator AVDictionary**(MediaDictionary value)
