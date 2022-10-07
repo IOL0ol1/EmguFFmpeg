@@ -12,7 +12,7 @@
     <PackageIcon>icon.png</PackageIcon>
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet emgu</PackageTags> 
     <RepositoryType>git</RepositoryType>
-    <Version>1.0.17</Version>
+    <Version>1.0.18</Version>
     <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
 </Project>
