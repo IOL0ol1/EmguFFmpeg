@@ -25,7 +25,7 @@ namespace EmguFFmpeg.Example
         public RecordingAudio(string outputFile, string inputDeviceName = null)
         {
             // console output
-            FFmpegHelper.SetupLogging(logWrite: _ => Console.Write(_));
+            FFmpegHelper.SetupLogging(logWrite: (_,_1) => Console.Write(_));
             // register all device
             FFmpegHelper.RegisterDevice();
 
