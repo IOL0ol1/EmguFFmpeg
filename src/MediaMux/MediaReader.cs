@@ -61,9 +61,6 @@ namespace EmguFFmpeg
             }
         }
 
-
-
-
         public MediaReader(AVFormatContext* formatContext, bool isOwner = true)
         {
             if (formatContext == null) throw new NullReferenceException();
@@ -147,7 +144,7 @@ namespace EmguFFmpeg
         #endregion IEnumerable<MediaPacket>
 
         #region IDisposable
-        protected bool disposedValue;
+        private bool disposedValue;
 
         protected override void Dispose(bool disposing)
         {

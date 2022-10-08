@@ -9,24 +9,20 @@ namespace EmguFFmpeg
     {
         private bool disposedValue;
 
-        public MediaCodecContext(IntPtr pAVCodecContext, bool isDisposeByOwner = true)
-        {
-            pCodecContext = (AVCodecContext*)pAVCodecContext;
-            disposedValue = !isDisposeByOwner;
-        }
-
         public MediaCodecContext(AVCodecContext* pAVCodecContext, bool isDisposeByOwner = true)
         {
             pCodecContext = pAVCodecContext;
             disposedValue = !isDisposeByOwner;
         }
 
+        public MediaCodecContext(IntPtr pAVCodecContext, bool isDisposeByOwner = true)
+            : this((AVCodecContext*)pAVCodecContext, isDisposeByOwner)
+        { }
+
+
         public MediaCodecContext(MediaCodec codec = null)
-        {
-            pCodecContext = ffmpeg.avcodec_alloc_context3(codec);
-            if (pCodecContext == null)
-                throw new NullReferenceException();
-        }
+                    : this(ffmpeg.avcodec_alloc_context3(codec), true)
+        { }
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_open2(AVCodecContext*, AVCodec*, AVDictionary**)"/>
@@ -40,7 +36,7 @@ namespace EmguFFmpeg
             ffmpeg.avcodec_open2(pCodecContext, codec, opts).ThrowIfError();
             return this;
         }
-        
+
         /// <summary>
         /// encode frame to packet
         /// </summary>
@@ -111,7 +107,7 @@ namespace EmguFFmpeg
             finally { if (inFrame == null) frame.Dispose(); }
         }
 
-        
+
         #region Safe wapper for IEnumerable
 
         /// <summary>

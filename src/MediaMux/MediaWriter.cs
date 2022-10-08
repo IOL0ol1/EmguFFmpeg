@@ -8,7 +8,7 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaWriter : MediaFormatContext
     {
-        protected bool disposedValue;
+        private bool disposedValue;
         protected bool hasWriteHeader; // Fixed: use ffmpeg's flag is better.
         protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
 
@@ -222,8 +222,9 @@ namespace EmguFFmpeg
 
                 if (pFormatContext != null)
                 {
-                    // maybe error if no call avformat_write_header, so don't check result.
-                    if (hasWriteHeader&&!hasWriteTrailer)
+                    // Fixed: External calls to ffmpeg.avformat_write_header
+                    // and ffmpeg.av_write_trailer function may cause errors.
+                    if (hasWriteHeader && !hasWriteTrailer)
                         ffmpeg.av_write_trailer(pFormatContext);
                     if (_stream != null)
                         _stream.Dispose();

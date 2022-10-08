@@ -7,21 +7,19 @@ namespace EmguFFmpeg
     {
         protected AVPacket* pPacket;
 
-        public MediaPacket Get(IntPtr pAVPacket, bool isDisposeByOwner = true)
+        public MediaPacket(AVPacket* pAVPacket, bool isDisposeByOwner = true)
         {
-            if (pAVPacket == IntPtr.Zero) throw new NullReferenceException();
-            return new MediaPacket((AVPacket*)pAVPacket) { disposedValue = !isDisposeByOwner };
+            pPacket = pAVPacket;
+            disposedValue = !isDisposeByOwner;
         }
 
-        internal MediaPacket(AVPacket* pPacket)
-        {
-            this.pPacket = pPacket;
-        }
+        public MediaPacket(IntPtr pAVPacket, bool isDisposeByOwner = true)
+            : this((AVPacket*)pAVPacket, isDisposeByOwner)
+        { }
 
         public MediaPacket()
-        {
-            pPacket = ffmpeg.av_packet_alloc();
-        }
+            : this(ffmpeg.av_packet_alloc(), true)
+        { }
 
         public AVPacket AVPacket => *pPacket;
 
@@ -113,7 +111,7 @@ namespace EmguFFmpeg
 
         #region IDisposable Support
 
-        private bool disposedValue = false; // To detect redundant calls
+        private bool disposedValue = false;
 
         protected virtual void Dispose(bool disposing)
         {

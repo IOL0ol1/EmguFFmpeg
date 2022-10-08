@@ -6,6 +6,7 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaStream
     {
+        protected AVStream* pStream = null;
 
         public MediaStream(IntPtr stream)
             : this((AVStream*)stream)
@@ -22,6 +23,9 @@ namespace EmguFFmpeg
             set => pStream->codecpar = value;
         }
 
+        /// <summary>
+        /// Safe <see cref="AVCodecParameters"/>*
+        /// </summary>
         public IntPtr CodecparSafe
         {
             get => (IntPtr)pStream->codecpar;
@@ -92,6 +96,5 @@ namespace EmguFFmpeg
             return value.pStream;
         }
 
-        private AVStream* pStream = null;
     }
 }

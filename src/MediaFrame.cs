@@ -13,10 +13,10 @@ namespace EmguFFmpeg
 
         public MediaFrame(AVFrame* pFrame, bool isDisposeByOwner = true)
         {
-            Debug.Assert(pFrame != null);
             _pFrame = pFrame;
             disposedValue = !isDisposeByOwner;
         }
+
         public MediaFrame(IntPtr pAVFrame, bool isDisposeByOwner = true)
             : this((AVFrame*)pAVFrame, isDisposeByOwner)
         { }
