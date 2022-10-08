@@ -15,11 +15,6 @@ namespace EmguFFmpeg
             disposedValue = !isDisposeByOwner;
         }
 
-        public MediaCodecContext(IntPtr pAVCodecContext, bool isDisposeByOwner = true)
-            : this((AVCodecContext*)pAVCodecContext, isDisposeByOwner)
-        { }
-
-
         public MediaCodecContext(MediaCodec codec = null)
                     : this(ffmpeg.avcodec_alloc_context3(codec), true)
         { }

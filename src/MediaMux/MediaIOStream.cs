@@ -65,10 +65,6 @@ namespace EmguFFmpeg
             return value._pIOContext;
         }
 
-        public MediaIOStream(IntPtr pIOContext, bool isDisposeByOwner = true)
-            : this((AVIOContext*)pIOContext, isDisposeByOwner)
-        { }
-
         public MediaIOStream(AVIOContext* pIOContext, bool isDisposeByOwner = true)
         {
             if (pIOContext == null) throw new NullReferenceException();

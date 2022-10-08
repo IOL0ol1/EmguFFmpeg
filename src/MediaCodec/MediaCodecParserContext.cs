@@ -12,11 +12,7 @@ namespace EmguFFmpeg
     {
         protected AVCodecParserContext* pCodecParserContext;
 
-        public MediaCodecParserContext(IntPtr pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
-            : this((AVCodecParserContext*)pAVCodecParserContext, bufferSize, isDisposeByOwner)
-        { 
-        }
-
+ 
         public MediaCodecParserContext(AVCodecParserContext* pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
         {
             pCodecParserContext = pAVCodecParserContext;

@@ -12,16 +12,13 @@ namespace EmguFFmpeg
         protected AVInputFormat* pInputFormat = null;
 
         public InFormat(AVInputFormat* iformat)
-            : this((IntPtr)iformat) { }
-
-        /// <summary>
-        /// <see cref="AVInputFormat"/> adapter.
-        /// </summary>
-        /// <param name="pAVInputFormat"></param>
-        public InFormat(IntPtr pAVInputFormat)
         {
-            pInputFormat = (AVInputFormat*)pAVInputFormat;
+            pInputFormat = iformat;
         }
+ 
+        internal InFormat(IntPtr pAVInputFormat)
+            : this((AVInputFormat*)pAVInputFormat)
+        { }
 
         /// <summary>
         /// get demuxer format by name

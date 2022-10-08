@@ -57,11 +57,7 @@ namespace EmguFFmpeg
             pFormatContext = formatContext;
             disposedValue = !isOwner;
         }
-
-        public MediaWriter(IntPtr formatContext, bool isOwner = true)
-            : this((AVFormatContext*)formatContext, isOwner)
-        { }
-
+ 
         /// <summary>
         /// Print detailed information about the output format, such as duration,
         ///     bitrate, streams, container, programs, metadata, side data, codec and time base.

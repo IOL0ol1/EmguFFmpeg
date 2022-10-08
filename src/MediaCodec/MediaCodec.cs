@@ -7,26 +7,6 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaCodec
     {
-        /// <summary>
-        /// Get <see cref="MediaCodec"/> from <see cref="AVCodec"/>*
-        /// </summary>
-        /// <param name="pCodec"><see cref="AVCodec"/>*</param>
-        /// <returns></returns>
-        public static MediaCodec FromNative(AVCodec* pCodec)
-        {
-            if (pCodec == null) throw new NullReferenceException();
-            return new MediaCodec(pCodec);
-        }
-
-        /// <summary>
-        /// Get <see cref="MediaCodec"/> from <see cref="AVCodec"/>*
-        /// </summary>
-        /// <param name="pCodec"><see cref="AVCodec"/>*</param>
-        /// <returns></returns>
-        public static MediaCodec FromNative(IntPtr pCodec)
-        {
-            return FromNative((AVCodec*)pCodec);
-        }
 
         /// <summary>
         /// Get <see cref="MediaCodec"/> by <see cref="ffmpeg.avcodec_find_encoder_by_name(string)"/>
@@ -74,10 +54,14 @@ namespace EmguFFmpeg
             return pCodec == null ? null : new MediaCodec(pCodec);
         }
 
-        internal MediaCodec(AVCodec* codec)
+        public MediaCodec(AVCodec* codec)
         {
             pCodec = codec;
         }
+
+        internal MediaCodec(IntPtr codec)
+            : this((AVCodec*)codec)
+        { }
 
         protected AVCodec* pCodec = null;
 
@@ -109,7 +93,7 @@ namespace EmguFFmpeg
                 IntPtr2Ptr opaque = IntPtr2Ptr.Null;
                 while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
                 {
-                    yield return FromNative(pCodec);
+                    yield return new MediaCodec(pCodec);
                 }
             }
         }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using FFmpeg.AutoGen;
@@ -16,10 +15,6 @@ namespace EmguFFmpeg
             _pFrame = pFrame;
             disposedValue = !isDisposeByOwner;
         }
-
-        public MediaFrame(IntPtr pAVFrame, bool isDisposeByOwner = true)
-            : this((AVFrame*)pAVFrame, isDisposeByOwner)
-        { }
 
         /// <summary>
         /// <see cref="ffmpeg.av_frame_alloc()"/>
@@ -165,6 +160,12 @@ namespace EmguFFmpeg
         }
 
         public int[] Linesize => _pFrame->linesize.ToArray();
+
+        public int Format
+        {
+            get => _pFrame->format;
+            set => _pFrame->format = value;
+        }
 
         public int Width
         {

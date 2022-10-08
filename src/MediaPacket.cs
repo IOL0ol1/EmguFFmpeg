@@ -13,10 +13,6 @@ namespace EmguFFmpeg
             disposedValue = !isDisposeByOwner;
         }
 
-        public MediaPacket(IntPtr pAVPacket, bool isDisposeByOwner = true)
-            : this((AVPacket*)pAVPacket, isDisposeByOwner)
-        { }
-
         public MediaPacket()
             : this(ffmpeg.av_packet_alloc(), true)
         { }

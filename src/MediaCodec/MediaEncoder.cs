@@ -24,7 +24,7 @@ namespace EmguFFmpeg
                 _.FrameRate = frameRate;
                 if (pixelFormat == AVPixelFormat.AV_PIX_FMT_NONE)
                 {
-                    var pixelFmts = MediaCodec.FromNative(_.AVCodecContext.codec).GetSupportedPixelFmts();
+                    var pixelFmts = new MediaCodec(_.AVCodecContext.codec).GetSupportedPixelFmts();
                     pixelFormat = pixelFmts.FirstOrDefault();
                 }
                 _.PixFmt = pixelFormat;
@@ -53,7 +53,7 @@ namespace EmguFFmpeg
                 _.FrameRate = frameRate;
                 if (pixelFormat == AVPixelFormat.AV_PIX_FMT_NONE)
                 {
-                    var pixelFmts = MediaCodec.FromNative(_.AVCodecContext.codec).GetSupportedPixelFmts();
+                    var pixelFmts = new MediaCodec(_.AVCodecContext.codec).GetSupportedPixelFmts();
                     pixelFormat = pixelFmts.FirstOrDefault();
                 }
                 _.PixFmt = pixelFormat;
@@ -154,7 +154,7 @@ namespace EmguFFmpeg
                 _.ChLayout = chLayout;
                 if (sampleFormat == AVSampleFormat.AV_SAMPLE_FMT_NONE)
                 {
-                    var sampleFmts = MediaCodec.FromNative(_.AVCodecContext.codec).GetSupportedSampelFmts();
+                    var sampleFmts = new MediaCodec(_.AVCodecContext.codec).GetSupportedSampelFmts();
                     sampleFormat = sampleFmts.FirstOrDefault();
                 }
                 _.SampleFmt = sampleFormat;
@@ -191,7 +191,7 @@ namespace EmguFFmpeg
                 _.ChLayout = chLayout;
                 if (sampleFormat == AVSampleFormat.AV_SAMPLE_FMT_NONE)
                 {
-                    var sampleFmts = MediaCodec.FromNative(_.AVCodecContext.codec).GetSupportedSampelFmts();
+                    var sampleFmts = new MediaCodec(_.AVCodecContext.codec).GetSupportedSampelFmts();
                     sampleFormat = sampleFmts.FirstOrDefault();
                 }
                 _.SampleFmt = sampleFormat;

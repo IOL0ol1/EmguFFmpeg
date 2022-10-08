@@ -7,11 +7,7 @@ namespace EmguFFmpeg
     public unsafe class MediaStream
     {
         protected AVStream* pStream = null;
-
-        public MediaStream(IntPtr stream)
-            : this((AVStream*)stream)
-        { }
-
+ 
         public MediaStream(AVStream* stream)
         {
             pStream = stream;

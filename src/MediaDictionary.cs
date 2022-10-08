@@ -23,10 +23,6 @@ namespace EmguFFmpeg
             disposedValue = !isDisposeByOwner;
         }
 
-        public MediaDictionary(IntPtr ppAVDictionary, bool isDisposeByOwner = true)
-            : this((AVDictionary**)ppAVDictionary, isDisposeByOwner)
-        { }
-
         public MediaDictionary()
         {
             fixed (AVDictionary** p = &tmpDictionary)

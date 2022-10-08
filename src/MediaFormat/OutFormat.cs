@@ -12,17 +12,13 @@ namespace EmguFFmpeg
         protected AVOutputFormat* pOutputFormat = null;
 
         public OutFormat(AVOutputFormat* oformat)
-            : this((IntPtr)oformat) { }
-
-        /// <summary>
-        /// <see cref="AVOutputFormat"/> adapter.
-        /// </summary>
-        /// <param name="pAVOutputFormat"></param>
-        public OutFormat(IntPtr pAVOutputFormat)
         {
-            if (pAVOutputFormat == IntPtr.Zero) throw new NullReferenceException();
-            pOutputFormat = (AVOutputFormat*)pAVOutputFormat;
+            pOutputFormat = oformat;
         }
+
+        internal OutFormat(IntPtr pAVOutputFormat)
+            : this((AVOutputFormat*)pAVOutputFormat)
+        { }
 
         /// <summary>
         /// get muxer format by name,e.g. "mp4" ".mp4"

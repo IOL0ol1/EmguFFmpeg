@@ -68,10 +68,6 @@ namespace EmguFFmpeg
             disposedValue = !isOwner;
         }
 
-        public MediaReader(IntPtr formatContext, bool isOwner = true)
-            : this((AVFormatContext*)formatContext, isOwner)
-        { }
-
         /// <summary>
         /// Print detailed information about the input format, such as duration,
         ///     bitrate, streams, container, programs, metadata, side data, codec and time base.
