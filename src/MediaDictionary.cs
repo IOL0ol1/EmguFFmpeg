@@ -9,11 +9,28 @@ namespace EmguFFmpeg
 {
     public unsafe class MediaDictionary : IDictionary<string, string>, IDisposable
     {
-        private AVDictionary* pDictionary = null;
+        private AVDictionary** ppDictionary = null;
+        private readonly AVDictionary* tmpDictionary = null;
+
+        /// <summary>
+        /// <paramref name="ptr"/> will be free when <see cref="Dispose(bool)"/>
+        /// </summary>
+        /// <param name="ptr"></param>
+        /// <param name="isDisposeByOwner"></param>
+        public MediaDictionary(AVDictionary** ptr, bool isDisposeByOwner = true)
+        {
+            ppDictionary = ptr;
+            disposedValue = !isDisposeByOwner;
+        }
+
+        public MediaDictionary(IntPtr ppAVDictionary, bool isDisposeByOwner = true)
+            : this((AVDictionary**)ppAVDictionary, isDisposeByOwner)
+        { }
 
         public MediaDictionary()
         {
-            pDictionary = null;
+            fixed (AVDictionary** p = &tmpDictionary)
+                ppDictionary = p;
         }
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
@@ -24,14 +41,6 @@ namespace EmguFFmpeg
             }
         }
 
-        /// <summary>
-        /// <paramref name="ptr"/> will be free when <see cref="Dispose(bool)"/>
-        /// </summary>
-        /// <param name="ptr"></param>
-        internal MediaDictionary(AVDictionary* ptr)
-        {
-            pDictionary = ptr;
-        }
 
         public string this[string key]
         {
@@ -52,7 +61,7 @@ namespace EmguFFmpeg
 
         public ICollection<string> Values => this.Select(_ => _.Value).ToArray();
 
-        public int Count => ffmpeg.av_dict_count(pDictionary);
+        public int Count => ffmpeg.av_dict_count(*ppDictionary);
 
         public bool IsReadOnly => false;
 
@@ -67,10 +76,7 @@ namespace EmguFFmpeg
 
         public int Add(string key, string value, AVDictWriteFlags flags)
         {
-            fixed (AVDictionary** pp = &pDictionary)
-            {
-                return ffmpeg.av_dict_set(pp, key, value, (int)flags).ThrowIfError();
-            }
+            return ffmpeg.av_dict_set(this, key, value, (int)flags).ThrowIfError();
         }
 
         public int Add(KeyValuePair<string, string> item, AVDictWriteFlags flags)
@@ -122,7 +128,8 @@ namespace EmguFFmpeg
 
         private static IntPtr av_dict_get_safe(MediaDictionary dict, string key, IntPtr prev, AVDictReadFlags flags)
         {
-            return (IntPtr)ffmpeg.av_dict_get(dict.pDictionary, key, (AVDictionaryEntry*)prev, (int)flags);
+            AVDictionary** ppDictionary = dict;
+            return (IntPtr)ffmpeg.av_dict_get(*ppDictionary, key, (AVDictionaryEntry*)prev, (int)flags);
         }
 
         private static KeyValuePair<string, string> GetEntry(IntPtr intPtr)
@@ -166,10 +173,7 @@ namespace EmguFFmpeg
         /// </summary>
         public void Clear()
         {
-            fixed (AVDictionary** pp = &pDictionary)
-            {
-                ffmpeg.av_dict_free(pp);
-            }
+            ffmpeg.av_dict_free(ppDictionary);
         }
 
         public bool TryGetValue(string key, out string value)
@@ -199,18 +203,16 @@ namespace EmguFFmpeg
         public MediaDictionary Copy(int flags = 0)
         {
             var output = new MediaDictionary();
-            ffmpeg.av_dict_copy(output, pDictionary, flags);
+            ffmpeg.av_dict_copy(output, *ppDictionary, flags);
             return output;
         }
-
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public static implicit operator AVDictionary**(MediaDictionary value)
         {
             if (value == null) return null;
-            fixed (AVDictionary** ppDictionary = &value.pDictionary)
-                return ppDictionary;
+            return value.ppDictionary;
         }
 
         private bool disposedValue;
@@ -234,6 +236,8 @@ namespace EmguFFmpeg
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
+
     }
 
     public unsafe static class AVDictionaryEntryEx
