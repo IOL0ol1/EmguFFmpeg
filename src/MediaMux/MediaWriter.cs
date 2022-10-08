@@ -56,8 +56,9 @@ namespace EmguFFmpeg
             if (formatContext == null) throw new NullReferenceException();
             pFormatContext = formatContext;
             disposedValue = !isOwner;
+            Format = new OutFormat(pFormatContext->oformat);
         }
- 
+
         /// <summary>
         /// Print detailed information about the output format, such as duration,
         ///     bitrate, streams, container, programs, metadata, side data, codec and time base.

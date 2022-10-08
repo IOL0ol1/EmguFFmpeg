@@ -61,11 +61,19 @@ namespace EmguFFmpeg
             }
         }
 
-        public MediaReader(AVFormatContext* formatContext, bool isOwner = true)
+        public MediaReader(AVFormatContext* formatContext, MediaDictionary options = null, bool isOwner = true)
         {
             if (formatContext == null) throw new NullReferenceException();
             pFormatContext = formatContext;
             disposedValue = !isOwner;
+            ffmpeg.avformat_find_stream_info(pFormatContext, options).ThrowIfError();
+            Format = new InFormat(pFormatContext->iformat);
+
+            for (int i = 0; i < pFormatContext->nb_streams; i++)
+            {
+                AVStream* pStream = pFormatContext->streams[i];
+                streams.Add(new MediaStream(pStream));
+            }
         }
 
         /// <summary>
