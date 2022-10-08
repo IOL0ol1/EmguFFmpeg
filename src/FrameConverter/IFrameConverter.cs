@@ -6,6 +6,8 @@ namespace EmguFFmpeg
     public interface IFrameConverter
     {
         IEnumerable<MediaFrame> Convert(MediaFrame frame);
+
+
     }
 
 }

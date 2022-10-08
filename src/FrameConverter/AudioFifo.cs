@@ -10,11 +10,11 @@ namespace EmguFFmpeg
     public unsafe class AudioFifo : IDisposable
     {
         protected AVAudioFifo* pAudioFifo;
-
-        protected AudioFifo() { }
-        public static AudioFifo FromNative(IntPtr pAVAudioFifo, bool isDisposeByOwner = true)
+ 
+        public AudioFifo(AVAudioFifo* pAVAudioFifo, bool isDisposeByOwner = true)
         {
-            return new AudioFifo() { pAudioFifo = (AVAudioFifo*)pAVAudioFifo, disposedValue = !isDisposeByOwner };
+            pAudioFifo = pAVAudioFifo;
+            disposedValue = !isDisposeByOwner;
         }
 
         /// <summary>
@@ -24,9 +24,8 @@ namespace EmguFFmpeg
         /// <param name="channels"></param>
         /// <param name="nbSamples"></param>
         public AudioFifo(AVSampleFormat format, int channels, int nbSamples = 1)
-        {
-            pAudioFifo = ffmpeg.av_audio_fifo_alloc(format, channels, nbSamples <= 0 ? 1 : nbSamples);
-        }
+            : this(ffmpeg.av_audio_fifo_alloc(format, channels, nbSamples <= 0 ? 1 : nbSamples), true)
+        { }
 
         /// <summary>
         /// Get the current number of samples in the AVAudioFifo available for reading.

@@ -10,76 +10,94 @@ namespace EmguFFmpeg
     /// </summary>
     public unsafe class PixelConverter : IFrameConverter, IDisposable
     {
-        protected SwsContext* pSwsContext = null;
+        protected SwsContext* pContext = null;
+        private SwsFilter* dstFilter;
+        private double* param;
+        private MediaFrame dstFrame;
+        private bool disposedValue;
         public readonly AVPixelFormat DstFormat;
         public readonly int DstWidth;
         public readonly int DstHeight;
-        public readonly int SwsFlag;
-        public MediaFrame DstFrame { get; set; }
-        private bool disposedValue;
+        public readonly int Flags;
 
-
-        protected PixelConverter(SwsContext* pSws, bool isDisposeByOwner = true)
+        /// <summary>
+        /// create video frame converter by dst parames, will allocate new frame and buffer data, convert will return new frame
+        /// </summary>
+        /// <param name="pSwsContext"></param>
+        /// <param name="dstFormat"></param>
+        /// <param name="dstWidth"></param>
+        /// <param name="dstHeight"></param>
+        /// <param name="flags"></param>
+        /// <param name="dstFilter"></param>
+        /// <param name="param"></param>
+        /// <param name="isDisposeByOwner"></param>
+        public PixelConverter(SwsContext* pSwsContext, AVPixelFormat dstFormat, int dstWidth, int dstHeight, int flags = ffmpeg.SWS_BILINEAR, SwsFilter* dstFilter = null, double* param = null, bool isDisposeByOwner = true)
+           : this(dstFormat, dstWidth, dstHeight, flags, dstFilter, param)
         {
-            pSwsContext = pSws;
+            pContext = pSwsContext;
             disposedValue = !isDisposeByOwner;
         }
 
         /// <summary>
-        /// NOTE: must set <see cref="DstFrame"/> before use!!!
+        /// create video frame converter by dstframe,<paramref name="dstFrame"/> need allocate new buffer(s) data, convert will return <paramref name="dstFrame"/>
         /// </summary>
         /// <param name="pSwsContext"></param>
+        /// <param name="dstFrame"></param>
+        /// <param name="flags"></param>
+        /// <param name="dstFilter"></param>
+        /// <param name="param"></param>
         /// <param name="isDisposeByOwner"></param>
-        /// <returns></returns>
-        public static PixelConverter FromNative(IntPtr pSwsContext, bool isDisposeByOwner = true)
+        public PixelConverter(SwsContext* pSwsContext, MediaFrame dstFrame, int flags = ffmpeg.SWS_BILINEAR, SwsFilter* dstFilter = null, double* param = null, bool isDisposeByOwner = true)
+            : this(dstFrame, flags, dstFilter, param)
         {
-            return new PixelConverter((SwsContext*)pSwsContext, !isDisposeByOwner);
+            pContext = pSwsContext;
+            disposedValue = !isDisposeByOwner;
         }
-
-        public static PixelConverter FromNative(SwsContext* pSwsContext, bool isDisposeByOwner = true)
-        {
-            return new PixelConverter(pSwsContext, !isDisposeByOwner);
-        }
-
 
         /// <summary>
-        /// create video frame converter by dst output parames
+        /// create video frame converter by dst parames, will allocate new frame and buffer data, convert will return new frame
         /// </summary>
         /// <param name="dstFormat"></param>
         /// <param name="dstWidth"></param>
         /// <param name="dstHeight"></param>
         /// <param name="flags"></param>
-        public PixelConverter(AVPixelFormat dstFormat, int dstWidth, int dstHeight, int flags = ffmpeg.SWS_BILINEAR)
+        /// <param name="dstFilter"></param>
+        /// <param name="param"></param>
+        public PixelConverter(AVPixelFormat dstFormat, int dstWidth, int dstHeight, int flags = ffmpeg.SWS_BILINEAR, SwsFilter* dstFilter = null, double* param = null)
         {
             DstWidth = dstWidth;
             DstHeight = dstHeight;
             DstFormat = dstFormat;
-            SwsFlag = flags;
-            DstFrame = MediaFrame.CreateVideoFrame(dstWidth, dstHeight, dstFormat);
+            Flags = flags;
+            this.dstFilter = dstFilter;
+            this.param = param;
+        }
+
+        /// <summary>
+        /// create video frame converter by dstframe,<paramref name="dstFrame"/> need allocate new buffer(s) data, convert will return <paramref name="dstFrame"/>
+        /// </summary>
+        /// <param name="dstFrame"></param>
+        /// <param name="flags"></param>
+        /// <param name="dstFilter"></param>
+        /// <param name="param"></param>
+        public PixelConverter(MediaFrame dstFrame, int flags = ffmpeg.SWS_BILINEAR, SwsFilter* dstFilter = null, double* param = null)
+            : this((AVPixelFormat)dstFrame.Format, dstFrame.Width, dstFrame.Height, flags, dstFilter, param)
+        {
+            this.dstFrame = dstFrame;
         }
 
         /// <summary>
         /// create video frame converter by dst codec
         /// </summary>
-        /// <param name="dstCodec"></param>
+        /// <param name="dstCodecContext"></param>
         /// <param name="flags"></param>
-        public static PixelConverter CreateByCodeContext(MediaCodecContext dstCodec, int flags = ffmpeg.SWS_BILINEAR)
+        /// <param name="dstFilter"></param>
+        /// <param name="param"></param>
+        public static PixelConverter CreateByDstCodeContext(MediaCodecContext dstCodecContext, int flags = ffmpeg.SWS_BILINEAR, SwsFilter* dstFilter = null, double* param = null)
         {
-            if (dstCodec.AVCodecContext.codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO)
-                
+            if (dstCodecContext.AVCodecContext.codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
-            return new PixelConverter(dstCodec.AVCodecContext.pix_fmt, dstCodec.AVCodecContext.width, dstCodec.AVCodecContext.height, flags);
-        }
-
-        /// <summary>
-        /// create video fram converter by dst frame
-        /// </summary>
-        /// <param name="dstFrame"></param>
-        /// <param name="flags"></param>
-        public static PixelConverter CreateByDstFrame(MediaFrame dstFrame, int flags = ffmpeg.SWS_BILINEAR)
-        {
-            if (!dstFrame.IsVideoFrame) throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
-            return new PixelConverter((AVPixelFormat)dstFrame.AVFrame.format, dstFrame.AVFrame.width, dstFrame.AVFrame.height, flags);
+            return new PixelConverter(dstCodecContext.PixFmt, dstCodecContext.Width, dstCodecContext.Height, flags, dstFilter, param);
         }
 
         /// <summary>
@@ -91,36 +109,35 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="srcframe"></param>
         /// <returns></returns>
-        public IEnumerable<MediaFrame> Convert(MediaFrame srcframe)
+        public IEnumerable<MediaFrame> Convert(MediaFrame srcframe) => Convert(srcframe, null);
+        public IEnumerable<MediaFrame> Convert(MediaFrame srcframe, SwsFilter* srcFilter)
         {
-            yield return ConvertFrame(srcframe);
+            return new[] { ConvertFrame(srcframe, srcFilter) };
         }
 
-        public MediaFrame ConvertFrame(MediaFrame srcFrame)
+        public MediaFrame ConvertFrame(MediaFrame srcFrame, SwsFilter* srcFilter = null)
         {
             AVFrame* src = srcFrame;
-            AVFrame* dst = DstFrame;
-            if (pSwsContext == null)
-            {
-                pSwsContext = ffmpeg.sws_getContext(
-                    src->width, src->height, (AVPixelFormat)src->format,
-                    DstWidth, DstHeight, DstFormat, SwsFlag, null, null, null);
-            }
-            ffmpeg.sws_scale(pSwsContext, src->data, src->linesize, 0, src->height, dst->data, dst->linesize).ThrowIfError();
-            return DstFrame;
+            var output = dstFrame ?? MediaFrame.CreateVideoFrame(DstWidth,DstHeight,DstFormat);
+            AVFrame* dst = output;
+            pContext = ffmpeg.sws_getCachedContext(pContext,
+                src->width, src->height, (AVPixelFormat)src->format,
+                DstWidth, DstHeight, DstFormat, Flags, srcFilter, dstFilter, param);
+            ffmpeg.sws_scale(pContext, src->data, src->linesize, 0, src->height, dst->data, dst->linesize).ThrowIfError();
+            return output;
         }
 
         public static implicit operator SwsContext*(PixelConverter value)
         {
             if (value is null) return null;
-            return value.pSwsContext;
+            return value.pContext;
         }
 
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                ffmpeg.sws_freeContext(pSwsContext);
+                ffmpeg.sws_freeContext(pContext);
                 disposedValue = true;
             }
         }
