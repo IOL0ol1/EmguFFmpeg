@@ -10,27 +10,14 @@ A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) warpper library, 
 - api is unstable.
 
 
-**This branch is under construction**
-    
-## Features
+**This branch is under construction, Please use master branch**
 
-1. compatible with **Bitmap**, **EmguCV** and **OpenCvSharp4**.
-2. easy decoding and encoding of data through **IEnumerable** interface.
-3. video/audio frame format converter.
-4. switch to ffmpeg.autogen or reverse. 
+## ROADMAP
 
- 
-## Index
-
-1. [EmguFFmpeg](/src)    
-	FFmpeg.AutoGen warpper
-	It's dependent on FFmpeg.AutoGen.    
-	for windows:
-	- nuget install EmguFFmpeg
-	- download the dll of ffmpeg with different licenses on your own.
- 
-
-## TODO
-    
-- [ ] Add Subtitle support.
-- [ ] Data exchange with NAudio and SharpAVI.
+- Split the filter section into optional standalone nuget packages.
+- Easy api to cut/seek/mute audio clip.
+- Easy api to cut/seek video clip.
+- More example and test.
+- Provides a queue for multiplexing/demultiplexing and encoding/decoding.
+- Data exchange with NAudio and SharpAVI.
+- Subtitle support.
