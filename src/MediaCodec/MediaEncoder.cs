@@ -13,7 +13,8 @@ namespace EmguFFmpeg
             int height,
             AVRational frameRate,
             AVPixelFormat pixelFormat = AVPixelFormat.AV_PIX_FMT_NONE,
-            int bitrate = 0)
+            int bitrate = 0,
+            MediaDictionary opts = null)
         {
             return new MediaCodecContext(MediaCodec.GetEncoder(format.VideoCodec)).Open(_ =>
             {
@@ -31,7 +32,7 @@ namespace EmguFFmpeg
                 _.BitRate = bitrate;
                 if ((format.Flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
                     _.Flag |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
-            });
+            }, null, opts);
         }
 
         public static MediaCodecContext CreateVideoEncoder(
@@ -41,7 +42,8 @@ namespace EmguFFmpeg
             AVRational frameRate,
             AVPixelFormat pixelFormat = AVPixelFormat.AV_PIX_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
             return new MediaCodecContext(codec).Open(_ =>
             {
@@ -57,7 +59,7 @@ namespace EmguFFmpeg
                 _.PixFmt = pixelFormat;
                 _.BitRate = bitrate;
                 _.Flag |= flags;
-            });
+            }, null, opts);
         }
 
         public static MediaCodecContext CreateVideoEncoder(
@@ -67,9 +69,10 @@ namespace EmguFFmpeg
             double fps,
             AVPixelFormat pixelFormat = AVPixelFormat.AV_PIX_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
-            return CreateVideoEncoder(codec, width, height, fps.ToRational(), pixelFormat, bitrate, flags);  
+            return CreateVideoEncoder(codec, width, height, fps.ToRational(), pixelFormat, bitrate, flags, opts);
         }
 
         public static MediaCodecContext CreateVideoEncoder(
@@ -78,9 +81,9 @@ namespace EmguFFmpeg
             int height,
             double fps,
             AVPixelFormat pixelFormat = AVPixelFormat.AV_PIX_FMT_NONE,
-            int bitrate = 0)
+            int bitrate = 0, MediaDictionary opts = null)
         {
-            return CreateVideoEncoder(format, width, height, fps.ToRational(), pixelFormat, bitrate);
+            return CreateVideoEncoder(format, width, height, fps.ToRational(), pixelFormat, bitrate, opts);
         }
 
         public static MediaCodecContext CreateVideoEncoder(
@@ -90,9 +93,9 @@ namespace EmguFFmpeg
             double fps,
             AVPixelFormat pixelFormat = AVPixelFormat.AV_PIX_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER, MediaDictionary opts = null)
         {
-            return CreateVideoEncoder(MediaCodec.GetEncoder(codecID), width, height, fps.ToRational(), pixelFormat, bitrate, flags);
+            return CreateVideoEncoder(MediaCodec.GetEncoder(codecID), width, height, fps.ToRational(), pixelFormat, bitrate, flags, opts);
         }
 
         public static MediaCodecContext CreateVideoEncoder(
@@ -102,9 +105,10 @@ namespace EmguFFmpeg
             AVRational frameRate,
             AVPixelFormat pixelFormat = AVPixelFormat.AV_PIX_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
-            return CreateVideoEncoder(MediaCodec.GetEncoder(codecID), width, height, frameRate, pixelFormat, bitrate, flags);
+            return CreateVideoEncoder(MediaCodec.GetEncoder(codecID), width, height, frameRate, pixelFormat, bitrate, flags, opts);
         }
 
         public static MediaCodecContext CreateVideoEncoder(
@@ -114,9 +118,10 @@ namespace EmguFFmpeg
             double fps,
             AVPixelFormat pixelFormat = AVPixelFormat.AV_PIX_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
-            return CreateVideoEncoder(MediaCodec.GetEncoder(codecName), width, height, fps.ToRational(), pixelFormat, bitrate, flags);
+            return CreateVideoEncoder(MediaCodec.GetEncoder(codecName), width, height, fps.ToRational(), pixelFormat, bitrate, flags, opts);
         }
 
         public static MediaCodecContext CreateVideoEncoder(
@@ -126,9 +131,10 @@ namespace EmguFFmpeg
             AVRational frameRate,
             AVPixelFormat pixelFormat = AVPixelFormat.AV_PIX_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
-            return CreateVideoEncoder(MediaCodec.GetEncoder(codecName), width, height, frameRate, pixelFormat, bitrate, flags);
+            return CreateVideoEncoder(MediaCodec.GetEncoder(codecName), width, height, frameRate, pixelFormat, bitrate, flags, opts);
         }
         #endregion
 
@@ -139,7 +145,8 @@ namespace EmguFFmpeg
             int sampleRate,
             AVChannelLayout chLayout,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
-            int bitrate = 0)
+            int bitrate = 0,
+            MediaDictionary opts = null)
         {
             return new MediaCodecContext(MediaCodec.GetEncoder(format.VideoCodec)).Open(_ =>
             {
@@ -155,7 +162,7 @@ namespace EmguFFmpeg
                 _.BitRate = bitrate;
                 if ((format.Flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
                     _.Flag |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
-            });
+            }, null, opts);
         }
 
         public static MediaCodecContext CreateAudioEncoder(
@@ -163,9 +170,10 @@ namespace EmguFFmpeg
             int sampleRate,
             int nbChannels,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
-            int bitrate = 0)
+            int bitrate = 0,
+            MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(format, sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate);
+            return CreateAudioEncoder(format, sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, opts);
         }
 
         public static MediaCodecContext CreateAudioEncoder(
@@ -174,7 +182,8 @@ namespace EmguFFmpeg
             AVChannelLayout chLayout,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
             return new MediaCodecContext(codec).Open(_ =>
             {
@@ -189,7 +198,7 @@ namespace EmguFFmpeg
                 _.TimeBase = new AVRational { num = 1, den = sampleRate };
                 _.BitRate = bitrate;
                 _.Flag |= flags;
-            });
+            }, null, opts);
         }
         public static MediaCodecContext CreateAudioEncoder(
             MediaCodec codec,
@@ -197,9 +206,10 @@ namespace EmguFFmpeg
             int nbChannels,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(codec, sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, flags);
+            return CreateAudioEncoder(codec, sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, flags, opts);
         }
 
         public static MediaCodecContext CreateAudioEncoder(
@@ -208,9 +218,10 @@ namespace EmguFFmpeg
             int nbChannels,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(MediaCodec.GetEncoder(codecID), sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, flags);
+            return CreateAudioEncoder(MediaCodec.GetEncoder(codecID), sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, flags, opts);
         }
 
         public static MediaCodecContext CreateAudioEncoder(
@@ -219,9 +230,10 @@ namespace EmguFFmpeg
             AVChannelLayout chLayout,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(MediaCodec.GetEncoder(codecID), sampleRate, chLayout, sampleFormat, bitrate, flags);
+            return CreateAudioEncoder(MediaCodec.GetEncoder(codecID), sampleRate, chLayout, sampleFormat, bitrate, flags, opts);
         }
 
         public static MediaCodecContext CreateAudioEncoder(
@@ -230,9 +242,10 @@ namespace EmguFFmpeg
             int nbChannels,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(MediaCodec.GetEncoder(codecName), sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, flags);
+            return CreateAudioEncoder(MediaCodec.GetEncoder(codecName), sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, flags, opts);
         }
 
         public static MediaCodecContext CreateAudioEncoder(
@@ -241,9 +254,10 @@ namespace EmguFFmpeg
             AVChannelLayout chLayout,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
             int bitrate = 0,
-            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+            int flags = ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
+            MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(MediaCodec.GetEncoder(codecName), sampleRate, chLayout, sampleFormat, bitrate, flags);
+            return CreateAudioEncoder(MediaCodec.GetEncoder(codecName), sampleRate, chLayout, sampleFormat, bitrate, flags, opts);
         }
 
         #endregion
