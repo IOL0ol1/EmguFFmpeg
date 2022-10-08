@@ -222,6 +222,7 @@ namespace EmguFFmpeg
             if (!disposedValue)
             {
                 Clear();
+                ppDictionary = null;
                 disposedValue = true;
             }
         }
