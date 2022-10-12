@@ -13,7 +13,7 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="codecName"></param>
         /// <returns></returns>
-        public static MediaCodec GetEncoder(string codecName)
+        public static MediaCodec FindEncoder(string codecName)
         {
             AVCodec* pCodec = ffmpeg.avcodec_find_encoder_by_name(codecName);
             return pCodec == null ? null : new MediaCodec(pCodec);
@@ -25,7 +25,7 @@ namespace EmguFFmpeg
         /// <param name="codecId"></param>
         /// <returns></returns>
 
-        public static MediaCodec GetEncoder(AVCodecID codecId)
+        public static MediaCodec FindEncoder(AVCodecID codecId)
         {
             AVCodec* pCodec = ffmpeg.avcodec_find_encoder(codecId);
             return pCodec == null ? null : new MediaCodec(pCodec);
@@ -36,7 +36,7 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="codecName"></param>
         /// <returns></returns>
-        public static MediaCodec GetDecoder(string codecName)
+        public static MediaCodec FindDecoder(string codecName)
         {
             AVCodec* pCodec = ffmpeg.avcodec_find_decoder_by_name(codecName);
             return pCodec == null ? null : new MediaCodec(pCodec);
@@ -48,7 +48,7 @@ namespace EmguFFmpeg
         /// <param name="codecId"></param>
         /// <returns></returns>
 
-        public static MediaCodec GetDecoder(AVCodecID codecId)
+        public static MediaCodec FindDecoder(AVCodecID codecId)
         {
             AVCodec* pCodec = ffmpeg.avcodec_find_decoder(codecId);
             return pCodec == null ? null : new MediaCodec(pCodec);
@@ -90,7 +90,7 @@ namespace EmguFFmpeg
             get
             {
                 IntPtr pCodec;
-                IntPtr2Ptr opaque = IntPtr2Ptr.Null;
+                IntPtr2Ptr opaque = IntPtr2Ptr.Ptr2Null;
                 while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
                 {
                     yield return new MediaCodec(pCodec);
@@ -128,7 +128,7 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (AVCodecHWConfig?)null;
         }
 
-        public IEnumerable<AVCodecHWConfig> GetSupportedHardware()
+        public IEnumerable<AVCodecHWConfig> GetHWConfigs()
         {
             AVCodecHWConfig? config;
             for (int i = 0; (config = avcodec_get_hw_config_safe(this, i)) != null; i++)
@@ -143,7 +143,7 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (AVPixelFormat?)null;
         }
 
-        public IEnumerable<AVPixelFormat> GetSupportedPixelFmts()
+        public IEnumerable<AVPixelFormat> GetPixelFmts()
         {
             AVPixelFormat? p;
             for (int i = 0; (p = pix_fmts_next_safe(this, i)) != null; i++)
@@ -161,7 +161,7 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (AVRational?)null;
         }
 
-        public IEnumerable<AVRational> GetSupportedFrameRates()
+        public IEnumerable<AVRational> GetSupportedFramerates()
         {
             AVRational? p;
             for (int i = 0; (p = supported_framerates_next_safe(this, i)) != null; i++)
@@ -179,7 +179,7 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (AVSampleFormat?)null;
         }
 
-        public IEnumerable<AVSampleFormat> GetSupportedSampelFmts()
+        public IEnumerable<AVSampleFormat> GetSampelFmts()
         {
             AVSampleFormat? p;
             for (int i = 0; (p = sample_fmts_next_safe(this, i)) != null; i++)
@@ -197,7 +197,7 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (int?)null;
         }
 
-        public IEnumerable<int> GetSupportedSampleRates()
+        public IEnumerable<int> GetSupportedSamplerates()
         {
             int? p;
             for (int i = 0; (p = supported_samplerates_next_safe(this, i)) != null; i++)
@@ -215,7 +215,7 @@ namespace EmguFFmpeg
             return ptr != null ? *ptr : (AVChannelLayout?)null;
         }
 
-        public IEnumerable<AVChannelLayout> GetSupportedChLayout()
+        public IEnumerable<AVChannelLayout> GetChLayouts()
         {
             AVChannelLayout? p;
             for (int i = 0; (p = ch_layouts_next_safe(this, i)) != null; i++)

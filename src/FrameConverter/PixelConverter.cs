@@ -95,7 +95,7 @@ namespace EmguFFmpeg
         /// <param name="param"></param>
         public static PixelConverter CreateByDstCodeContext(MediaCodecContext dstCodecContext, int flags = ffmpeg.SWS_BILINEAR, SwsFilter* dstFilter = null, double* param = null)
         {
-            if (dstCodecContext.AVCodecContext.codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO)
+            if (dstCodecContext.Context.codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
             return new PixelConverter(dstCodecContext.PixFmt, dstCodecContext.Width, dstCodecContext.Height, flags, dstFilter, param);
         }

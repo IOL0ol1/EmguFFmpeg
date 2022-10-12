@@ -6,13 +6,14 @@ using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe class MediaWriter : MediaFormatContext
+    public unsafe class MediaMuxer : MediaFormatContext
     {
         private bool disposedValue;
         protected bool hasWriteHeader; // Fixed: use ffmpeg's flag is better.
         protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
 
-        protected MediaIOStream _stream;
+        protected MediaIOContext _ioContext;
+        private Stream _stream;
 
         public OutFormat Format { get; protected set; }
 
@@ -22,14 +23,15 @@ namespace EmguFFmpeg
         /// <param name="stream"></param>
         /// <param name="oformat"></param>
         /// <param name="options">useless, the future may change</param>
-        public MediaWriter(Stream stream, OutFormat oformat, MediaDictionary options = null)
+        public MediaMuxer(Stream stream, OutFormat oformat, MediaDictionary options = null)
         {
-            _stream = new MediaIOStream(stream);
+            _stream = stream;
+            _ioContext = MediaIOContext.Link(_stream);
             pFormatContext = ffmpeg.avformat_alloc_context();
             pFormatContext->oformat = oformat;
             Format = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = _stream;
+                pFormatContext->pb = _ioContext;
         }
 
         /// <summary>
@@ -40,7 +42,7 @@ namespace EmguFFmpeg
         /// <param name="file"></param>
         /// <param name="oformat"></param>
         /// <param name="options"></param>
-        public MediaWriter(string file, OutFormat oformat = null, MediaDictionary options = null)
+        public MediaMuxer(string file, OutFormat oformat = null, MediaDictionary options = null)
         {
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
@@ -48,10 +50,10 @@ namespace EmguFFmpeg
             }
             Format = oformat ?? new OutFormat(pFormatContext->oformat);
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = _stream = MediaIOStream.Open(file, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
+                pFormatContext->pb = _ioContext = MediaIOContext.Open(file, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
         }
 
-        public MediaWriter(AVFormatContext* formatContext, bool isOwner = true)
+        public MediaMuxer(AVFormatContext* formatContext, bool isOwner = true)
         {
             if (formatContext == null) throw new NullReferenceException();
             pFormatContext = formatContext;
@@ -93,22 +95,21 @@ namespace EmguFFmpeg
         /// Add a new stream to a media file.
         /// <see cref="ffmpeg.avformat_new_stream(AVFormatContext*, AVCodec*)"/>.
         /// </summary>
-        /// <param name="codecContext">
-        /// if <paramref name="codecContext"/> is not null, then call 
+        /// <param name="encoder">
+        /// if <paramref name="encoder"/> is not null, then call 
         /// <see cref="ffmpeg.avcodec_parameters_from_context(AVCodecParameters*, AVCodecContext*)"/>
         /// </param>
         /// <returns>newly created stream or null on error.</returns>
-        public MediaStream AddStream(MediaCodecContext codecContext = null)
+        public MediaStream AddStream(MediaEncoder encoder = null)
         {
             AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
-            pStream->id = (int)(pFormatContext->nb_streams - 1);
             if (pStream == null) return null;
-            if (codecContext != null)
-            {
-                ffmpeg.avcodec_parameters_from_context(pStream->codecpar, codecContext).ThrowIfError();
-                pStream->time_base = codecContext.AVCodecContext.time_base;
-            }
             var stream = new MediaStream(pStream);
+            if (encoder != null)
+            {
+                ffmpeg.avcodec_parameters_from_context(pStream->codecpar, encoder.Context).ThrowIfError();
+                pStream->time_base = encoder.Context.TimeBase;
+            }
             streams.Add(stream);
             return stream;
         }
@@ -126,9 +127,20 @@ namespace EmguFFmpeg
         {
             AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
             if (pStream == null) return null;
+            var stream = new MediaStream(pStream);
             ffmpeg.avcodec_parameters_copy(pStream->codecpar, &codecpar).ThrowIfError();
             pStream->time_base = timebase;
+            streams.Add(stream);
+            return stream;
+        }
+
+        public MediaStream AddStream(IntPtr pAVCodecParameters, AVRational timebase)
+        {
+            AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
+            if (pStream == null) return null;
             var stream = new MediaStream(pStream);
+            ffmpeg.avcodec_parameters_copy(pStream->codecpar, (AVCodecParameters*)pAVCodecParameters).ThrowIfError();
+            pStream->time_base = timebase;
             streams.Add(stream);
             return stream;
         }
@@ -171,20 +183,20 @@ namespace EmguFFmpeg
 
         /// <summary>
         /// Flush codecs cache.
-        /// <para><see cref="MediaCodecContext.EncodeFrame(MediaFrame, MediaPacket)"/></para>
+        /// <para><see cref="MediaEncoder.EncodeFrame(MediaFrame, MediaPacket)"/></para>
         /// <para><see cref="WritePacket(MediaPacket, AVRational?)"/></para> 
         /// </summary>
         /// <param name="mediaCodecs">Flush encode list</param>
-        public void FlushCodecs(IEnumerable<MediaCodecContext> mediaCodecs = null)
+        public void FlushCodecs(IEnumerable<MediaEncoder> mediaCodecs)
         {
             if (mediaCodecs != null)
             {
                 foreach (var mediaCodec in mediaCodecs
-                    .Where(_ => (((AVCodecContext*)_)->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0))
+                    .Where(_ => (((AVCodecContext*)_.Context)->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0))
                 {
                     foreach (var packet in mediaCodec.EncodeFrame(null))
                     {
-                        WritePacket(packet, mediaCodec.AVCodecContext.time_base);
+                        WritePacket(packet, mediaCodec.Context.TimeBase);
                     }
                 }
             }
@@ -217,14 +229,15 @@ namespace EmguFFmpeg
                     // nothing
                 }
 
+                _stream?.Dispose();
                 if (pFormatContext != null)
                 {
                     // Fixed: External calls to ffmpeg.avformat_write_header
                     // and ffmpeg.av_write_trailer function may cause errors.
                     if (hasWriteHeader && !hasWriteTrailer)
                         ffmpeg.av_write_trailer(pFormatContext);
-                    if (_stream != null)
-                        _stream.Dispose();
+                    if (_ioContext != null)
+                        _ioContext.Dispose();
                     ffmpeg.avformat_free_context(pFormatContext);
                     pFormatContext = null;
                 }

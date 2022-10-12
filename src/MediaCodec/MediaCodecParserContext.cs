@@ -12,24 +12,36 @@ namespace EmguFFmpeg
     {
         protected AVCodecParserContext* pCodecParserContext;
 
- 
-        public MediaCodecParserContext(AVCodecParserContext* pAVCodecParserContext, int bufferSize = 4096, bool isDisposeByOwner = true)
+
+        public MediaCodecParserContext(AVCodecParserContext* pAVCodecParserContext, bool isDisposeByOwner = true)
         {
             pCodecParserContext = pAVCodecParserContext;
             disposedValue = !isDisposeByOwner;
-            size = bufferSize;
-            buffer = new byte[bufferSize + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE];
         }
 
-        public MediaCodecParserContext(int codecId, int bufferSize = 4096)
+        public MediaCodecParserContext(int codecId)
+            : this(ffmpeg.av_parser_init(codecId))
+        { }
+
+        public MediaCodecParserContext(AVCodecID codecId)
+            : this((int)codecId)
+        { }
+
+        private AVCodecParser? av_parser_iterate_safe(IntPtr2Ptr opaque)
         {
-            pCodecParserContext = ffmpeg.av_parser_init(codecId);
-            size = bufferSize;
-            buffer = new byte[bufferSize + ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE];
+            var ret = ffmpeg.av_parser_iterate(opaque);
+            return ret == null ? (AVCodecParser?)null : *ret;
         }
 
-        protected int size;
-        protected byte[] buffer;
+        public IEnumerable<AVCodecParser> GetParsers()
+        {
+            AVCodecParser? output;
+            IntPtr2Ptr opaque = IntPtr2Ptr.Ptr2Null;
+            while ((output = av_parser_iterate_safe(opaque)) != null)
+            {
+                yield return output.Value;
+            }
+        }
 
         /// <summary>
         /// TODO:
@@ -38,26 +50,29 @@ namespace EmguFFmpeg
         /// <param name="stream"></param>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public IEnumerator<MediaPacket> ParserPacket(MediaCodecContext codecContext, Stream stream, MediaPacket packet = null)
+        public IEnumerable<MediaPacket> ParserPackets(MediaCodecContext codecContext, Stream stream, MediaPacket packet = null)
         {
-            //int dataSize;
-            //while ((dataSize = stream.Read(buffer, 0, size)) != 0)
-            //{
-            //    fixed (byte* inbuf = buffer)
-            //    {
-            //        byte* data = inbuf;
-            //        while (dataSize > 0)
-            //        {
-
-            //            var ret = ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, &((AVPacket*)packet)->data, &((AVPacket*)packet)->size, data, dataSize, ffmpeg.AV_NOPTS_VALUE, ffmpeg.AV_NOPTS_VALUE, 0).ThrowIfError();
-            //            data += ret;
-            //            dataSize -= ret;
-            //            //if (packet.AVPacket.size > 0)
-            //            //    yield return packet;
-            //        }
-            //    }
-            //}
-            throw new NotImplementedException();
+            var bufSize = 20480 + 64; // buffer size + AV_INPUT_BUFFER_PADDING_SIZE
+            var buf = new byte[bufSize];
+            int outSize;
+            var pkt = packet == null ? new MediaPacket() { Dts = ffmpeg.AV_NOPTS_VALUE, Pts = ffmpeg.AV_NOPTS_VALUE, Pos = 0 } : packet;
+            try
+            {
+                while ((outSize = stream.Read(buf, 0, bufSize)) != 0)
+                {
+                    for (int offset = 0; offset < outSize;)
+                    {
+                        var ret = Parser2(codecContext, pkt, buf, offset).ThrowIfError();
+                        offset += ret;
+                        if (packet.Size > 0)
+                            yield return pkt;
+                    }
+                }
+            }
+            finally
+            {
+                if (packet == null) pkt?.Dispose();
+            }
         }
 
 
@@ -65,12 +80,35 @@ namespace EmguFFmpeg
         /// TODO:
         /// </summary>
         /// <param name="codecContext"></param>
-        /// <param name="stream"></param>
-        /// <param name="packet"></param>
+        /// <param name="poutbuf"></param>
+        /// <param name="poutbufSize"></param>
+        /// <param name="buf"></param>
+        /// <param name="bufSize"></param>
+        /// <param name="pts"></param>
+        /// <param name="dts"></param>
+        /// <param name="pos"></param>
         /// <returns></returns>
-        public IEnumerable<MediaFrame> Parser(MediaCodecContext codecContext, Stream stream, MediaPacket packet = null)
+        public int Parser2(MediaCodecContext codecContext, IntPtr2Ptr poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
         {
-            throw new NotImplementedException();
+            return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, (byte**)(void**)poutbuf, (int*)poutbufSize, (byte*)buf, bufSize, pts, dts, pos);
+        }
+
+
+        public int Parser2(MediaCodecContext codecContext, IntPtr2Ptr poutbuf, IntPtr poutbufSize, byte[] buf, long pts, long dts, long pos)
+        {
+            fixed (byte* pbuf = buf)
+            {
+                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, (byte**)(void**)poutbuf, (int*)poutbufSize, pbuf, buf.Length, pts, dts, pos);
+            }
+        }
+
+        public int Parser2(MediaCodecContext codecContext, MediaPacket packet, byte[] buf, int bufOffset = 0)
+        {
+            fixed (byte* pbuf = buf)
+            {
+                byte* pbufStart = pbuf + bufOffset;
+                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, &((AVPacket*)packet)->data, &((AVPacket*)packet)->size, pbufStart, buf.Length - bufOffset, packet.Pts, packet.Dts, packet.Pos);
+            }
         }
 
         private bool disposedValue;
@@ -81,6 +119,7 @@ namespace EmguFFmpeg
             {
                 if (disposing)
                 {
+                    // nothing
                 }
                 ffmpeg.av_parser_close(pCodecParserContext);
                 disposedValue = true;

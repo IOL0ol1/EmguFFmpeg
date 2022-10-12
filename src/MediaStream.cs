@@ -7,7 +7,7 @@ namespace EmguFFmpeg
     public unsafe class MediaStream
     {
         protected AVStream* pStream = null;
- 
+
         public MediaStream(AVStream* stream)
         {
             pStream = stream;
@@ -19,14 +19,7 @@ namespace EmguFFmpeg
             set => pStream->codecpar = value;
         }
 
-        /// <summary>
-        /// Safe <see cref="AVCodecParameters"/>*
-        /// </summary>
-        public IntPtr CodecparSafe
-        {
-            get => (IntPtr)pStream->codecpar;
-            set => pStream->codecpar = (AVCodecParameters*)value;
-        }
+        public AVCodecParameters CodecparPoint => *pStream->codecpar;
 
         public AVRational TimeBase
         {
@@ -45,7 +38,7 @@ namespace EmguFFmpeg
             get => pStream->duration;
             set => pStream->duration = value;
         }
- 
+
         public AVStream Stream => *pStream;
 
         /// <summary>

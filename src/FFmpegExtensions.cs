@@ -26,6 +26,8 @@ namespace EmguFFmpeg
         }
     }
 
+
+
     public static class AVChannelLayoutExtension
     {
         public unsafe static AVChannelLayout Default(int nb_channels)
@@ -40,6 +42,22 @@ namespace EmguFFmpeg
             var chLayout = new AVChannelLayout();
             ffmpeg.av_channel_layout_copy(&chLayout, &channelLayout);
             return chLayout;
+        }
+    }
+
+    public static class AVSampleFormatExtension
+    {
+        public static string GetName(this AVSampleFormat sampleFormat)
+        {
+            return ffmpeg.av_get_sample_fmt_name(sampleFormat);
+        }
+    }
+
+    public static class AVPixelFormatExtension
+    {
+        public static string GetName(this AVPixelFormat pixelFormat)
+        {
+            return ffmpeg.av_get_pix_fmt_name(pixelFormat);
         }
     }
 }

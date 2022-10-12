@@ -70,7 +70,7 @@ namespace EmguFFmpeg
         /// <param name="dstCodec"></param>
         public static SampleConverter CreateByCodeContext(MediaCodecContext dstCodec)
         {
-            if (dstCodec.AVCodecContext.codec_type != AVMediaType.AVMEDIA_TYPE_AUDIO)
+            if (dstCodec.Context.codec_type != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
             return new SampleConverter(dstCodec.SampleFmt, dstCodec.ChLayout, dstCodec.FrameSize, dstCodec.SampleRate);
         }
@@ -88,7 +88,7 @@ namespace EmguFFmpeg
                 fixed (AVChannelLayout* pDst = &DstChLayout)
                 fixed (SwrContext** ppSwrContext = &pSwrContext)
                 {
-                    ffmpeg.swr_alloc_set_opts2(ppSwrContext, pDst, DstFormat, DstSampleRate, &src->ch_layout, (AVSampleFormat)src->format, src->sample_rate, 0, null);
+                    ffmpeg.swr_alloc_set_opts2(ppSwrContext, pDst, DstFormat, DstSampleRate, &src->ch_layout, (AVSampleFormat)src->format, src->sample_rate, 0, null).ThrowIfError();
                 }
                 ffmpeg.swr_init(pSwrContext).ThrowIfError();
             }

@@ -158,13 +158,13 @@ namespace EmguFFmpeg
         /// </summary>
         /// <param name="ptr"></param>
         /// <returns></returns>
-        public static IntPtr2Ptr Pointer(IntPtr ptr) => new IntPtr2Ptr(ptr);
+        public static IntPtr2Ptr GetPointer(IntPtr ptr) => new IntPtr2Ptr(ptr);
 
         /// <summary>
         /// create a pointer to <see langword="null"/>.
         /// </summary>
         /// <returns></returns>
-        public static IntPtr2Ptr Null => new IntPtr2Ptr(IntPtr.Zero);
+        public static IntPtr2Ptr Ptr2Null => new IntPtr2Ptr(IntPtr.Zero);
 
         /// <summary>
         /// get pointer (ptr).

@@ -53,7 +53,7 @@ namespace EmguFFmpeg
             get
             {
                 IntPtr iformat;
-                IntPtr2Ptr ifmtOpaque = IntPtr2Ptr.Null;
+                IntPtr2Ptr ifmtOpaque = IntPtr2Ptr.Ptr2Null;
                 while ((iformat = av_demuxer_iterate_safe(ifmtOpaque)) != IntPtr.Zero)
                 {
                     yield return new InFormat(iformat);

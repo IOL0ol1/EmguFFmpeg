@@ -5,9 +5,10 @@ using FFmpeg.AutoGen;
 
 namespace EmguFFmpeg
 {
-    public unsafe partial class MediaReader : MediaFormatContext
+    public unsafe partial class MediaDemuxer : MediaFormatContext
     {
-        protected MediaIOStream _stream;
+        protected MediaIOContext _iocontext;
+        private Stream _stream;
 
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
@@ -20,11 +21,12 @@ namespace EmguFFmpeg
         /// <param name="stream"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public MediaReader(Stream stream, InFormat iformat = null, MediaDictionary options = null)
+        public MediaDemuxer(Stream stream, InFormat iformat = null, MediaDictionary options = null)
         {
-            _stream = new MediaIOStream(stream);
+            _stream = stream;
+            _iocontext = MediaIOContext.Link(_stream);
             pFormatContext = ffmpeg.avformat_alloc_context();
-            pFormatContext->pb = _stream;
+            pFormatContext->pb = _iocontext;
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
                 ffmpeg.avformat_open_input(ppFormatContext, null, iformat, options).ThrowIfError();
@@ -45,7 +47,7 @@ namespace EmguFFmpeg
         /// <param name="url"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public MediaReader(string url, InFormat iformat = null, MediaDictionary options = null)
+        public MediaDemuxer(string url, InFormat iformat = null, MediaDictionary options = null)
         {
             fixed (AVFormatContext** ppFormatContext = &pFormatContext)
             {
@@ -61,7 +63,7 @@ namespace EmguFFmpeg
             }
         }
 
-        public MediaReader(AVFormatContext* formatContext, MediaDictionary options = null, bool isOwner = true)
+        public MediaDemuxer(AVFormatContext* formatContext, MediaDictionary options = null, bool isOwner = true)
         {
             if (formatContext == null) throw new NullReferenceException();
             pFormatContext = formatContext;
@@ -154,8 +156,8 @@ namespace EmguFFmpeg
         {
             if (!disposedValue)
             {
-                if (_stream != null)
-                    _stream.Dispose();
+                _stream?.Dispose();
+                _iocontext?.Dispose();
                 if (pFormatContext != null)
                 {
                     fixed (AVFormatContext** ppFormatContext = &pFormatContext)

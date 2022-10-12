@@ -72,7 +72,7 @@ namespace EmguFFmpeg
             get
             {
                 IntPtr oformat;
-                IntPtr2Ptr ofmtOpaque = IntPtr2Ptr.Null;
+                IntPtr2Ptr ofmtOpaque = IntPtr2Ptr.Ptr2Null;
                 while ((oformat = av_muxer_iterate_safe(ofmtOpaque)) != IntPtr.Zero)
                 {
                     yield return new OutFormat(oformat);

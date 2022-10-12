@@ -265,6 +265,8 @@ namespace EmguFFmpeg
             ffmpeg.av_frame_unref(_pFrame);
         }
 
+        public int MakeWritable() => ffmpeg.av_frame_make_writable(_pFrame).ThrowIfError();
+
         public AVFrame AVFrame => *_pFrame;
 
         public static implicit operator AVFrame*(MediaFrame value)
