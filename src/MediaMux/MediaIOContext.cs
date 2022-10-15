@@ -7,8 +7,6 @@ namespace FFmpegSharp
     public unsafe class MediaIOContext : Stream
     {
         protected AVIOContext* _pIOContext;
-
-        protected bool _createByOpen;
         protected avio_alloc_context_read_packet _readfunc;
         protected avio_alloc_context_write_packet _writefunc;
         protected avio_alloc_context_seek _seekfunc;
@@ -49,11 +47,11 @@ namespace FFmpegSharp
             if (_pIOContext == null) throw new NullReferenceException();
         }
 
-        public static MediaIOContext Open(string url, int flags, MediaDictionary options = null)
+        public static MediaIOContext Create(string url, int flags, MediaDictionary options = null)
         {
             AVIOContext* pIOContext = null;
             ffmpeg.avio_open2(&pIOContext, url, flags, null, options).ThrowIfError();
-            return new MediaIOContext(pIOContext, true) { _createByOpen = true };
+            return new MediaIOContext(pIOContext, true);
         }
 
         public static MediaIOContext Link(Stream stream, int bufferSize = 4096)
@@ -166,19 +164,10 @@ namespace FFmpegSharp
 
         protected override void Dispose(bool disposing)
         {
-            Flush();
             if (!disposedValue)
             {
-                if (_createByOpen)
-                    ffmpeg.avio_close(_pIOContext);
-                else
-                {
-                    ffmpeg.av_free(_pIOContext->buffer);
-                    fixed (AVIOContext** ptr = &_pIOContext)
-                    {
-                        ffmpeg.avio_context_free(ptr);
-                    }
-                }
+                Flush();
+                ffmpeg.avio_close(_pIOContext);
                 disposedValue = true;
             }
             base.Dispose(disposing);

@@ -11,10 +11,11 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>FFmpeg</Authors>
-    <PackageProjectUrl>https://github.com/IOL0ol1/EmguFFmpeg</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/IOL0ol1/EmguFFmpeg</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/IOL0ol1/EmguFFmpeg/tree/dev</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/IOL0ol1/EmguFFmpeg/tree/dev</RepositoryUrl>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet emgu</PackageTags>
+    <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet ffmpeg4sharp ffmpegsharp</PackageTags>
     <RepositoryType>git</RepositoryType>
     <Version>1.0.0</Version>
     <NoWarn>1701;1702;1591</NoWarn>
@@ -25,16 +26,9 @@
     <PackageReference Include="FFmpeg.AutoGen" Version="5.1.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Remove="README.md" />
+  <ItemGroup> 
+    <None Include="README.md" Pack="true" Visible="false" PackagePath="\" />
     <None Include="../icon.png" Pack="true" Visible="false" PackagePath="" />
   </ItemGroup>
-
-
-
-  <ItemGroup>
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-  </ItemGroup>
-
 
 </Project>

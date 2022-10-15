@@ -25,7 +25,7 @@ namespace FFmpegSharp
         }
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
-            :this()
+            : this()
         {
             foreach (var item in dictionary)
             {
@@ -219,6 +219,12 @@ namespace FFmpegSharp
         {
             if (value == null) return null;
             return value.ppDictionary;
+        }
+
+        public static implicit operator AVDictionary*(MediaDictionary value)
+        {
+            if (value == null) return null;
+            return *value.ppDictionary;
         }
 
         private bool disposedValue;

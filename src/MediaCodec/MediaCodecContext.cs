@@ -6,7 +6,7 @@ namespace FFmpegSharp
 {
     public unsafe partial class MediaCodecContext : MediaCodecContextBase, IDisposable
     {
-        private bool disposedValue;
+        protected bool disposedValue;
 
         public static MediaCodecContext Create(Action<MediaCodecContextBase> beforeOpenSetting, MediaCodec codec = null, MediaDictionary opts = null)
         {

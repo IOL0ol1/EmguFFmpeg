@@ -190,7 +190,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> contextSettings = null,
             MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(format, sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, contextSettings, opts);
+            return CreateAudioEncoder(format, sampleRate, AVChannelLayoutExtension.ToDefaultChLayout(nbChannels), sampleFormat, bitrate, contextSettings, opts);
         }
 
         public static MediaEncoder CreateAudioEncoder(
@@ -229,7 +229,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> contextSettings = null,
             MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(codec, sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, flags, contextSettings, opts);
+            return CreateAudioEncoder(codec, sampleRate, AVChannelLayoutExtension.ToDefaultChLayout(nbChannels), sampleFormat, bitrate, flags, contextSettings, opts);
         }
 
         public static MediaEncoder CreateAudioEncoder(
@@ -242,7 +242,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> contextSettings = null,
             MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(MediaCodec.FindEncoder(codecID), sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, flags, contextSettings, opts);
+            return CreateAudioEncoder(MediaCodec.FindEncoder(codecID), sampleRate, AVChannelLayoutExtension.ToDefaultChLayout(nbChannels), sampleFormat, bitrate, flags, contextSettings, opts);
         }
 
         public static MediaEncoder CreateAudioEncoder(
@@ -268,7 +268,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> contextSettings = null,
             MediaDictionary opts = null)
         {
-            return CreateAudioEncoder(MediaCodec.FindEncoder(codecName), sampleRate, AVChannelLayoutExtension.Default(nbChannels), sampleFormat, bitrate, flags, contextSettings, opts);
+            return CreateAudioEncoder(MediaCodec.FindEncoder(codecName), sampleRate, AVChannelLayoutExtension.ToDefaultChLayout(nbChannels), sampleFormat, bitrate, flags, contextSettings, opts);
         }
 
         public static MediaEncoder CreateAudioEncoder(

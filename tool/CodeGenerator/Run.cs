@@ -13,7 +13,7 @@ namespace CodeGenerator
         private static void Main(string[] args)
         {
 
-            var types = new List<(Type,string)>
+            var types = new List<(Type, string)>
              {
                  (typeof(AVCodec),        null),
                  (typeof(AVCodecContext), null),
@@ -26,7 +26,7 @@ namespace CodeGenerator
              };
             foreach (var type in types)
             {
-                var g = CodeGenerator(type.Item1,dstTypeName:type.Item2);
+                var g = CodeGenerator(type.Item1, dstTypeName: type.Item2);
                 File.WriteAllText($"../../../{g.OutTypeName}.cs", g.SourceCode);
             }
 
@@ -48,7 +48,7 @@ namespace CodeGenerator
                 sw.WriteLine($"using FFmpeg.AutoGen;");
                 sw.WriteLine($"namespace {@namespace}");
                 sw.WriteLine(@"{");
-                sw.WriteLine($"    public abstract unsafe class {dstTypeName}");
+                sw.WriteLine($"    public abstract unsafe partial class {dstTypeName}");
                 sw.WriteLine(@"    {");
                 sw.WriteLine($"        protected {srcTypeName}* {pTypeName} = null;");
                 sw.WriteLine(@"");

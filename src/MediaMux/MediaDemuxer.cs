@@ -7,7 +7,7 @@ using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaDemuxer : MediaFormatContextBase, IDisposable, IReadOnlyList<MediaStream>
+    public unsafe class MediaDemuxer : MediaFormatContext, IReadOnlyList<MediaStream>
     {
         private Stream _stream;
 
@@ -27,7 +27,6 @@ namespace FFmpegSharp
         /// <param name="options"></param>
         public static MediaDemuxer Open(Stream stream, InFormat iformat = null, MediaDictionary options = null)
         {
-
             var pFormatContext = ffmpeg.avformat_alloc_context();
             pFormatContext->pb = MediaIOContext.Link(stream);
             ffmpeg.avformat_open_input(&pFormatContext, null, iformat, options).ThrowIfError();
@@ -35,7 +34,6 @@ namespace FFmpegSharp
             var output = new MediaDemuxer(pFormatContext)
             {
                 _stream = stream,
-                Format = new InFormat(pFormatContext->iformat),
             };
             return output;
         }
@@ -46,15 +44,13 @@ namespace FFmpegSharp
         /// <param name="url"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public static MediaDemuxer Open(string url, InFormat iformat = null, MediaDictionary options = null)
+        /// <param name="context"></param>
+        public static MediaDemuxer Open(string url, InFormat iformat = null, MediaDictionary options = null, MediaFormatContext context = null)
         {
-            AVFormatContext* pFormatContext = null;
+            AVFormatContext* pFormatContext = context;
             ffmpeg.avformat_open_input(&pFormatContext, url, iformat, options).ThrowIfError();
             ffmpeg.avformat_find_stream_info(pFormatContext, options).ThrowIfError();
-            var output = new MediaDemuxer(pFormatContext)
-            {
-                Format = new InFormat(pFormatContext->iformat)
-            };
+            var output = new MediaDemuxer(pFormatContext);
             return output;
         }
 
@@ -174,9 +170,8 @@ namespace FFmpegSharp
         #endregion IEnumerable<MediaPacket>
 
         #region IDisposable
-        private bool disposedValue;
 
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -185,28 +180,19 @@ namespace FFmpegSharp
                 {
                     fixed (AVFormatContext** ppFormatContext = &pFormatContext)
                     {
-                        ffmpeg.av_freep(&pFormatContext->pb->buffer);
-                        ffmpeg.avio_context_free(&pFormatContext->pb);
                         ffmpeg.avformat_close_input(ppFormatContext);
                     }
                     pFormatContext = null;
                 }
                 disposedValue = true;
             }
+            base.Dispose(disposing);
         }
 
         ~MediaDemuxer()
         {
             Dispose(disposing: false);
         }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-
-
         #endregion IDisposable
     }
 }

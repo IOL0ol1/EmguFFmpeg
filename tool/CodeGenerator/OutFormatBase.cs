@@ -1,7 +1,7 @@
 using FFmpeg.AutoGen;
 namespace FFmpegSharp.Internal
 {
-    public abstract unsafe class OutFormatBase
+    public abstract unsafe partial class OutFormatBase
     {
         protected AVOutputFormat* pOutputFormat = null;
 

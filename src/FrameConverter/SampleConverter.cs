@@ -26,7 +26,7 @@ namespace FFmpegSharp
         }
 
         public SampleConverter(SwrContext* pSwrContext, AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate, bool isDisposeByOwner = true)
-            : this(pSwrContext, dstFormat, AVChannelLayoutExtension.Default(dstChannels), dstNbSamples, dstSampleRate, isDisposeByOwner)
+            : this(pSwrContext, dstFormat, AVChannelLayoutExtension.ToDefaultChLayout(dstChannels), dstNbSamples, dstSampleRate, isDisposeByOwner)
         { }
 
 
@@ -60,7 +60,7 @@ namespace FFmpegSharp
         /// <param name="dstNbSamples"></param>
         /// <param name="dstSampleRate"></param>
         public SampleConverter(AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate)
-            : this(dstFormat, AVChannelLayoutExtension.Default(dstChannels), dstNbSamples, dstSampleRate)
+            : this(dstFormat, AVChannelLayoutExtension.ToDefaultChLayout(dstChannels), dstNbSamples, dstSampleRate)
         { }
 
         /// <summary>

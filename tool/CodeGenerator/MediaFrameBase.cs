@@ -1,7 +1,7 @@
 using FFmpeg.AutoGen;
 namespace FFmpegSharp.Internal
 {
-    public abstract unsafe class MediaFrameBase
+    public abstract unsafe partial class MediaFrameBase
     {
         protected AVFrame* pFrame = null;
 

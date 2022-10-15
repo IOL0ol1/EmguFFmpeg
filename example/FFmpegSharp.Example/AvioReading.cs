@@ -1,24 +1,26 @@
 ﻿using System.IO;
 using FFmpeg.AutoGen;
 
-namespace FFmpegSharp.AppTest
+namespace FFmpegSharp.Example
 {
     internal class AvioReading : ExampleBase
     {
-        public AvioReading(string inputFile = "path-to-your.mp4")
-        {
-            parames["inputFile"] = inputFile;
-        }
+        public AvioReading() : this("path-to-your.mp4")
+        { }
+
+        public AvioReading(params string[] args) : base(args)
+        { }
 
         public unsafe override void Execute()
         {
-            var inputFile = GetParame<string>("inputFile");
+            var inputFile = args[0];
 
             AVFormatContext* fmt_ctx = ffmpeg.avformat_alloc_context();
             var fs = File.OpenRead(inputFile);
             var io = MediaIOContext.Link(fs, 4096);
             fmt_ctx->pb = io;
-            var ret = ffmpeg.avformat_open_input(&fmt_ctx, null, null, null);
+            ffmpeg.avformat_open_input(&fmt_ctx, null, null, null);
+            //ffmpeg.avformat_find_stream_info(fmt_ctx, null);
             var ctx = new MediaDemuxer(fmt_ctx);
             ctx.DumpFormat();
             fs.Dispose();

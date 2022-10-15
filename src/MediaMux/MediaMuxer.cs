@@ -7,9 +7,8 @@ using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaMuxer : MediaFormatContextBase, IDisposable
+    public unsafe class MediaMuxer : MediaFormatContext
     {
-        private bool disposedValue;
         protected bool hasWriteHeader; // Fixed: use ffmpeg's flag is better.
         protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
 
@@ -49,11 +48,11 @@ namespace FFmpegSharp
             ffmpeg.avformat_alloc_output_context2(&pFormatContext, oformat, null, file).ThrowIfError();
 
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = MediaIOContext.Open(file, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
+                pFormatContext->pb = MediaIOContext.Create(file, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
             return new MediaMuxer(pFormatContext);
         }
 
-        public MediaMuxer(AVFormatContext* formatContext, bool isOwner = true) : base(formatContext)
+        public MediaMuxer(AVFormatContext* formatContext, bool isOwner = true) : base(formatContext, isOwner)
         {
             if (formatContext == null) throw new NullReferenceException();
             disposedValue = !isOwner;
@@ -216,7 +215,7 @@ namespace FFmpegSharp
         /// <para><see cref="ffmpeg.avformat_free_context(AVFormatContext*)"/></para>
         /// </summary>
         /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -232,25 +231,17 @@ namespace FFmpegSharp
                     // and ffmpeg.av_write_trailer function may cause errors.
                     if (hasWriteHeader && !hasWriteTrailer)
                         ffmpeg.av_write_trailer(pFormatContext);
-                    ffmpeg.avformat_free_context(pFormatContext);
                     pFormatContext = null;
                 }
                 disposedValue = true;
             }
-
+            base.Dispose(disposing);
         }
+
         ~MediaMuxer()
         {
             Dispose(disposing: false);
         }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-
-
         #endregion IDisposable
     }
 }

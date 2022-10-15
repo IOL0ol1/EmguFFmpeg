@@ -20,7 +20,7 @@ namespace FFmpegSharp
         internal OutFormat(IntPtr pAVOutputFormat)
             : this((AVOutputFormat*)pAVOutputFormat)
         { }
-
+ 
         /// <summary>
         /// get muxer format by name,e.g. "mp4" ".mp4"
         /// </summary>

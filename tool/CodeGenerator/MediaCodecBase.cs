@@ -1,7 +1,7 @@
 using FFmpeg.AutoGen;
 namespace FFmpegSharp.Internal
 {
-    public abstract unsafe class MediaCodecBase
+    public abstract unsafe partial class MediaCodecBase
     {
         protected AVCodec* pCodec = null;
 

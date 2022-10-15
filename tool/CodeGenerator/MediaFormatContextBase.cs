@@ -1,7 +1,7 @@
 using FFmpeg.AutoGen;
 namespace FFmpegSharp.Internal
 {
-    public abstract unsafe class MediaFormatContextBase
+    public abstract unsafe partial class MediaFormatContextBase
     {
         protected AVFormatContext* pFormatContext = null;
 

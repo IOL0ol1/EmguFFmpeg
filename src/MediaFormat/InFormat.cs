@@ -20,6 +20,12 @@ namespace FFmpegSharp
             : this((AVInputFormat*)pAVInputFormat)
         { }
 
+
+        public static InFormat FindFormat(string shortName)
+        {
+            return new InFormat(ffmpeg.av_find_input_format(shortName));
+        }
+
         /// <summary>
         /// get demuxer format by name
         /// </summary>

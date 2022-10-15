@@ -1,27 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace FFmpegSharp.AppTest
+namespace FFmpegSharp.Example
 {
     internal class Transcoding : ExampleBase
     {
-        public Transcoding(string input, string output)
-        {
-            parames.Add("input", input);
-            parames.Add("output", output);
-        }
+        public Transcoding() : this("", "")
+        { }
+
+        public Transcoding(params string[] args) : base(args)
+        { }
 
         public unsafe override void Execute()
         {
-            using (var mr = MediaDemuxer.Open(GetParame<string>("input")))
-            using (var mw = MediaMuxer.Create(GetParame<string>("output")))
+            var input = args[0];
+            var output = args[1];
+            using (var mr = MediaDemuxer.Open(input))
+            using (var mw = MediaMuxer.Create(output))
             {
                 var decodecs = mr.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef)).ToList();
                 var encodecs = new List<MediaCodecContext>();
-            
+
                 decodecs.ForEach(_ => _?.Dispose());
                 encodecs.ForEach(_ => _?.Dispose());
             }
