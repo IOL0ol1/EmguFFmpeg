@@ -1,8 +1,5 @@
-EmguFFmpeg
+FFmpegSharp
 =====================
-[![NuGet version (EmguFFmpeg)](https://img.shields.io/nuget/v/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)
-[![NuGet downloads (EmguFFmpeg)](https://img.shields.io/nuget/dt/EmguFFmpeg.svg)](https://www.nuget.org/packages/EmguFFmpeg/)
-[![Build status](https://img.shields.io/appveyor/ci/IOL0ol1/emguffmpeg)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg)     
 
 A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) warpper library, make ffmpeg api easier to use.    
     
