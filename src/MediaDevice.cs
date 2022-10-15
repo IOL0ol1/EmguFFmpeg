@@ -1,7 +1,7 @@
 ﻿using System;
 using FFmpeg.AutoGen;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     /// <summary>
     /// must call <see cref="FFmpegHelper.RegisterDevice"/>
@@ -21,18 +21,24 @@ namespace EmguFFmpeg
         /// <summary>
         /// NOTE: ffmpeg cannot get device information through code, only print the display.
         /// </summary>
-        /// <param name="device"></param>
+        /// <param name="iformat"></param>
         /// <param name="parame"></param>
         /// <param name="options">options for <see cref=" ffmpeg.avformat_open_input"/></param>
         /// <returns></returns>
-        public static void PrintDeviceInfos(MediaFormat device, string parame, MediaDictionary options = null)
+        public static void PrintInputDeviceInfos(InFormat iformat, string parame, MediaDictionary options = null)
         {
             AVFormatContext* pFmtCtx = ffmpeg.avformat_alloc_context();
             ffmpeg.av_log(null, (int)LogLevel.Verbose, $"--------------------------{Environment.NewLine}");
-            if (device is InFormat iformat)
-                ffmpeg.avformat_open_input(&pFmtCtx, parame, iformat, options);
-            else if (device is OutFormat oformat)
-                ffmpeg.avformat_alloc_output_context2(&pFmtCtx, oformat, null, parame);
+            ffmpeg.avformat_open_input(&pFmtCtx, parame, iformat, options);
+            ffmpeg.av_log(null, (int)LogLevel.Verbose, $"--------------------------{Environment.NewLine}");
+            ffmpeg.avformat_free_context(pFmtCtx);
+        }
+
+        public static void PrintOutputDeviceInfos(OutFormat oformat, string parame, MediaDictionary options = null)
+        {
+            AVFormatContext* pFmtCtx = ffmpeg.avformat_alloc_context();
+            ffmpeg.av_log(null, (int)LogLevel.Verbose, $"--------------------------{Environment.NewLine}");
+            ffmpeg.avformat_alloc_output_context2(&pFmtCtx, oformat, null, parame);
             ffmpeg.av_log(null, (int)LogLevel.Verbose, $"--------------------------{Environment.NewLine}");
             ffmpeg.avformat_free_context(pFmtCtx);
         }

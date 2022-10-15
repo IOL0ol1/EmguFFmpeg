@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using FFmpeg.AutoGen;
+using FFmpegSharp.Internal;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     /// <summary>
     /// <see cref="AVInputFormat"/> wapper
     /// </summary>
-    public unsafe class InFormat : MediaFormat
+    public unsafe class InFormat : InFormatBase
     {
-        protected AVInputFormat* pInputFormat = null;
 
-        public InFormat(AVInputFormat* iformat)
+        public InFormat(AVInputFormat* iformat) : base(iformat)
         {
             pInputFormat = iformat;
         }
- 
+
         internal InFormat(IntPtr pAVInputFormat)
             : this((AVInputFormat*)pAVInputFormat)
         { }
@@ -66,19 +66,9 @@ namespace EmguFFmpeg
             return (IntPtr)ffmpeg.av_demuxer_iterate(opaque);
         }
 
-        public AVInputFormat AVInputFormat => *pInputFormat;
-
-        public static implicit operator AVInputFormat*(InFormat value)
-        {
-            if (value == null) return null;
-            return value.pInputFormat;
-        }
-
-        public int RawCodecId => pInputFormat->raw_codec_id;
-        public override int Flags => pInputFormat->flags;
-        public override string Name => ((IntPtr)pInputFormat->name).PtrToStringUTF8();
-        public override string LongName => ((IntPtr)pInputFormat->long_name).PtrToStringUTF8();
-        public override string Extensions => ((IntPtr)pInputFormat->extensions).PtrToStringUTF8();
-        public override string MimeType => ((IntPtr)pInputFormat->mime_type).PtrToStringUTF8();
+        public string Name => ((IntPtr)pInputFormat->name).PtrToStringUTF8();
+        public string LongName => ((IntPtr)pInputFormat->long_name).PtrToStringUTF8();
+        public string Extensions => ((IntPtr)pInputFormat->extensions).PtrToStringUTF8();
+        public string MimeType => ((IntPtr)pInputFormat->mime_type).PtrToStringUTF8();
     }
 }

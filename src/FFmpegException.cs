@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 using FFmpeg.AutoGen;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     /// <summary>
     /// FFmpeg exception

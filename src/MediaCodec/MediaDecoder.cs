@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using FFmpeg.AutoGen;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     public unsafe class MediaDecoder : IDisposable
     {
@@ -85,7 +85,7 @@ namespace EmguFFmpeg
         /// <summary>
         /// Create <see cref="AVCodecContext"/> by <see cref="AVCodecParameters"/>.
         /// <para>
-        /// <seealso cref="MediaCodecContext.Open(Action{MediaCodecContextSettings}, MediaCodec, MediaDictionary)"/>
+        /// <seealso cref="MediaCodecContext.Open(Action{Internal.MediaCodecContextBase}, MediaCodec, MediaDictionary)"/>
         /// </para>
         /// <para>
         /// <seealso cref="ffmpeg.avcodec_parameters_to_context(AVCodecContext*, AVCodecParameters*)"/>
@@ -103,7 +103,7 @@ namespace EmguFFmpeg
                 ? null
                 : new MediaDecoder(MediaCodecContext.Create(_ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), codec, opts));
         }
- 
+
         #endregion
 
         protected virtual void Dispose(bool disposing)

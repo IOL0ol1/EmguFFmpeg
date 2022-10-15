@@ -1,21 +1,21 @@
 ﻿using System;
-
 using FFmpeg.AutoGen;
+using FFmpegSharp.Internal;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
-    public unsafe partial class MediaCodecContext : MediaCodecContextSettings, IDisposable
+    public unsafe partial class MediaCodecContext : MediaCodecContextBase, IDisposable
     {
         private bool disposedValue;
 
-        public static MediaCodecContext Create(Action<MediaCodecContextSettings> beforeOpenSetting, MediaCodec codec = null, MediaDictionary opts = null)
+        public static MediaCodecContext Create(Action<MediaCodecContextBase> beforeOpenSetting, MediaCodec codec = null, MediaDictionary opts = null)
         {
             return new MediaCodecContext(codec).Open(beforeOpenSetting, null, opts);
         }
 
         public MediaCodecContext(AVCodecContext* pAVCodecContext, bool isDisposeByOwner = true)
+            : base(pAVCodecContext)
         {
-            pCodecContext = pAVCodecContext;
             disposedValue = !isDisposeByOwner;
         }
 
@@ -29,7 +29,7 @@ namespace EmguFFmpeg
         /// <param name="beforeOpenSetting"></param>
         /// <param name="codec"></param>
         /// <param name="opts"></param>
-        public MediaCodecContext Open(Action<MediaCodecContextSettings> beforeOpenSetting = null, MediaCodec codec = null, MediaDictionary opts = null)
+        public MediaCodecContext Open(Action<MediaCodecContextBase> beforeOpenSetting = null, MediaCodec codec = null, MediaDictionary opts = null)
         {
             beforeOpenSetting?.Invoke(this);
             ffmpeg.avcodec_open2(pCodecContext, codec, opts).ThrowIfError();

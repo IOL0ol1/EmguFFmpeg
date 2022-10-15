@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 
 using FFmpeg.AutoGen;
+using FFmpegSharp.Internal;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
-    public unsafe class MediaCodec
+    public unsafe class MediaCodec : MediaCodecBase
     {
 
         /// <summary>
@@ -55,25 +56,19 @@ namespace EmguFFmpeg
         }
 
         public MediaCodec(AVCodec* codec)
-        {
-            pCodec = codec;
-        }
+            : base(codec)
+        { }
 
         internal MediaCodec(IntPtr codec)
             : this((AVCodec*)codec)
         { }
 
-        protected AVCodec* pCodec = null;
 
-        public AVCodec AVCodec => *pCodec;
-        public AVMediaType Type => pCodec->type;
-        public AVCodecID Id => pCodec->id;
         public string Name => ((IntPtr)pCodec->name).PtrToStringUTF8();
         public string LongName => ((IntPtr)pCodec->long_name).PtrToStringUTF8();
         public string WrapperName => ((IntPtr)pCodec->wrapper_name).PtrToStringUTF8();
-        public bool IsDecoder => ffmpeg.av_codec_is_decoder(pCodec) > 0;
-        public bool IsEncoder => ffmpeg.av_codec_is_encoder(pCodec) > 0;
-        public int Capabilities => pCodec->capabilities;
+        public bool IsDecoder => ffmpeg.av_codec_is_decoder(pCodec) != 0;
+        public bool IsEncoder => ffmpeg.av_codec_is_encoder(pCodec) != 0;
 
         #region safe wapper for IEnumerable
 
@@ -232,12 +227,6 @@ namespace EmguFFmpeg
         public override string ToString()
         {
             return $"[{Name}]{LongName}";
-        }
-
-        public static implicit operator AVCodec*(MediaCodec value)
-        {
-            if (value == null) return null;
-            return value.pCodec;
         }
     }
 }

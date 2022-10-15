@@ -1,8 +1,7 @@
 ﻿using System;
-using System.ComponentModel;
 using FFmpeg.AutoGen;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     /// <summary>
     /// <see cref="AVAudioFifo"/> wapper
@@ -10,7 +9,7 @@ namespace EmguFFmpeg
     public unsafe class AudioFifo : IDisposable
     {
         protected AVAudioFifo* pAudioFifo;
- 
+
         public AudioFifo(AVAudioFifo* pAVAudioFifo, bool isDisposeByOwner = true)
         {
             pAudioFifo = pAVAudioFifo;

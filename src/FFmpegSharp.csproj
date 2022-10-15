@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;</TargetFrameworks>
+    <PackageId>FFmpeg4Sharp</PackageId>
+    <Description>
+      A FFmpeg.AutoGen Warpper Library.
+    </Description>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>FFmpeg</Authors>
+    <PackageProjectUrl>https://github.com/IOL0ol1/EmguFFmpeg</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/IOL0ol1/EmguFFmpeg</RepositoryUrl>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet emgu</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <Version>1.0.0</Version>
+    <NoWarn>1701;1702;1591</NoWarn>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FFmpeg.AutoGen" Version="5.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="README.md" />
+    <None Include="../icon.png" Pack="true" Visible="false" PackagePath="" />
+  </ItemGroup>
+
+
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+
+</Project>

@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FFmpeg.AutoGen;
+using FFmpegSharp.Internal;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
-    public unsafe class MediaMuxer : MediaFormatContext
+    public unsafe class MediaMuxer : MediaFormatContextBase, IDisposable
     {
         private bool disposedValue;
         protected bool hasWriteHeader; // Fixed: use ffmpeg's flag is better.
         protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
 
-        protected MediaIOContext _ioContext;
         private Stream _stream;
+
+        public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
         public OutFormat Format { get; protected set; }
 
@@ -23,15 +25,14 @@ namespace EmguFFmpeg
         /// <param name="stream"></param>
         /// <param name="oformat"></param>
         /// <param name="options">useless, the future may change</param>
-        public MediaMuxer(Stream stream, OutFormat oformat, MediaDictionary options = null)
+        public static MediaMuxer Create(Stream stream, OutFormat oformat, MediaDictionary options = null)
         {
-            _stream = stream;
-            _ioContext = MediaIOContext.Link(_stream);
-            pFormatContext = ffmpeg.avformat_alloc_context();
+            var pFormatContext = ffmpeg.avformat_alloc_context();
             pFormatContext->oformat = oformat;
-            Format = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = _ioContext;
+                pFormatContext->pb = MediaIOContext.Link(stream);
+            var output = new MediaMuxer(pFormatContext) { _stream = stream };
+            return output;
         }
 
         /// <summary>
@@ -42,21 +43,19 @@ namespace EmguFFmpeg
         /// <param name="file"></param>
         /// <param name="oformat"></param>
         /// <param name="options"></param>
-        public MediaMuxer(string file, OutFormat oformat = null, MediaDictionary options = null)
+        public static MediaMuxer Create(string file, OutFormat oformat = null, MediaDictionary options = null)
         {
-            fixed (AVFormatContext** ppFormatContext = &pFormatContext)
-            {
-                ffmpeg.avformat_alloc_output_context2(ppFormatContext, oformat, null, file).ThrowIfError();
-            }
-            Format = oformat ?? new OutFormat(pFormatContext->oformat);
+            AVFormatContext* pFormatContext = null;
+            ffmpeg.avformat_alloc_output_context2(&pFormatContext, oformat, null, file).ThrowIfError();
+
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = _ioContext = MediaIOContext.Open(file, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
+                pFormatContext->pb = MediaIOContext.Open(file, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
+            return new MediaMuxer(pFormatContext);
         }
 
-        public MediaMuxer(AVFormatContext* formatContext, bool isOwner = true)
+        public MediaMuxer(AVFormatContext* formatContext, bool isOwner = true) : base(formatContext)
         {
             if (formatContext == null) throw new NullReferenceException();
-            pFormatContext = formatContext;
             disposedValue = !isOwner;
             Format = new OutFormat(pFormatContext->oformat);
         }
@@ -110,7 +109,6 @@ namespace EmguFFmpeg
                 ffmpeg.avcodec_parameters_from_context(pStream->codecpar, encoder.Context).ThrowIfError();
                 pStream->time_base = encoder.Context.TimeBase;
             }
-            streams.Add(stream);
             return stream;
         }
 
@@ -130,7 +128,6 @@ namespace EmguFFmpeg
             var stream = new MediaStream(pStream);
             ffmpeg.avcodec_parameters_copy(pStream->codecpar, &codecpar).ThrowIfError();
             pStream->time_base = timebase;
-            streams.Add(stream);
             return stream;
         }
 
@@ -141,7 +138,6 @@ namespace EmguFFmpeg
             var stream = new MediaStream(pStream);
             ffmpeg.avcodec_parameters_copy(pStream->codecpar, (AVCodecParameters*)pAVCodecParameters).ThrowIfError();
             pStream->time_base = timebase;
-            streams.Add(stream);
             return stream;
         }
 
@@ -175,7 +171,7 @@ namespace EmguFFmpeg
         public int WritePacket(MediaPacket packet, AVRational? codecTimeBase = null)
         {
             if (codecTimeBase != null)
-                ffmpeg.av_packet_rescale_ts(packet, codecTimeBase.Value, this[packet.StreamIndex].TimeBase);
+                ffmpeg.av_packet_rescale_ts(packet, codecTimeBase.Value, pFormatContext->streams[packet.StreamIndex]->time_base);
             int ret = ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
             packet.Unref();
             return ret;
@@ -220,7 +216,7 @@ namespace EmguFFmpeg
         /// <para><see cref="ffmpeg.avformat_free_context(AVFormatContext*)"/></para>
         /// </summary>
         /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -236,14 +232,22 @@ namespace EmguFFmpeg
                     // and ffmpeg.av_write_trailer function may cause errors.
                     if (hasWriteHeader && !hasWriteTrailer)
                         ffmpeg.av_write_trailer(pFormatContext);
-                    if (_ioContext != null)
-                        _ioContext.Dispose();
                     ffmpeg.avformat_free_context(pFormatContext);
                     pFormatContext = null;
                 }
                 disposedValue = true;
             }
 
+        }
+        ~MediaMuxer()
+        {
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
 

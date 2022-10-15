@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     public interface IFrameConverter
     {

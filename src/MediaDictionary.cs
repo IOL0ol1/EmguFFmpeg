@@ -5,18 +5,13 @@ using System.Linq;
 
 using FFmpeg.AutoGen;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     public unsafe class MediaDictionary : IDictionary<string, string>, IDisposable
     {
         private AVDictionary** ppDictionary = null;
-        private readonly AVDictionary* tmpDictionary = null;
+        private readonly AVDictionary* holdPlace = null; // 
 
-        /// <summary>
-        /// <paramref name="ptr"/> will be free when <see cref="Dispose(bool)"/>
-        /// </summary>
-        /// <param name="ptr"></param>
-        /// <param name="isDisposeByOwner"></param>
         public MediaDictionary(AVDictionary** ptr, bool isDisposeByOwner = true)
         {
             ppDictionary = ptr;
@@ -25,11 +20,12 @@ namespace EmguFFmpeg
 
         public MediaDictionary()
         {
-            fixed (AVDictionary** p = &tmpDictionary)
+            fixed (AVDictionary** p = &holdPlace)
                 ppDictionary = p;
         }
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
+            :this()
         {
             foreach (var item in dictionary)
             {
@@ -37,19 +33,33 @@ namespace EmguFFmpeg
             }
         }
 
-
         public string this[string key]
         {
             get
             {
                 AVDictionaryEntry* entry;
-                if ((entry = (AVDictionaryEntry*)av_dict_get_safe(this, key, IntPtr.Zero, AVDictReadFlags.MatchCase)) != null)
+                if ((entry = (AVDictionaryEntry*)av_dict_get_safe(this, key, IntPtr.Zero, (int)AVDictReadFlags.MatchCase)) != null)
                     return (*entry).GetValue();
                 throw new KeyNotFoundException();
             }
             set
             {
-                Add(key, value, AVDictWriteFlags.None);
+                Add(key, value, (int)AVDictWriteFlags.None);
+            }
+        }
+
+        public string this[string key, int flags]
+        {
+            get
+            {
+                AVDictionaryEntry* entry;
+                if ((entry = (AVDictionaryEntry*)av_dict_get_safe(this, key, IntPtr.Zero, flags)) != null)
+                    return (*entry).GetValue();
+                throw new KeyNotFoundException();
+            }
+            set
+            {
+                Add(key, value, flags);
             }
         }
 
@@ -67,17 +77,17 @@ namespace EmguFFmpeg
                 throw new ArgumentNullException();
             if (ContainsKey(key))
                 throw new ArgumentException();
-            Add(key, value, AVDictWriteFlags.DontOverwrite);
+            Add(key, value, (int)AVDictWriteFlags.DontOverwrite);
         }
 
-        public int Add(string key, string value, AVDictWriteFlags flags)
+        public int Add(string key, string value, int flags)
         {
-            return ffmpeg.av_dict_set(this, key, value, (int)flags).ThrowIfError();
+            return ffmpeg.av_dict_set(this, key, value, flags).ThrowIfError();
         }
 
         public int Add(KeyValuePair<string, string> item, AVDictWriteFlags flags)
         {
-            return Add(item.Key, item.Value, flags);
+            return Add(item.Key, item.Value, (int)flags);
         }
 
         public void Add(KeyValuePair<string, string> item)
@@ -92,12 +102,12 @@ namespace EmguFFmpeg
 
         public bool ContainsKey(string key)
         {
-            return av_dict_get_safe(this, key, IntPtr.Zero, AVDictReadFlags.MatchCase) != IntPtr.Zero;
+            return av_dict_get_safe(this, key, IntPtr.Zero, (int)AVDictReadFlags.MatchCase) != IntPtr.Zero;
         }
 
         public bool ContainsKey(string key, AVDictReadFlags flags)
         {
-            return av_dict_get_safe(this, key, IntPtr.Zero, flags) != IntPtr.Zero;
+            return av_dict_get_safe(this, key, IntPtr.Zero, (int)flags) != IntPtr.Zero;
         }
 
         /// <summary>
@@ -122,10 +132,10 @@ namespace EmguFFmpeg
 
         #region IEnumerator
 
-        private static IntPtr av_dict_get_safe(MediaDictionary dict, string key, IntPtr prev, AVDictReadFlags flags)
+        private static IntPtr av_dict_get_safe(MediaDictionary dict, string key, IntPtr prev, int flags)
         {
             AVDictionary** ppDictionary = dict;
-            return (IntPtr)ffmpeg.av_dict_get(*ppDictionary, key, (AVDictionaryEntry*)prev, (int)flags);
+            return (IntPtr)ffmpeg.av_dict_get(*ppDictionary, key, (AVDictionaryEntry*)prev, flags);
         }
 
         private static KeyValuePair<string, string> GetEntry(IntPtr intPtr)
@@ -137,7 +147,7 @@ namespace EmguFFmpeg
         public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
         {
             IntPtr prev = IntPtr.Zero;
-            while ((prev = av_dict_get_safe(this, string.Empty, prev, AVDictReadFlags.IgnoreSuffix)) != IntPtr.Zero)
+            while ((prev = av_dict_get_safe(this, string.Empty, prev, (int)AVDictReadFlags.IgnoreSuffix)) != IntPtr.Zero)
             {
                 yield return GetEntry(prev);
             }
@@ -152,7 +162,7 @@ namespace EmguFFmpeg
         /// <returns></returns>
         public bool Remove(string key)
         {
-            return Add(key, null, AVDictWriteFlags.None) == 0;
+            return Add(key, null, (int)AVDictWriteFlags.None) == 0;
         }
 
         public bool Remove(KeyValuePair<string, string> item)
@@ -175,7 +185,7 @@ namespace EmguFFmpeg
         public bool TryGetValue(string key, out string value)
         {
             AVDictionaryEntry* entry;
-            if ((entry = (AVDictionaryEntry*)av_dict_get_safe(this, key, IntPtr.Zero, AVDictReadFlags.MatchCase)) != null)
+            if ((entry = (AVDictionaryEntry*)av_dict_get_safe(this, key, IntPtr.Zero, (int)AVDictReadFlags.MatchCase)) != null)
             {
                 value = (*entry).GetValue();
                 return true;
@@ -188,7 +198,7 @@ namespace EmguFFmpeg
         {
             var list = new List<string>();
             AVDictionaryEntry* prev = null;
-            while ((prev = (AVDictionaryEntry*)av_dict_get_safe(this, key, (IntPtr)prev, flags)) != null)
+            while ((prev = (AVDictionaryEntry*)av_dict_get_safe(this, key, (IntPtr)prev, (int)flags)) != null)
             {
                 list.Add((*prev).GetValue());
             }

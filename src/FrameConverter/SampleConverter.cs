@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     /// <summary>
     /// <see cref="SwrContext"/> wapper, include a <see cref="AVAudioFifo"/>.
@@ -70,7 +69,7 @@ namespace EmguFFmpeg
         /// <param name="dstCodec"></param>
         public static SampleConverter CreateByCodeContext(MediaCodecContext dstCodec)
         {
-            if (dstCodec.Context.codec_type != AVMediaType.AVMEDIA_TYPE_AUDIO)
+            if (dstCodec.Ref.codec_type != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
             return new SampleConverter(dstCodec.SampleFmt, dstCodec.ChLayout, dstCodec.FrameSize, dstCodec.SampleRate);
         }
@@ -149,7 +148,7 @@ namespace EmguFFmpeg
         public MediaFrame ConvertFrame(MediaFrame srcFrame, out int outSamples, out int cacheSamples)
         {
             var tmpFrame = SwrCheckInit(srcFrame);
-            int curSamples = FifoPush(srcFrame,tmpFrame);
+            int curSamples = FifoPush(srcFrame, tmpFrame);
             var dstframe = FifoPop(tmpFrame);
             cacheSamples = AudioFifo.Size;
             outSamples = curSamples - cacheSamples;

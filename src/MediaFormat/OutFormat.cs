@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using FFmpeg.AutoGen;
+using FFmpegSharp.Internal;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     /// <summary>
     /// <see cref="AVOutputFormat"/> wapper
     /// </summary>
-    public unsafe class OutFormat : MediaFormat
+    public unsafe class OutFormat : OutFormatBase
     {
-        protected AVOutputFormat* pOutputFormat = null;
 
         public OutFormat(AVOutputFormat* oformat)
+            : base(oformat)
         {
             pOutputFormat = oformat;
         }
@@ -89,22 +90,9 @@ namespace EmguFFmpeg
 
         #endregion Safe wapper for IEnumerable
 
-        public AVOutputFormat AVOutputFormat => *pOutputFormat;
-
-        public static implicit operator AVOutputFormat*(OutFormat value)
-        {
-            if (value == null) return null;
-            return value.pOutputFormat;
-        }
-
-        public AVCodecID VideoCodec => pOutputFormat->video_codec;
-        public AVCodecID AudioCodec => pOutputFormat->audio_codec;
-        public AVCodecID DataCodec => pOutputFormat->data_codec;
-        public AVCodecID SubtitleCodec => pOutputFormat->subtitle_codec;
-        public override int Flags => pOutputFormat->flags;
-        public override string Name => ((IntPtr)pOutputFormat->name).PtrToStringUTF8();
-        public override string LongName => ((IntPtr)pOutputFormat->long_name).PtrToStringUTF8();
-        public override string Extensions => ((IntPtr)pOutputFormat->extensions).PtrToStringUTF8();
-        public override string MimeType => ((IntPtr)pOutputFormat->mime_type).PtrToStringUTF8();
+        public string Name => ((IntPtr)pOutputFormat->name).PtrToStringUTF8();
+        public string LongName => ((IntPtr)pOutputFormat->long_name).PtrToStringUTF8();
+        public string Extensions => ((IntPtr)pOutputFormat->extensions).PtrToStringUTF8();
+        public string MimeType => ((IntPtr)pOutputFormat->mime_type).PtrToStringUTF8();
     }
 }

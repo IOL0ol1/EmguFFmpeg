@@ -2,7 +2,7 @@
 using System.IO;
 using FFmpeg.AutoGen;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     public unsafe class MediaIOContext : Stream
     {

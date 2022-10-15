@@ -1,6 +1,6 @@
 ﻿using FFmpeg.AutoGen;
 
-namespace EmguFFmpeg
+namespace FFmpegSharp
 {
     public static class AVRationalExtension
     {
