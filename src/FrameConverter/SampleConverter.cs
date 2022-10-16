@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Mail;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
@@ -9,96 +10,123 @@ namespace FFmpegSharp
     /// </summary>
     public unsafe class SampleConverter : IFrameConverter, IDisposable
     {
-        private MediaFrame dstFrame;
+        //private MediaFrame dstFrame;
         private bool disposedValue;
         protected SwrContext* pSwrContext = null;
-        public readonly AudioFifo AudioFifo;
-        public readonly AVSampleFormat DstFormat;
-        public readonly AVChannelLayout DstChLayout;
-        public readonly int DstNbSamples;
-        public readonly int DstSampleRate;
+        public readonly AudioFifo AudioFifo; // TODO: maybe remove
+        //public readonly AVSampleFormat DstFormat;
+        //public readonly AVChannelLayout DstChLayout;
+        //public readonly int DstNbSamples;
+        //public readonly int DstSampleRate;
 
-        public SampleConverter(SwrContext* pSwrContext, AVSampleFormat dstFormat, AVChannelLayout dstChLayout, int dstNbSamples, int dstSampleRate, bool isDisposeByOwner = true)
-            : this(dstFormat, dstChLayout, dstNbSamples, dstSampleRate)
+        //public SampleConverter(SwrContext* pSwrContext, AVSampleFormat dstFormat, AVChannelLayout dstChLayout, int dstNbSamples, int dstSampleRate, bool isDisposeByOwner = true)
+        //    : this(dstFormat, dstChLayout, dstNbSamples, dstSampleRate)
+        //{
+        //    this.pSwrContext = pSwrContext;
+        //    disposedValue = !isDisposeByOwner;
+        //}
+
+        //public SampleConverter(SwrContext* pSwrContext, AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate, bool isDisposeByOwner = true)
+        //    : this(pSwrContext, dstFormat, AVChannelLayoutExtension.ToDefaultChLayout(dstChannels), dstNbSamples, dstSampleRate, isDisposeByOwner)
+        //{ }
+
+
+        ///// <summary>
+        ///// create audio converter by dst parames
+        ///// </summary>
+        ///// <param name="dstFormat"></param>
+        ///// <param name="dstChLayout">see <see cref="AVChannelLayout"/></param>
+        ///// <param name="dstNbSamples"></param>
+        ///// <param name="dstSampleRate"></param>
+        //public SampleConverter(AVSampleFormat dstFormat, AVChannelLayout dstChLayout, int dstNbSamples, int dstSampleRate)
+        //{
+        //    DstFormat = dstFormat;
+        //    DstChLayout = dstChLayout;
+        //    DstNbSamples = dstNbSamples;
+        //    DstSampleRate = dstSampleRate;
+        //    AudioFifo = new AudioFifo(DstFormat, dstChLayout.nb_channels, 1);
+        //}
+        //public SampleConverter(MediaFrame dstFrame)
+        //    : this((AVSampleFormat)dstFrame.Format, dstFrame.ChLayout, dstFrame.NbSamples, dstFrame.SampleRate)
+        //{
+        //    this.dstFrame = dstFrame;
+        //}
+
+
+        ///// <summary>
+        ///// create audio converter by dst output parames
+        ///// </summary>
+        ///// <param name="dstFormat"></param>
+        ///// <param name="dstChannels"></param>
+        ///// <param name="dstNbSamples"></param>
+        ///// <param name="dstSampleRate"></param>
+        //public SampleConverter(AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate)
+        //    : this(dstFormat, AVChannelLayoutExtension.ToDefaultChLayout(dstChannels), dstNbSamples, dstSampleRate)
+        //{ }
+
+        ///// <summary>
+        ///// create audio converter by dst codec
+        ///// </summary>
+        ///// <param name="dstCodec"></param>
+        //public static SampleConverter CreateByCodeContext(MediaCodecContext dstCodec)
+        //{
+        //    if (dstCodec.Ref.codec_type != AVMediaType.AVMEDIA_TYPE_AUDIO)
+        //        throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
+        //    return new SampleConverter(dstCodec.SampleFmt, dstCodec.ChLayout, dstCodec.FrameSize, dstCodec.SampleRate);
+        //}
+
+        public SampleConverter(SwrContext* pSwrContext, bool isDisposeByOwner = true)
         {
             this.pSwrContext = pSwrContext;
             disposedValue = !isDisposeByOwner;
         }
 
-        public SampleConverter(SwrContext* pSwrContext, AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate, bool isDisposeByOwner = true)
-            : this(pSwrContext, dstFormat, AVChannelLayoutExtension.ToDefaultChLayout(dstChannels), dstNbSamples, dstSampleRate, isDisposeByOwner)
+        public SampleConverter() : this(ffmpeg.swr_alloc())
         { }
-
-
-        /// <summary>
-        /// create audio converter by dst parames
-        /// </summary>
-        /// <param name="dstFormat"></param>
-        /// <param name="dstChLayout">see <see cref="AVChannelLayout"/></param>
-        /// <param name="dstNbSamples"></param>
-        /// <param name="dstSampleRate"></param>
-        public SampleConverter(AVSampleFormat dstFormat, AVChannelLayout dstChLayout, int dstNbSamples, int dstSampleRate)
-        {
-            DstFormat = dstFormat;
-            DstChLayout = dstChLayout;
-            DstNbSamples = dstNbSamples;
-            DstSampleRate = dstSampleRate;
-            AudioFifo = new AudioFifo(DstFormat, dstChLayout.nb_channels, 1);
-        }
-        public SampleConverter(MediaFrame dstFrame)
-            : this((AVSampleFormat)dstFrame.Format, dstFrame.ChLayout, dstFrame.NbSamples, dstFrame.SampleRate)
-        {
-            this.dstFrame = dstFrame;
-        }
-
-
-        /// <summary>
-        /// create audio converter by dst output parames
-        /// </summary>
-        /// <param name="dstFormat"></param>
-        /// <param name="dstChannels"></param>
-        /// <param name="dstNbSamples"></param>
-        /// <param name="dstSampleRate"></param>
-        public SampleConverter(AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate)
-            : this(dstFormat, AVChannelLayoutExtension.ToDefaultChLayout(dstChannels), dstNbSamples, dstSampleRate)
-        { }
-
-        /// <summary>
-        /// create audio converter by dst codec
-        /// </summary>
-        /// <param name="dstCodec"></param>
-        public static SampleConverter CreateByCodeContext(MediaCodecContext dstCodec)
-        {
-            if (dstCodec.Ref.codec_type != AVMediaType.AVMEDIA_TYPE_AUDIO)
-                throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
-            return new SampleConverter(dstCodec.SampleFmt, dstCodec.ChLayout, dstCodec.FrameSize, dstCodec.SampleRate);
-        }
 
         #region safe wapper for IEnumerable
 
-        private MediaFrame SwrCheckInit(MediaFrame srcFrame)
+        private void SwrCheckInit(MediaFrame srcFrame, MediaFrame dstframe)
         {
-            var output = dstFrame ?? MediaFrame.CreateAudioFrame(DstChLayout, DstNbSamples, DstFormat, DstSampleRate);
-            if (pSwrContext == null)
+            var output = dstframe;//?? MediaFrame.CreateAudioFrame(DstChLayout, DstNbSamples, DstFormat, DstSampleRate);
+            AVChannelLayout inChLayout;
+            ffmpeg.av_opt_get_chlayout(pSwrContext, "in_ch_layout", 0, &inChLayout).ThrowIfError();
+            AVChannelLayout outChLayout;
+            ffmpeg.av_opt_get_chlayout(pSwrContext, "out_ch_layout", 0, &outChLayout).ThrowIfError();
+            long inSampleRate;
+            ffmpeg.av_opt_get_int(pSwrContext, "in_sample_rate", 0, &inSampleRate).ThrowIfError();
+            long outSampleRate;
+            ffmpeg.av_opt_get_int(pSwrContext, "out_sample_rate", 0, &outSampleRate).ThrowIfError();
+            AVSampleFormat outFmt;
+            ffmpeg.av_opt_get_sample_fmt(pSwrContext, "out_sample_fmt", 0, &outFmt).ThrowIfError();
+            AVSampleFormat inFmt;
+            ffmpeg.av_opt_get_sample_fmt(pSwrContext, "in_sample_fmt", 0, &inFmt).ThrowIfError();
+            if (ffmpeg.swr_is_initialized(pSwrContext) == 0
+                || inChLayout.IsContentEqual(srcFrame.ChLayout)
+                || inSampleRate != srcFrame.SampleRate
+                || (int)inFmt != srcFrame.Format
+                || outChLayout.IsContentEqual(dstframe.ChLayout)
+                || outSampleRate != dstframe.SampleRate
+                || (int)outFmt != dstframe.Format)
             {
                 AVFrame* src = srcFrame;
                 AVFrame* dst = output;
 
-                fixed (AVChannelLayout* pDst = &DstChLayout)
                 fixed (SwrContext** ppSwrContext = &pSwrContext)
                 {
-                    ffmpeg.swr_alloc_set_opts2(ppSwrContext, pDst, DstFormat, DstSampleRate, &src->ch_layout, (AVSampleFormat)src->format, src->sample_rate, 0, null).ThrowIfError();
+                    ffmpeg.swr_alloc_set_opts2(ppSwrContext, &outChLayout, outFmt, (int)outSampleRate,
+                        &src->ch_layout, (AVSampleFormat)src->format, src->sample_rate, 0, null).ThrowIfError();
                 }
                 ffmpeg.swr_init(pSwrContext).ThrowIfError();
             }
-            return output;
         }
 
         private int FifoPush(MediaFrame srcFrame, MediaFrame dstFrame)
         {
             AVFrame* src = srcFrame;
             AVFrame* dst = dstFrame;
-            for (int i = 0, ret = DstNbSamples; ret == DstNbSamples && src != null; i++)
+            var outNbSamples = dstFrame.NbSamples;
+            for (int i = 0, ret = outNbSamples; ret == outNbSamples && src != null; i++)
             {
                 if (i == 0 && src != null)
                     ret = ffmpeg.swr_convert(pSwrContext, dst->extended_data, dst->nb_samples, src->extended_data, src->nb_samples).ThrowIfError();
@@ -112,7 +140,7 @@ namespace FFmpegSharp
         private MediaFrame FifoPop(MediaFrame dstFrame)
         {
             AVFrame* dst = dstFrame;
-            AudioFifo.Read((void**)dst->extended_data, DstNbSamples);
+            AudioFifo.Read((void**)dst->extended_data, dst->nb_samples);
             return dstFrame;
         }
 
@@ -127,14 +155,15 @@ namespace FFmpegSharp
         /// </para>
         /// </summary>
         /// <param name="srcFrame"></param>
+        /// <param name="dstFrame"></param>
         /// <returns></returns>
-        public IEnumerable<MediaFrame> Convert(MediaFrame srcFrame)
+        public IEnumerable<MediaFrame> Convert(MediaFrame srcFrame, MediaFrame dstFrame)
         {
-            var tmpFrame = SwrCheckInit(srcFrame);
-            FifoPush(srcFrame, tmpFrame);
-            while (AudioFifo.Size >= DstNbSamples)
+            SwrCheckInit(srcFrame, dstFrame);
+            FifoPush(srcFrame, dstFrame);
+            while (AudioFifo.Size >= dstFrame.NbSamples)
             {
-                yield return FifoPop(tmpFrame);
+                yield return FifoPop(dstFrame);
             }
         }
 
@@ -142,14 +171,15 @@ namespace FFmpegSharp
         /// convert input audio frame to output frame
         /// </summary>
         /// <param name="srcFrame">input audio frame</param>
+        /// <param name="dstFrame"></param>
         /// <param name="outSamples">number of samples actually output</param>
         /// <param name="cacheSamples">number of samples in the internal cache</param>
         /// <returns></returns>
-        public MediaFrame ConvertFrame(MediaFrame srcFrame, out int outSamples, out int cacheSamples)
+        public MediaFrame ConvertFrame(MediaFrame srcFrame, MediaFrame dstFrame, out int outSamples, out int cacheSamples)
         {
-            var tmpFrame = SwrCheckInit(srcFrame);
-            int curSamples = FifoPush(srcFrame, tmpFrame);
-            var dstframe = FifoPop(tmpFrame);
+            SwrCheckInit(srcFrame,dstFrame);
+            int curSamples = FifoPush(srcFrame, dstFrame);
+            var dstframe = FifoPop(dstFrame);
             cacheSamples = AudioFifo.Size;
             outSamples = curSamples - cacheSamples;
             return dstframe;

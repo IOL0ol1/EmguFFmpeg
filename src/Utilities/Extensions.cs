@@ -5,7 +5,7 @@ using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
 {
- 
+
 
     public static class AVRationalExtension
     {
@@ -47,6 +47,13 @@ namespace FFmpegSharp
             var chLayout = new AVChannelLayout();
             ffmpeg.av_channel_layout_copy(&chLayout, &channelLayout);
             return chLayout;
+        }
+
+        public static bool IsContentEqual(this AVChannelLayout value, AVChannelLayout layout)
+        {
+            return value.nb_channels == layout.nb_channels
+                && value.order == layout.order
+                && value.u.mask == layout.u.mask;
         }
     }
 
