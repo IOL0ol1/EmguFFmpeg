@@ -1,47 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
 using FFmpeg.AutoGen;
+using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaDecoder : IDisposable
+    public unsafe class MediaDecoder : MediaCodecContextBase, IDisposable
     {
         private bool disposedValue;
-
-        public static implicit operator MediaCodecContext(MediaDecoder value)
-        {
-            if (value == null) return null;
-            return value.Context;
-        }
 
         public static implicit operator AVCodecContext*(MediaDecoder value)
         {
             if (value == null) return null;
-            return value.Context;
+            return value.pCodecContext;
         }
 
-        public MediaCodecContext Context { get; private set; }
-
-
-        public MediaDecoder(MediaCodecContext context, bool isDisposeByOwner = true)
-        {
-            Context = context;
-            disposedValue = !isDisposeByOwner;
-        }
+        public MediaDecoder(MediaCodecContext context)
+            : base(context)
+        { }
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public int SendPacket(MediaPacket packet) => ffmpeg.avcodec_send_packet(Context, packet);
+        public int SendPacket(MediaPacket packet) => ffmpeg.avcodec_send_packet(pCodecContext, packet);
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_receive_frame(AVCodecContext*, AVFrame*)"/>
         /// </summary>
         /// <param name="frame"></param>
         /// <returns></returns>
-        public int ReceiveFrame(MediaFrame frame) => ffmpeg.avcodec_receive_frame(Context, frame);
+        public int ReceiveFrame(MediaFrame frame) => ffmpeg.avcodec_receive_frame(pCodecContext, frame);
 
         /// <summary>
         /// decode packet to get frame.
@@ -114,7 +104,7 @@ namespace FFmpegSharp
                 {
                     // nothing
                 }
-                Context?.Dispose();
+                new MediaCodecContext(pCodecContext).Dispose();
                 disposedValue = true;
             }
         }

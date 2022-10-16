@@ -30,7 +30,7 @@ namespace FFmpegSharp.Example
              }, codec)))
             using (var frame = new MediaFrame())
             {
-                foreach (var oPacket in parser.ParserPackets(c.Context, f, pkt))
+                foreach (var oPacket in parser.ParserPackets(c, f, pkt))
                 {
                     foreach (var oFrame in c.DecodePacket(oPacket, frame))
                     {

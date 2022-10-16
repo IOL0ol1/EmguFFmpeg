@@ -28,7 +28,7 @@ namespace FFmpegSharp.Example
                 using (var videoDecCtx = MediaDecoder.CreateDecoder(videoStream.CodecparRef))
                 using (var audioDecCtx = MediaDecoder.CreateDecoder(audioStream.CodecparRef))
                 // Use align = 1 AVFrame instead uint8_t *video_dst_data, less and safer code.
-                using (var videoDstData = MediaFrame.CreateVideoFrame(videoDecCtx.Context.Width, videoDecCtx.Context.Height, videoDecCtx.Context.PixFmt, 1))
+                using (var videoDstData = MediaFrame.CreateVideoFrame(videoDecCtx.Width, videoDecCtx.Height, videoDecCtx.PixFmt, 1))
                 using (var pkt = new MediaPacket())
                 using (var frame = new MediaFrame())
                 {
@@ -63,10 +63,10 @@ namespace FFmpegSharp.Example
 
                     // video play command
                     Console.WriteLine($"Play the output video file with the command:\n" +
-                           $"ffplay -f rawvideo -pix_fmt {videoDecCtx.Context.PixFmt.GetName()} -video_size {videoDecCtx.Context.Width}x{videoDecCtx.Context.Height} {videoDstFilename}\n");
+                           $"ffplay -f rawvideo -pix_fmt {videoDecCtx.PixFmt.GetName()} -video_size {videoDecCtx.Width}x{videoDecCtx.Height} {videoDstFilename}\n");
 
                     // TODO: audio play command
-                    var audioCtx = audioDecCtx.Context;
+                    var audioCtx = audioDecCtx;
                     var sfmt = audioCtx.SampleFmt;
                     var n_channels = audioCtx.ChLayout.nb_channels;
                     if (ffmpeg.av_sample_fmt_is_planar(sfmt) != 0)
@@ -86,6 +86,7 @@ namespace FFmpegSharp.Example
 
         private unsafe void WriteVideoOut(MediaFrame f, MediaFrame of, Stream stream)
         {
+            of.MakeWritable();
             var dstData = new byte_ptrArray4();
             dstData.UpdateFrom(of.Data);
             var dstLinesize = new int_array4();

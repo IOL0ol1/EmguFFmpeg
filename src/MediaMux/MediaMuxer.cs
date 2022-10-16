@@ -4,10 +4,9 @@ using System.IO;
 using System.Linq;
 using FFmpeg.AutoGen;
 using FFmpegSharp.Internal;
-
 namespace FFmpegSharp
 {
-    public unsafe class MediaMuxer : MediaFormatContext
+    public unsafe class MediaMuxer : MediaFormatContextBase, IDisposable
     {
         protected bool hasWriteHeader; // Fixed: use ffmpeg's flag is better.
         protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
@@ -16,21 +15,20 @@ namespace FFmpegSharp
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
-        public OutFormat Format { get; protected set; }
+        public OutFormat Format => new OutFormat(pFormatContext->oformat);
 
         /// <summary>
         /// write to stream
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="oformat"></param>
-        /// <param name="options">useless, the future may change</param>
-        public static MediaMuxer Create(Stream stream, OutFormat oformat, MediaDictionary options = null)
+        public static MediaMuxer Create(Stream stream, OutFormat oformat)
         {
             var pFormatContext = ffmpeg.avformat_alloc_context();
             pFormatContext->oformat = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                 pFormatContext->pb = MediaIOContext.Link(stream);
-            var output = new MediaMuxer(pFormatContext) { _stream = stream };
+            var output = new MediaMuxer(new MediaFormatContext(pFormatContext)) { _stream = stream };
             return output;
         }
 
@@ -49,14 +47,20 @@ namespace FFmpegSharp
 
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                 pFormatContext->pb = MediaIOContext.Create(file, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
-            return new MediaMuxer(pFormatContext);
+            return new MediaMuxer(new MediaFormatContext(pFormatContext));
         }
 
-        public MediaMuxer(AVFormatContext* formatContext, bool isOwner = true) : base(formatContext, isOwner)
+        public MediaMuxer(MediaFormatContext formatContext) : base(formatContext)
         {
             if (formatContext == null) throw new NullReferenceException();
-            disposedValue = !isOwner;
-            Format = new OutFormat(pFormatContext->oformat);
+        }
+
+        public MediaMuxer(OutFormat oformat, string formatName, string fileName) : base(ffmpeg.avformat_alloc_context())
+        {
+            fixed (AVFormatContext** ppFormatContext = &pFormatContext)
+            {
+                ffmpeg.avformat_alloc_output_context2(ppFormatContext, oformat, formatName, fileName).ThrowIfError();
+            }
         }
 
         /// <summary>
@@ -105,8 +109,8 @@ namespace FFmpegSharp
             var stream = new MediaStream(pStream);
             if (encoder != null)
             {
-                ffmpeg.avcodec_parameters_from_context(pStream->codecpar, encoder.Context).ThrowIfError();
-                pStream->time_base = encoder.Context.TimeBase;
+                ffmpeg.avcodec_parameters_from_context(pStream->codecpar, encoder).ThrowIfError();
+                pStream->time_base = encoder.TimeBase;
             }
             return stream;
         }
@@ -187,11 +191,11 @@ namespace FFmpegSharp
             if (mediaCodecs != null)
             {
                 foreach (var mediaCodec in mediaCodecs
-                    .Where(_ => (((AVCodecContext*)_.Context)->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0))
+                    .Where(_ => (((AVCodecContext*)_)->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0))
                 {
                     foreach (var packet in mediaCodec.EncodeFrame(null))
                     {
-                        WritePacket(packet, mediaCodec.Context.TimeBase);
+                        WritePacket(packet, mediaCodec.TimeBase);
                     }
                 }
             }
@@ -209,13 +213,14 @@ namespace FFmpegSharp
         }
 
         #region IDisposable
+        private bool disposedValue;
 
         /// <summary>
         /// <para><see cref="ffmpeg.avio_close(AVIOContext*)"/></para>
         /// <para><see cref="ffmpeg.avformat_free_context(AVFormatContext*)"/></para>
         /// </summary>
         /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -231,16 +236,23 @@ namespace FFmpegSharp
                     // and ffmpeg.av_write_trailer function may cause errors.
                     if (hasWriteHeader && !hasWriteTrailer)
                         ffmpeg.av_write_trailer(pFormatContext);
+                    ffmpeg.avio_close(pFormatContext->pb);
+                    ffmpeg.avformat_free_context(pFormatContext);
                     pFormatContext = null;
                 }
                 disposedValue = true;
             }
-            base.Dispose(disposing);
         }
 
         ~MediaMuxer()
         {
             Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
         #endregion IDisposable
     }

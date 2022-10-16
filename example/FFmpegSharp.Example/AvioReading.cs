@@ -21,7 +21,7 @@ namespace FFmpegSharp.Example
             fmt_ctx->pb = io;
             ffmpeg.avformat_open_input(&fmt_ctx, null, null, null);
             //ffmpeg.avformat_find_stream_info(fmt_ctx, null);
-            var ctx = new MediaDemuxer(fmt_ctx);
+            var ctx = new MediaDemuxer(new MediaFormatContext(fmt_ctx));
             ctx.DumpFormat();
             fs.Dispose();
             ctx.Dispose();

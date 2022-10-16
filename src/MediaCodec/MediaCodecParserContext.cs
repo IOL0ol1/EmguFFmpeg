@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 
 using FFmpeg.AutoGen;
+using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
@@ -48,7 +49,7 @@ namespace FFmpegSharp
         /// <param name="stream"></param>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public IEnumerable<MediaPacket> ParserPackets(MediaCodecContext codecContext, Stream stream, MediaPacket packet = null)
+        public IEnumerable<MediaPacket> ParserPackets(MediaCodecContextBase codecContext, Stream stream, MediaPacket packet = null)
         {
             var bufSize = 20480 + 64; // buffer size + AV_INPUT_BUFFER_PADDING_SIZE
             var buf = new byte[bufSize];
@@ -86,13 +87,13 @@ namespace FFmpegSharp
         /// <param name="dts"></param>
         /// <param name="pos"></param>
         /// <returns></returns>
-        public int Parser2(MediaCodecContext codecContext, IntPtr2Ptr poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
+        public int Parser2(MediaCodecContextBase codecContext, IntPtr2Ptr poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
         {
             return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, (byte**)(void**)poutbuf, (int*)poutbufSize, (byte*)buf, bufSize, pts, dts, pos);
         }
 
 
-        public int Parser2(MediaCodecContext codecContext, IntPtr2Ptr poutbuf, IntPtr poutbufSize, byte[] buf, long pts, long dts, long pos)
+        public int Parser2(MediaCodecContextBase codecContext, IntPtr2Ptr poutbuf, IntPtr poutbufSize, byte[] buf, long pts, long dts, long pos)
         {
             fixed (byte* pbuf = buf)
             {
@@ -100,7 +101,7 @@ namespace FFmpegSharp
             }
         }
 
-        public int Parser2(MediaCodecContext codecContext, MediaPacket packet, byte[] buf, int bufOffset = 0)
+        public int Parser2(MediaCodecContextBase codecContext, MediaPacket packet, byte[] buf, int bufOffset = 0)
         {
             fixed (byte* pbuf = buf)
             {

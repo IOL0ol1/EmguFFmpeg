@@ -23,7 +23,7 @@
 
                     muxer.WriteHeader();
 
-                    using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, vEncoder.Context.PixFmt))
+                    using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, vEncoder.PixFmt))
                     {
                         for (var i = 0; i < 30; i++)
                         {
@@ -32,7 +32,7 @@
                             foreach (var packet in vEncoder.EncodeFrame(vFrame))
                             {
                                 packet.StreamIndex = vStream.Index;
-                                muxer.WritePacket(packet, vEncoder.Context.TimeBase);
+                                muxer.WritePacket(packet, vEncoder.TimeBase);
                             }
                         }
                     }

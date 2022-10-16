@@ -3,7 +3,7 @@ using FFmpeg.AutoGen;
 using FFmpegSharp.Internal;
 namespace FFmpegSharp
 {
-    public unsafe class MediaFormatContext : MediaFormatContextBase,IDisposable
+    public unsafe class MediaFormatContext : MediaFormatContextBase, IDisposable
     {
         public MediaFormatContext(AVFormatContext* pAVCodecContext, bool isDisposeByOwner = true)
             : base(pAVCodecContext)
@@ -14,6 +14,8 @@ namespace FFmpegSharp
         public MediaFormatContext()
                     : this(ffmpeg.avformat_alloc_context(), true)
         { }
+
+
 
         #region IDisposable
         protected bool disposedValue;

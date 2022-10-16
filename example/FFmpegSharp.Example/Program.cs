@@ -8,18 +8,22 @@ namespace FFmpegSharp.Example
     {
         private static void Main(string[] args)
         {
-            //new CreateMPEG4().Execute();
-            //new AvioReading().Execute();
-            //new EncodeAudio().Execute();
-            //new EncodeVideo().Execute();
-            //new DecodeAudio().Execute();
-            //new DecodeVideo().Execute();
-            //new DemuxingDecoding().Execute();
-
-            ffmpeg.avdevice_register_all();
-            var o = new MediaDictionary { ["list_devices"] = "true" };
-
-            var f = MediaDemuxer.Open("video=dummy",InFormat.FindFormat("dshow"),o,new MediaFormatContext());
+            try
+            {
+                //new CreateMPEG4().Execute();
+                //new AvioReading().Execute();
+                //new EncodeAudio().Execute();
+                //new EncodeVideo().Execute();
+                //new DecodeAudio().Execute();
+                //new DecodeVideo().Execute();
+                //new DemuxingDecoding().Execute();
+                new Transcoding().Execute();
+                new Metadata().Execute();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message + ex.StackTrace);
+            }
 
             //foreach (var deviceInfoList in f.ListDevice())
             //{
@@ -34,8 +38,7 @@ namespace FFmpegSharp.Example
             //        }
             //    }
             //}
-            f.Dispose();
-            o.Dispose();
+
 
         }
 

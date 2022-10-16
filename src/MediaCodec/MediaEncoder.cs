@@ -6,7 +6,7 @@ using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaEncoder : IDisposable
+    public unsafe class MediaEncoder : MediaCodecContextBase, IDisposable
     {
 
         #region Video
@@ -89,8 +89,8 @@ namespace FFmpegSharp
             int height,
             double fps,
             AVPixelFormat pixelFormat = AVPixelFormat.AV_PIX_FMT_NONE,
-            Action<MediaCodecContextBase> contextSettings = null,
-            int bitrate = 0, MediaDictionary opts = null)
+            int bitrate = 0,
+            Action<MediaCodecContextBase> contextSettings = null, MediaDictionary opts = null)
         {
             return CreateVideoEncoder(format, width, height, fps.ToRational(), pixelFormat, bitrate, contextSettings, opts);
         }
@@ -296,25 +296,16 @@ namespace FFmpegSharp
                 : new MediaEncoder(MediaCodecContext.Create(_ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), codec, opts));
         }
 
-        public static implicit operator MediaCodecContext(MediaEncoder value)
-        {
-            if (value == null) return null;
-            return value.Context;
-        }
-
+ 
         public static implicit operator AVCodecContext*(MediaEncoder value)
         {
             if (value == null) return null;
-            return value.Context;
+            return value.pCodecContext;
         }
+         
 
-        public MediaCodecContext Context { get; private set; }
-
-        public MediaEncoder(MediaCodecContext context, bool isDisposeByOwner = true)
-        {
-            Context = context;
-            disposedValue = !isDisposeByOwner;
-        }
+        public MediaEncoder(MediaCodecContextBase context):base(context)
+        {  }
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_send_frame(AVCodecContext*, AVFrame*)"/>
@@ -328,14 +319,14 @@ namespace FFmpegSharp
         /// sent to it AVERROR(EINVAL): codec not opened, it is a decoder, or requires flush
         /// AVERROR(ENOMEM): failed to add packet to internal queue, or similar other errors:
         /// legitimate encoding errors</returns>
-        public int SendFrame(MediaFrame frame) => ffmpeg.avcodec_send_frame(Context, frame);
+        public int SendFrame(MediaFrame frame) => ffmpeg.avcodec_send_frame(pCodecContext, frame);
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_receive_packet(AVCodecContext*, AVPacket*)"/>
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public int ReceivePacket(MediaPacket packet) => ffmpeg.avcodec_receive_packet(Context, packet);
+        public int ReceivePacket(MediaPacket packet) => ffmpeg.avcodec_receive_packet(pCodecContext, packet);
 
 
 
@@ -384,7 +375,7 @@ namespace FFmpegSharp
                     // nothing
                 }
 
-                Context?.Dispose();
+                new MediaCodecContext(pCodecContext).Dispose();
                 disposedValue = true;
             }
         }

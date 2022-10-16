@@ -28,13 +28,13 @@ namespace FFmpegSharp.Example
                 if (!codec.GetSampelFmts().Any(_1 => _1 == AVSampleFormat.AV_SAMPLE_FMT_S16))
                     Console.WriteLine($"Encoder does not support sample format {AVSampleFormat.AV_SAMPLE_FMT_S16.GetName()}");
                 using (var encoder = MediaEncoder.CreateAudioEncoder(codec, sampleRate, chLayout, sampleFmt, bitrate))
-                using (var frame = MediaFrame.CreateAudioFrame(encoder.Context.ChLayout, encoder.Context.FrameSize, encoder.Context.SampleFmt))
+                using (var frame = MediaFrame.CreateAudioFrame(encoder.ChLayout, encoder.FrameSize, encoder.SampleFmt))
                 {
                     double t, tincr;
                     for (int i = 0; i < 25; i++)
                     {
                         AVFrame* pframe = frame;
-                        AVCodecContext* c = encoder.Context;
+                        AVCodecContext* c = encoder;
                         /* encode a single tone sound */
                         t = 0;
                         tincr = 2 * Math.PI * 440.0 / c->sample_rate;

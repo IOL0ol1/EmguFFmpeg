@@ -5,7 +5,7 @@ namespace FFmpegSharp.Example
 {
     internal class Transcoding : ExampleBase
     {
-        public Transcoding() : this("", "")
+        public Transcoding() : this("path-to-your-input.mp4", "path-to-yout.avi")
         { }
 
         public Transcoding(params string[] args) : base(args)
@@ -16,8 +16,10 @@ namespace FFmpegSharp.Example
             var input = args[0];
             var output = args[1];
             using (var mr = MediaDemuxer.Open(input))
-            using (var mw = MediaMuxer.Create(output))
+            //using (var mw = MediaMuxer.Create(output))
             {
+                MediaCodec a = null;
+                mr.FindBestStream(FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_AUDIO, ref a);
                 var decodecs = mr.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef)).ToList();
                 var encodecs = new List<MediaCodecContext>();
 

@@ -29,17 +29,17 @@ namespace FFmpegSharp.Example
                 pkt.Dts = ffmpeg.AV_NOPTS_VALUE;
                 pkt.Pts = ffmpeg.AV_NOPTS_VALUE;
                 pkt.Pos = 0;
-                foreach (var packet in parser.ParserPackets(decoder.Context, inStream, pkt))
+                foreach (var packet in parser.ParserPackets(decoder, inStream, pkt))
                 {
                     foreach (var frame in decoder.DecodePacket(packet, decoded_frame))
                     {
-                        WriteToOutput(frame, decoder.Context.ChLayout.nb_channels, outStream);
+                        WriteToOutput(frame, decoder.ChLayout.nb_channels, outStream);
                     }
                 }
                 // flush the decoder
                 foreach (var frame in decoder.DecodePacket(null, decoded_frame))
                 {
-                    WriteToOutput(frame, decoder.Context.ChLayout.nb_channels, outStream);
+                    WriteToOutput(frame, decoder.ChLayout.nb_channels, outStream);
                 }
             }
         }

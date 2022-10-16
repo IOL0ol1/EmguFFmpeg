@@ -72,8 +72,8 @@ namespace FFmpegSharp.Example
                   codecs. To create a valid file, you usually need to write packets
                   into a proper file format or protocol; see muxing.c.
                 */
-                if (encoder.Context.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO
-                    || encoder.Context.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG2VIDEO)
+                if (encoder.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO
+                    || encoder.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG2VIDEO)
                 {
                     byte[] endcode = { 0, 0, 1, 0xb7 };
                     os.Write(endcode, 0, endcode.Length);
