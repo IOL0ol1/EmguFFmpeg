@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Mail;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
@@ -177,7 +176,7 @@ namespace FFmpegSharp
         /// <returns></returns>
         public MediaFrame ConvertFrame(MediaFrame srcFrame, MediaFrame dstFrame, out int outSamples, out int cacheSamples)
         {
-            SwrCheckInit(srcFrame,dstFrame);
+            SwrCheckInit(srcFrame, dstFrame);
             int curSamples = FifoPush(srcFrame, dstFrame);
             var dstframe = FifoPop(dstFrame);
             cacheSamples = AudioFifo.Size;

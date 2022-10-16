@@ -296,16 +296,16 @@ namespace FFmpegSharp
                 : new MediaEncoder(MediaCodecContext.Create(_ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), codec, opts));
         }
 
- 
+
         public static implicit operator AVCodecContext*(MediaEncoder value)
         {
             if (value == null) return null;
             return value.pCodecContext;
         }
-         
 
-        public MediaEncoder(MediaCodecContextBase context):base(context)
-        {  }
+
+        public MediaEncoder(MediaCodecContextBase context) : base(context)
+        { }
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_send_frame(AVCodecContext*, AVFrame*)"/>

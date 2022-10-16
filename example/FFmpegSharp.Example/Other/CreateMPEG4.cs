@@ -37,6 +37,7 @@
                         }
                     }
                     muxer.FlushCodecs(new[] { vEncoder });
+                    muxer.WriteTrailer();
                 }
             }
         }

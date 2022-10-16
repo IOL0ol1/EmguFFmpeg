@@ -1,6 +1,4 @@
 ﻿using System;
-using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
 
 namespace FFmpegSharp.Example
 {
