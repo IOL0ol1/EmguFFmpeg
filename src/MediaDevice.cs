@@ -20,52 +20,39 @@ namespace FFmpegSharp
         private static OutFormat av_output_audio_device_next_safe(OutFormat format) => new OutFormat(ffmpeg.av_output_audio_device_next(format));
         private static OutFormat av_output_video_device_next_safe(OutFormat format) => new OutFormat(ffmpeg.av_output_video_device_next(format));
 
-
-        public static IEnumerable<InFormat> InputAudioDevices
+        public static IEnumerable<InFormat> GetInputAudioDevices()
         {
-            get
+            InFormat format = null;
+            while ((format = av_input_audio_device_next_safe(format)) != null)
             {
-                InFormat format = null;
-                while ((format = av_input_audio_device_next_safe(format)) != null)
-                {
-                    yield return format;
-                }
+                yield return format;
             }
         }
 
-        public static IEnumerable<InFormat> InputVideoDevices
+        public static IEnumerable<InFormat> GetInputVideoDevices()
         {
-            get
+            InFormat format = null;
+            while ((format = av_input_video_device_next_safe(format)) != null)
             {
-                InFormat format = null;
-                while ((format = av_input_video_device_next_safe(format)) != null)
-                {
-                    yield return format;
-                }
+                yield return format;
             }
         }
 
-        public static IEnumerable<OutFormat> OutputAudioDevices
+        public static IEnumerable<OutFormat> GetOutputAudioDevices()
         {
-            get
+            OutFormat format = null;
+            while ((format = av_output_audio_device_next_safe(format)) != null)
             {
-                OutFormat format = null;
-                while ((format = av_output_audio_device_next_safe(format)) != null)
-                {
-                    yield return format;
-                }
+                yield return format;
             }
         }
 
-        public static IEnumerable<OutFormat> OutputVideoDevices
+        public static IEnumerable<OutFormat> GetOutputVideoDevices()
         {
-            get
+            OutFormat format = null;
+            while ((format = av_output_video_device_next_safe(format)) != null)
             {
-                OutFormat format = null;
-                while ((format = av_output_video_device_next_safe(format)) != null)
-                {
-                    yield return format;
-                }
+                yield return format;
             }
         }
 

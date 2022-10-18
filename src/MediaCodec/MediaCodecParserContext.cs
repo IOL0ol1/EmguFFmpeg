@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
-
+using FFmpegSharp.Internal; 
 namespace FFmpegSharp
 {
     public unsafe class MediaCodecParserContext : IDisposable
@@ -26,13 +25,13 @@ namespace FFmpegSharp
             : this((int)codecId)
         { }
 
-        private AVCodecParser? av_parser_iterate_safe(IntPtr2Ptr opaque)
+        private static AVCodecParser? av_parser_iterate_safe(IntPtr2Ptr opaque)
         {
             var ret = ffmpeg.av_parser_iterate(opaque);
             return ret == null ? (AVCodecParser?)null : *ret;
         }
 
-        public IEnumerable<AVCodecParser> GetParsers()
+        public static IEnumerable<AVCodecParser> GetParsers()
         {
             AVCodecParser? output;
             IntPtr2Ptr opaque = IntPtr2Ptr.Ptr2Null;

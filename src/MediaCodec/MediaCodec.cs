@@ -80,16 +80,13 @@ namespace FFmpegSharp
         /// <summary>
         /// Get all supported codec
         /// </summary>
-        public static IEnumerable<MediaCodec> Codecs
+        public static IEnumerable<MediaCodec> GetCodecs()
         {
-            get
+            IntPtr pCodec;
+            IntPtr2Ptr opaque = IntPtr2Ptr.Ptr2Null;
+            while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
             {
-                IntPtr pCodec;
-                IntPtr2Ptr opaque = IntPtr2Ptr.Ptr2Null;
-                while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
-                {
-                    yield return new MediaCodec(pCodec);
-                }
+                yield return new MediaCodec(pCodec);
             }
         }
 

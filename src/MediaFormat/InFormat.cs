@@ -35,7 +35,7 @@ namespace FFmpegSharp
             name = name.Trim().TrimStart('.');
             if (!string.IsNullOrEmpty(name))
             {
-                foreach (var format in Formats)
+                foreach (var format in GetFormats())
                 {
                     // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
                     string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
@@ -54,16 +54,13 @@ namespace FFmpegSharp
         /// <summary>
         /// get all supported input formats.
         /// </summary>
-        public static IEnumerable<InFormat> Formats
+        public static IEnumerable<InFormat> GetFormats()
         {
-            get
+            IntPtr iformat;
+            IntPtr2Ptr ifmtOpaque = IntPtr2Ptr.Ptr2Null;
+            while ((iformat = av_demuxer_iterate_safe(ifmtOpaque)) != IntPtr.Zero)
             {
-                IntPtr iformat;
-                IntPtr2Ptr ifmtOpaque = IntPtr2Ptr.Ptr2Null;
-                while ((iformat = av_demuxer_iterate_safe(ifmtOpaque)) != IntPtr.Zero)
-                {
-                    yield return new InFormat(iformat);
-                }
+                yield return new InFormat(iformat);
             }
         }
 
