@@ -41,12 +41,12 @@ namespace FFmpegSharp
         {
             if (!disposedValue)
             {
-                if (disposing)
+                if (pCodecContext != null)
                 {
-                }
-                fixed (AVCodecContext** ppCodecContext = &pCodecContext)
-                {
-                    ffmpeg.avcodec_free_context(ppCodecContext);
+                    fixed (AVCodecContext** ppCodecContext = &pCodecContext)
+                    {
+                        ffmpeg.avcodec_free_context(ppCodecContext);
+                    }
                 }
                 disposedValue = true;
             }

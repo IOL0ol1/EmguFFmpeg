@@ -12,22 +12,31 @@ namespace FFmpegSharp
         }
 
         public MediaFormatContext()
-                    : this(ffmpeg.avformat_alloc_context(), true)
+                    : this(ffmpeg.avformat_alloc_context())
         { }
 
 
 
         #region IDisposable
-        protected bool disposedValue;
+        private bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                if (disposing)
+                if (pFormatContext != null)
                 {
+                    if (pFormatContext->iformat != null)
+                    {
+                        fixed(AVFormatContext** ppFormatContext = &pFormatContext)
+                        ffmpeg.avformat_close_input(ppFormatContext);
+                    }
+                    else
+                    {
+                        ffmpeg.avio_close(pFormatContext->pb);
+                        ffmpeg.avformat_free_context(pFormatContext);
+                    }
+                    pFormatContext = null;
                 }
-                ffmpeg.avio_close(pFormatContext->pb);
-                ffmpeg.avformat_free_context(pFormatContext);
                 disposedValue = true;
             }
         }

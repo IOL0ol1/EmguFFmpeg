@@ -10,12 +10,12 @@ namespace FFmpegSharp
     public unsafe class MediaDemuxer : MediaFormatContextBase, IReadOnlyList<MediaStream>, IDisposable
     {
         private Stream _stream;
+        protected MediaFormatContext context;
 
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
         /// </summary>
         public InFormat Format => new InFormat(pFormatContext->iformat);
-
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
@@ -30,7 +30,7 @@ namespace FFmpegSharp
             var output = Open(null, iformat, _ =>
             {
                 AVFormatContext* f = _;
-                f->pb = MediaIOContext.Link(stream);
+                f->pb = stream.CreateIOContext();
             }, options);
             output._stream = stream;
             return output;
@@ -45,7 +45,7 @@ namespace FFmpegSharp
         /// <param name="options"></param>
         public static MediaDemuxer Open(string url, InFormat iformat = null, Action<MediaFormatContextBase> beforeSetting = null, MediaDictionary options = null)
         {
-            var output = new MediaDemuxer();
+            var output = new MediaDemuxer(new MediaFormatContext());
             beforeSetting?.Invoke(output);
             fixed (AVFormatContext** ppFormatContext = &output.pFormatContext)
             {
@@ -55,13 +55,11 @@ namespace FFmpegSharp
             return output;
         }
 
-        public MediaDemuxer() : base(ffmpeg.avformat_alloc_context())
-        { }
-
-        public MediaDemuxer(MediaFormatContext formatContext)
-            : base(formatContext)
+        public MediaDemuxer(MediaFormatContext context)
+            : base(context)
         {
-            if (formatContext == null) throw new NullReferenceException();
+            if (context == null) throw new NullReferenceException();
+            this.context = context;
         }
 
         public int FindStreamInfo(MediaDictionary options)
@@ -201,13 +199,13 @@ namespace FFmpegSharp
         {
             if (!disposedValue)
             {
-                _stream?.Dispose();
+                if (disposing)
+                {
+                    _stream?.Dispose();
+                }
                 if (pFormatContext != null)
                 {
-                    fixed (AVFormatContext** ppFormatContext = &pFormatContext)
-                    {
-                        ffmpeg.avformat_close_input(ppFormatContext);
-                    }
+                    context.Dispose();
                     pFormatContext = null;
                 }
                 disposedValue = true;

@@ -7,17 +7,44 @@ namespace FFmpegSharp
 {
     public unsafe class MediaDecoder : MediaCodecContextBase, IDisposable
     {
-        private bool disposedValue;
+        protected readonly MediaCodecContext context;
 
-        public static implicit operator AVCodecContext*(MediaDecoder value)
+        #region Create
+
+        /// <summary>
+        /// Create <see cref="AVCodecContext"/> by <see cref="AVCodecParameters"/>.
+        /// <para>
+        /// <seealso cref="MediaCodecContext.Open(Action{Internal.MediaCodecContextBase}, MediaCodec, MediaDictionary)"/>
+        /// </para>
+        /// <para>
+        /// <seealso cref="ffmpeg.avcodec_parameters_to_context(AVCodecContext*, AVCodecParameters*)"/>
+        /// </para>
+        /// </summary>
+        /// <param name="codecParameters"></param>
+        /// <param name="opts"></param>
+        /// <returns></returns>
+        public static MediaDecoder CreateDecoder(AVCodecParameters codecParameters, MediaDictionary opts = null)
         {
-            if (value == null) return null;
-            return value.pCodecContext;
+            var codec = MediaCodec.FindDecoder(codecParameters.codec_id);
+            AVCodecParameters* pCodecParameters = &codecParameters;
+            // If codec_id is AV_CODEC_ID_NONE return null
+            return codec == null
+                ? null
+                : new MediaDecoder(MediaCodecContext.Create(_ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), codec, opts));
         }
 
-        public MediaDecoder(MediaCodecContext context)
-            : base(context)
-        { }
+        #endregion
+
+        /// <summary>
+        /// Load a <see cref="MediaCodecContext"/> has opened.
+        /// </summary>
+        /// <param name="openedCodeContext"></param>
+        public MediaDecoder(MediaCodecContext openedCodeContext)
+            : base(openedCodeContext)
+        {
+            if (openedCodeContext == null) throw new NullReferenceException();
+            context = openedCodeContext;
+        }
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_send_packet(AVCodecContext*, AVPacket*)"/>
@@ -69,42 +96,13 @@ namespace FFmpegSharp
             finally { if (inFrame == null) frame.Dispose(); }
         }
 
-
-        #region Create
-
-        /// <summary>
-        /// Create <see cref="AVCodecContext"/> by <see cref="AVCodecParameters"/>.
-        /// <para>
-        /// <seealso cref="MediaCodecContext.Open(Action{Internal.MediaCodecContextBase}, MediaCodec, MediaDictionary)"/>
-        /// </para>
-        /// <para>
-        /// <seealso cref="ffmpeg.avcodec_parameters_to_context(AVCodecContext*, AVCodecParameters*)"/>
-        /// </para>
-        /// </summary>
-        /// <param name="codecParameters"></param>
-        /// <param name="opts"></param>
-        /// <returns></returns>
-        public static MediaDecoder CreateDecoder(AVCodecParameters codecParameters, MediaDictionary opts = null)
-        {
-            var codec = MediaCodec.FindDecoder(codecParameters.codec_id);
-            AVCodecParameters* pCodecParameters = &codecParameters;
-            // If codec_id is AV_CODEC_ID_NONE return null
-            return codec == null
-                ? null
-                : new MediaDecoder(MediaCodecContext.Create(_ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), codec, opts));
-        }
-
-        #endregion
-
+        #region IDisposable
+        private bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // nothing
-                }
-                new MediaCodecContext(pCodecContext).Dispose();
+            { 
+                context.Dispose();
                 disposedValue = true;
             }
         }
@@ -119,5 +117,6 @@ namespace FFmpegSharp
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+        #endregion
     }
 }

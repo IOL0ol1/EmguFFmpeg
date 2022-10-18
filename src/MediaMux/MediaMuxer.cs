@@ -12,6 +12,7 @@ namespace FFmpegSharp
         protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
 
         private Stream _stream;
+        private MediaFormatContext context;
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
@@ -24,11 +25,12 @@ namespace FFmpegSharp
         /// <param name="oformat"></param>
         public static MediaMuxer Create(Stream stream, OutFormat oformat)
         {
-            var pFormatContext = ffmpeg.avformat_alloc_context();
+            var formatContext = new MediaFormatContext();
+            AVFormatContext* pFormatContext = formatContext;
             pFormatContext->oformat = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = MediaIOContext.Link(stream);
-            var output = new MediaMuxer(new MediaFormatContext(pFormatContext)) { _stream = stream };
+                pFormatContext->pb = stream.CreateIOContext();
+            var output = new MediaMuxer(formatContext) { _stream = stream };
             return output;
         }
 
@@ -37,30 +39,25 @@ namespace FFmpegSharp
         /// <para><see cref="ffmpeg.avformat_alloc_output_context2(AVFormatContext**, AVOutputFormat*, string, string)"/></para>
         /// <para><see cref="ffmpeg.avio_open(AVIOContext**, string, int)"/></para>
         /// </summary>
-        /// <param name="file"></param>
+        /// <param name="fileName"></param>
         /// <param name="oformat"></param>
+        /// <param name="formatName"></param>
         /// <param name="options"></param>
-        public static MediaMuxer Create(string file, OutFormat oformat = null, MediaDictionary options = null)
+        public static MediaMuxer Create(string fileName, OutFormat oformat = null, string formatName = null, MediaDictionary options = null)
         {
             AVFormatContext* pFormatContext = null;
-            ffmpeg.avformat_alloc_output_context2(&pFormatContext, oformat, null, file).ThrowIfError();
+            ffmpeg.avformat_alloc_output_context2(&pFormatContext, oformat, formatName, fileName).ThrowIfError();
 
-            if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = MediaIOContext.Create(file, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
+            if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0 && fileName != null)
+                pFormatContext->pb = MediaIOContext.Open(fileName, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
             return new MediaMuxer(new MediaFormatContext(pFormatContext));
         }
 
-        public MediaMuxer(MediaFormatContext formatContext) : base(formatContext)
+        public MediaMuxer(MediaFormatContext openedFormatContext)
+            : base(openedFormatContext)
         {
-            if (formatContext == null) throw new NullReferenceException();
-        }
-
-        public MediaMuxer(OutFormat oformat, string formatName, string fileName) : base(ffmpeg.avformat_alloc_context())
-        {
-            fixed (AVFormatContext** ppFormatContext = &pFormatContext)
-            {
-                ffmpeg.avformat_alloc_output_context2(ppFormatContext, oformat, formatName, fileName).ThrowIfError();
-            }
+            if (openedFormatContext == null) throw new NullReferenceException();
+            context = openedFormatContext;
         }
 
         /// <summary>
@@ -226,18 +223,16 @@ namespace FFmpegSharp
             {
                 if (disposing)
                 {
-                    // nothing
+                    _stream?.Dispose();
                 }
-
-                _stream?.Dispose();
                 if (pFormatContext != null)
                 {
+                    // If no trailer is written, it is written automatically.
                     // Fixed: External calls to ffmpeg.avformat_write_header
                     // and ffmpeg.av_write_trailer function may cause errors.
                     if (hasWriteHeader && !hasWriteTrailer)
                         ffmpeg.av_write_trailer(pFormatContext);
-                    ffmpeg.avio_close(pFormatContext->pb);
-                    ffmpeg.avformat_free_context(pFormatContext);
+                    context.Dispose();
                     pFormatContext = null;
                 }
                 disposedValue = true;
