@@ -26,7 +26,6 @@ namespace FFmpegSharp.Example.Other
             using (var mediaReader = MediaDemuxer.Open(input))
             using (var srcPacket = new MediaPacket())
             using (var srcFrame = new MediaFrame())
-
             using (var convert = new PixelConverter())
             {
                 var decoders = mediaReader.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef)).ToList();
