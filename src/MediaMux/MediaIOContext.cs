@@ -7,13 +7,13 @@ namespace FFmpegSharp
     public unsafe class MediaIOContext : Stream
     {
         protected AVIOContext* _pIOContext;
+        // Hold ref for delegate, Otherwise, it will be recycled by GC
         protected avio_alloc_context_read_packet _readfunc;
         protected avio_alloc_context_write_packet _writefunc;
         protected avio_alloc_context_seek _seekfunc;
-
-        private Func<IntPtr, IntPtr, int, int> _read;
-        private Func<IntPtr, IntPtr, int, int> _write;
-        private Func<IntPtr, long, int, long> _seek;
+        private Func<IntPtr, IntPtr, int, int> _readSafe;
+        private Func<IntPtr, IntPtr, int, int> _writeSafe;
+        private Func<IntPtr, long, int, long> _seekSafe;
 
         public static implicit operator AVIOContext*(MediaIOContext value)
         {
@@ -35,70 +35,22 @@ namespace FFmpegSharp
             int bufferSize = 4096)
         {
             var _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
-            if (_buffer == null) throw new NullReferenceException();
-            _read = read;
-            _write = write;
-            _seek = seek;
-
-            _readfunc = read != null ? (o, b, s) => _read.Invoke((IntPtr)o, (IntPtr)b, s) : (avio_alloc_context_read_packet)null;
-            _writefunc = write != null ? (o, b, s) => _write.Invoke((IntPtr)o, (IntPtr)b, s) : (avio_alloc_context_write_packet)null;
-            _seekfunc = seek != null ? (o, b, s) => _seek.Invoke((IntPtr)o, b, s) : (avio_alloc_context_seek)null;
+            if (_buffer == null) throw new OutOfMemoryException();
+            _readSafe = read;
+            _writeSafe = write;
+            _seekSafe = seek;
+            _readfunc = read != null ? (o, b, s) => _readSafe.Invoke((IntPtr)o, (IntPtr)b, s) : (avio_alloc_context_read_packet)null;
+            _writefunc = write != null ? (o, b, s) => _writeSafe.Invoke((IntPtr)o, (IntPtr)b, s) : (avio_alloc_context_write_packet)null;
+            _seekfunc = seek != null ? (o, b, s) => _seekSafe.Invoke((IntPtr)o, b, s) : (avio_alloc_context_seek)null;
             _pIOContext = ffmpeg.avio_alloc_context(_buffer, bufferSize, _writefunc != null ? 1 : 0, null, _readfunc, _writefunc, _seekfunc);
             if (_pIOContext == null) throw new NullReferenceException();
         }
 
-        public static MediaIOContext Create(string url, int flags, MediaDictionary options = null)
+        public static MediaIOContext Open(string url, int flags, MediaDictionary options = null)
         {
             AVIOContext* pIOContext = null;
             ffmpeg.avio_open2(&pIOContext, url, flags, null, options).ThrowIfError();
             return new MediaIOContext(pIOContext, true);
-        }
-
-        public static MediaIOContext Link(Stream stream, int bufferSize = 4096)
-        {
-            Func<IntPtr, IntPtr, int, int> WriteFunc = (IntPtr opaque, IntPtr buf, int buf_size) =>
-            {
-#if NETSTANDARD2_0
-                var buffer = new byte[buf_size];
-                System.Runtime.InteropServices.Marshal.Copy((IntPtr)buf, buffer, 0, buf_size);
-                stream.Write(buffer, 0, buf_size);
-#else
-                var buffer = new Span<byte>((void*)buf, buf_size);
-                stream.Write(buffer);
-#endif
-                return buf_size;
-            };
-
-            Func<IntPtr, IntPtr, int, int> ReadFunc = (IntPtr opaque, IntPtr buf, int buf_size) =>
-            {
-#if NETSTANDARD2_0
-                var buffer = new byte[buf_size];
-                var count = stream.Read(buffer, 0, buf_size);
-                System.Runtime.InteropServices.Marshal.Copy(buffer, 0, (IntPtr)buf, count);
-#else
-                var buffer = new Span<byte>((void*)buf, buf_size);
-                var count = stream.Read(buffer);
-
-#endif
-                return count == 0 ? ffmpeg.AVERROR_EOF : count;
-            };
-
-            Func<IntPtr, long, int, long> SeekFunc = (IntPtr opaque, long offset, int whence) =>
-            {
-                if (whence == ffmpeg.AVSEEK_SIZE)
-                {
-                    return stream.Length;
-                }
-                else if (whence < 3)
-                {
-                    return stream.Seek(offset, (SeekOrigin)whence);
-                }
-                else
-                {
-                    return -1;
-                }
-            };
-            return new MediaIOContext(stream.CanRead ? ReadFunc : null, stream.CanWrite ? WriteFunc : null, stream.CanSeek ? SeekFunc : null, bufferSize);
         }
 
         public override bool CanRead => _pIOContext->read_packet.Pointer != IntPtr.Zero;
@@ -166,8 +118,12 @@ namespace FFmpegSharp
         {
             if (!disposedValue)
             {
-                Flush();
-                ffmpeg.avio_close(_pIOContext);
+                if (_pIOContext != null)
+                {
+                    Flush();
+                    ffmpeg.avio_close(_pIOContext);
+                    _pIOContext = null;
+                }
                 disposedValue = true;
             }
             base.Dispose(disposing);
