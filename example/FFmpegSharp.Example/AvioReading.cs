@@ -15,13 +15,11 @@ namespace FFmpegSharp.Example
         {
             var inputFile = args[0];
 
-            AVFormatContext* fmt_ctx = ffmpeg.avformat_alloc_context();
             var fs = File.OpenRead(inputFile);
-            var io = MediaIOContext.Link(fs, 4096);
-            fmt_ctx->pb = io;
-            ffmpeg.avformat_open_input(&fmt_ctx, null, null, null);
-            //ffmpeg.avformat_find_stream_info(fmt_ctx, null);
-            var ctx = new MediaDemuxer(new MediaFormatContext(fmt_ctx));
+            var ctx = MediaDemuxer.Open(null, null, _ => 
+            {
+                ((AVFormatContext*)_)->pb = fs.CreateIOContext(4096);
+            });  
             ctx.DumpFormat();
             fs.Dispose();
             ctx.Dispose();
