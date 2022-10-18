@@ -61,11 +61,11 @@ namespace FFmpegSharp.Example
                     }
                     Console.WriteLine("Demuxing succeeded.");
 
-                    // video play command
+                    // print video play command
                     Console.WriteLine($"Play the output video file with the command:\n" +
                            $"ffplay -f rawvideo -pix_fmt {videoDecCtx.PixFmt.GetName()} -video_size {videoDecCtx.Width}x{videoDecCtx.Height} {videoDstFilename}\n");
 
-                    // TODO: audio play command
+                    // TODO: print audio play command
                     var audioCtx = audioDecCtx;
                     var sfmt = audioCtx.SampleFmt;
                     var n_channels = audioCtx.ChLayout.nb_channels;

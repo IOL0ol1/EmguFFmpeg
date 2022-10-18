@@ -26,7 +26,7 @@ namespace FFmpegSharp.Example
             using (FileStream os = File.Create(outputFile))
             using (MediaFrame frame = MediaFrame.CreateVideoFrame(width, height, pixelFormat))
             using (MediaPacket pkt = new MediaPacket())
-            using (MediaEncoder encoder = MediaEncoder.CreateVideoEncoder(codeName, width, height, fps, pixelFormat, bitrate, contextSettings: _ =>
+            using (MediaEncoder encoder = MediaEncoder.CreateVideoEncoder(codeName, width, height, fps, pixelFormat, bitrate, otherSettings: _ =>
             {
                 /* emit one intra frame every ten frames
                  * check frame pict_type before passing frame

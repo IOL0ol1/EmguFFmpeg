@@ -1,4 +1,5 @@
 ﻿using System;
+using FFmpegSharp.Example.Other;
 
 namespace FFmpegSharp.Example
 {
@@ -8,6 +9,7 @@ namespace FFmpegSharp.Example
         {
             try
             {
+                new Video2Image().Execute();
                 //new CreateMPEG4().Execute();
                 //new AvioReading().Execute();
                 //new EncodeAudio().Execute();
@@ -15,8 +17,8 @@ namespace FFmpegSharp.Example
                 //new DecodeAudio().Execute();
                 //new DecodeVideo().Execute();
                 //new DemuxingDecoding().Execute();
-                new Transcoding().Execute();
-                new Metadata().Execute();
+                //new Transcoding().Execute();
+                //new Metadata().Execute();
             }
             catch (Exception ex)
             {

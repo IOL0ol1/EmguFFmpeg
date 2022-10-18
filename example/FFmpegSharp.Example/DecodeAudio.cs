@@ -25,7 +25,6 @@ namespace FFmpegSharp.Example
             using (var inStream = File.OpenRead(input))
             using (var outStream = File.OpenWrite(output))
             {
-
                 pkt.Dts = ffmpeg.AV_NOPTS_VALUE;
                 pkt.Pts = ffmpeg.AV_NOPTS_VALUE;
                 pkt.Pos = 0;
