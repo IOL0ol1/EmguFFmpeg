@@ -9,70 +9,9 @@ namespace FFmpegSharp
     /// </summary>
     public unsafe class SampleConverter : IFrameConverter, IDisposable
     {
-        //private MediaFrame dstFrame;
         private bool disposedValue;
         protected SwrContext* pSwrContext = null;
         public readonly AudioFifo AudioFifo; // TODO: maybe remove
-        //public readonly AVSampleFormat DstFormat;
-        //public readonly AVChannelLayout DstChLayout;
-        //public readonly int DstNbSamples;
-        //public readonly int DstSampleRate;
-
-        //public SampleConverter(SwrContext* pSwrContext, AVSampleFormat dstFormat, AVChannelLayout dstChLayout, int dstNbSamples, int dstSampleRate, bool isDisposeByOwner = true)
-        //    : this(dstFormat, dstChLayout, dstNbSamples, dstSampleRate)
-        //{
-        //    this.pSwrContext = pSwrContext;
-        //    disposedValue = !isDisposeByOwner;
-        //}
-
-        //public SampleConverter(SwrContext* pSwrContext, AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate, bool isDisposeByOwner = true)
-        //    : this(pSwrContext, dstFormat, AVChannelLayoutExtension.ToDefaultChLayout(dstChannels), dstNbSamples, dstSampleRate, isDisposeByOwner)
-        //{ }
-
-
-        ///// <summary>
-        ///// create audio converter by dst parames
-        ///// </summary>
-        ///// <param name="dstFormat"></param>
-        ///// <param name="dstChLayout">see <see cref="AVChannelLayout"/></param>
-        ///// <param name="dstNbSamples"></param>
-        ///// <param name="dstSampleRate"></param>
-        //public SampleConverter(AVSampleFormat dstFormat, AVChannelLayout dstChLayout, int dstNbSamples, int dstSampleRate)
-        //{
-        //    DstFormat = dstFormat;
-        //    DstChLayout = dstChLayout;
-        //    DstNbSamples = dstNbSamples;
-        //    DstSampleRate = dstSampleRate;
-        //    AudioFifo = new AudioFifo(DstFormat, dstChLayout.nb_channels, 1);
-        //}
-        //public SampleConverter(MediaFrame dstFrame)
-        //    : this((AVSampleFormat)dstFrame.Format, dstFrame.ChLayout, dstFrame.NbSamples, dstFrame.SampleRate)
-        //{
-        //    this.dstFrame = dstFrame;
-        //}
-
-
-        ///// <summary>
-        ///// create audio converter by dst output parames
-        ///// </summary>
-        ///// <param name="dstFormat"></param>
-        ///// <param name="dstChannels"></param>
-        ///// <param name="dstNbSamples"></param>
-        ///// <param name="dstSampleRate"></param>
-        //public SampleConverter(AVSampleFormat dstFormat, int dstChannels, int dstNbSamples, int dstSampleRate)
-        //    : this(dstFormat, AVChannelLayoutExtension.ToDefaultChLayout(dstChannels), dstNbSamples, dstSampleRate)
-        //{ }
-
-        ///// <summary>
-        ///// create audio converter by dst codec
-        ///// </summary>
-        ///// <param name="dstCodec"></param>
-        //public static SampleConverter CreateByCodeContext(MediaCodecContext dstCodec)
-        //{
-        //    if (dstCodec.Ref.codec_type != AVMediaType.AVMEDIA_TYPE_AUDIO)
-        //        throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
-        //    return new SampleConverter(dstCodec.SampleFmt, dstCodec.ChLayout, dstCodec.FrameSize, dstCodec.SampleRate);
-        //}
 
         public SampleConverter(SwrContext* pSwrContext, bool isDisposeByOwner = true)
         {
