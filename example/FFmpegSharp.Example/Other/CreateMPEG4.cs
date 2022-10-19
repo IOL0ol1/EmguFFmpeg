@@ -3,7 +3,7 @@
     internal class CreateMPEG4 : ExampleBase
     {
 
-        public CreateMPEG4() : this("path-to-your.mp4")
+        public CreateMPEG4() : this($"{nameof(CreateMPEG4)}-output.mp4")
         { }
 
         public CreateMPEG4(params string[] args) : base(args)

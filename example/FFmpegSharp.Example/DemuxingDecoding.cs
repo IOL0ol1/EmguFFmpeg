@@ -7,7 +7,7 @@ namespace FFmpegSharp.Example
 {
     internal class DemuxingDecoding : ExampleBase
     {
-        public DemuxingDecoding() : this("path-to-your-input.mp4", "path-to-your-out.v", "path-to-your-out.a")
+        public DemuxingDecoding() : this($"video-input.mp4", $"{nameof(DemuxingDecoding)}-output.v", $"{nameof(DemuxingDecoding)}-output.a")
         { }
 
         public DemuxingDecoding(params string[] args) : base(args)

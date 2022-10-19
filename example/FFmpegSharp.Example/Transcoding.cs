@@ -5,7 +5,7 @@ namespace FFmpegSharp.Example
 {
     internal class Transcoding : ExampleBase
     {
-        public Transcoding() : this("path-to-your-input.mp4", "path-to-yout.avi")
+        public Transcoding() : this($"video-input.mp4", $"{nameof(Transcoding)}-output.avi")
         { }
 
         public Transcoding(params string[] args) : base(args)

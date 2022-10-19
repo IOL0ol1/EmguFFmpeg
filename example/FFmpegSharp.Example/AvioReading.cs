@@ -5,7 +5,7 @@ namespace FFmpegSharp.Example
 {
     internal class AvioReading : ExampleBase
     {
-        public AvioReading() : this("path-to-your.mp4")
+        public AvioReading() : this($"video-input.mp4")
         { }
 
         public AvioReading(params string[] args) : base(args)
@@ -16,7 +16,7 @@ namespace FFmpegSharp.Example
             var inputFile = args[0];
 
             var fs = File.OpenRead(inputFile);
-            var ctx = MediaDemuxer.Open(null, null, _ => 
+            var ctx = MediaDemuxer.Open(null, null, beforeOpen: _ =>
             {
                 ((AVFormatContext*)_)->pb = fs.CreateIOContext(4096);
             });  

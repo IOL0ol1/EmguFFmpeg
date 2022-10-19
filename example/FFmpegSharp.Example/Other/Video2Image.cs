@@ -12,11 +12,13 @@ namespace FFmpegSharp.Example.Other
 {
     internal class Video2Image : ExampleBase
     {
-        public Video2Image() : this("path-to-your.mp4", "path-to-folder")
+        public Video2Image() : this($"video-input.mp4", $"{nameof(Video2Image)}-output")
         { }
 
         public Video2Image(params string[] args) : base(args)
-        { }
+        {
+            Enable = false;
+        }
 
         public unsafe override void Execute()
         {

@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using FFmpeg.AutoGen;
 using FFmpegSharp.Example.Other;
 
 namespace FFmpegSharp.Example
@@ -9,56 +12,44 @@ namespace FFmpegSharp.Example
         {
             try
             {
-                new Video2Image().Execute();
-                //new CreateMPEG4().Execute();
-                //new AvioReading().Execute();
-                //new EncodeAudio().Execute();
-                //new EncodeVideo().Execute();
-                //new DecodeAudio().Execute();
-                //new DecodeVideo().Execute();
-                //new DemuxingDecoding().Execute();
-                //new Transcoding().Execute();
-                //new Metadata().Execute();
+                //var dict = new MediaDictionary()
+                //{
+                //    ["texst"] = "12",
+                //    ["listen"] = "2",
+                //};
+                //dict.Add("texst", "2334", AVDictWriteFlags.MultiKey);
+                //var a = dict.Get("a").ToList();
+                //var b = dict.Get("texst").ToList();
+                //ffmpeg.avformat_network_init();
+                //MediaIOContext.Open("http://localhost:10010", ffmpeg.AVIO_FLAG_WRITE, dict);
+
+                typeof(Program).Assembly
+                    .GetTypes()
+                    .Where(_ => _.IsAssignableTo(typeof(ExampleBase)) && !_.IsAbstract)
+                    .Select(_ => Activator.CreateInstance(_)).OfType<ExampleBase>()
+                    .Where(_ => _.Enable)
+                    .OrderBy(_ => _.Index).ToList()
+                    .ForEach(_ => _.Execute());
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message + ex.StackTrace);
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
             }
-
-            //foreach (var deviceInfoList in f.ListDevice())
-            //{
-            //    Console.WriteLine(deviceInfoList.DefaultDevice);
-            //    foreach (var deviceInfo in deviceInfoList.Devices)
-            //    {
-            //        Console.WriteLine(deviceInfo.DeviceName);
-            //        Console.WriteLine(deviceInfo.DeviceDescripton);
-            //        foreach (var type in deviceInfo.MediaTypes)
-            //        {
-            //            Console.WriteLine($"{type}");
-            //        }
-            //    }
-            //}
-
-
         }
-
-
-
     }
 
-    public interface IExample
+    public abstract class ExampleBase
     {
-        void Execute();
-    }
-
-    public abstract class ExampleBase : IExample
-    {
-        protected string[] args;
+        protected string[] args = new string[0];
 
         public ExampleBase(params string[] args)
         {
-            this.args = args ?? new string[0];
+            this.args = args;
         }
+
+        public int Index { get; protected set; }
+        public bool Enable { get; protected set; } = true;
 
         public abstract void Execute();
     }

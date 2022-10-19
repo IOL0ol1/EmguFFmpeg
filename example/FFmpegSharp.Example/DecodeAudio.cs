@@ -6,11 +6,13 @@ namespace FFmpegSharp.Example
 {
     internal class DecodeAudio : ExampleBase
     {
-        public DecodeAudio() : this("path-to-your.mp2", "path-to-your.raw")
+        public DecodeAudio() : this($"EncodeAudio-output.mp2", $"{nameof(DecodeAudio)}-output.raw")
         { }
 
         public DecodeAudio(params string[] args) : base(args)
-        { }
+        {
+            Index = 13;
+        }
 
         public override void Execute()
         {

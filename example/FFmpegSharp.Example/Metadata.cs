@@ -4,7 +4,7 @@ namespace FFmpegSharp.Example
 {
     internal class Metadata : ExampleBase
     {
-        public Metadata() : this("path-to-your-input.mp4")
+        public Metadata() : this($"video-input.mp4")
         { }
 
         public Metadata(params string[] args) : base(args)

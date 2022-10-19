@@ -6,11 +6,13 @@ namespace FFmpegSharp.Example
 {
     public class EncodeVideo : ExampleBase
     {
-        public EncodeVideo() : this("path-to-your.h264", "libx264")
+        public EncodeVideo() : this($"EncodeVideo-output.h264", "libx264")
         { }
 
         public EncodeVideo(params string[] args) : base(args)
-        { }
+        {
+            Index = 11;
+        }
 
         public unsafe override void Execute()
         {

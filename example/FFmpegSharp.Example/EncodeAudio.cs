@@ -7,11 +7,13 @@ namespace FFmpegSharp.Example
 {
     public class EncodeAudio : ExampleBase
     {
-        public EncodeAudio() : this("path-to-your.mp2")
+        public EncodeAudio() : this($"EncodeAudio-output.mp2")
         { }
 
         public EncodeAudio(params string[] args) : base(args)
-        { }
+        {
+            Index = 10;
+        }
 
         public unsafe override void Execute()
         {

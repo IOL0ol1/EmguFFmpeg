@@ -5,7 +5,7 @@ namespace FFmpegSharp.Example
 {
     internal class Muxing : ExampleBase
     {
-        public Muxing() : this("path-to-your-muxing-output.mp4")
+        public Muxing() : this($"Muxing-output.mp4")
         { }
 
         public Muxing(params string[] args) : base(args)

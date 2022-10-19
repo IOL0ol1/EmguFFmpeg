@@ -6,28 +6,33 @@ namespace FFmpegSharp.Example
 {
     internal class DecodeVideo : ExampleBase
     {
-        public DecodeVideo() : this("path-to-your.h264", "path-to-your.mp4")
+        public DecodeVideo() : this($"EncodeVideo-output.h264", $"{nameof(DecodeVideo)}-output.mp4")
         { }
 
         public DecodeVideo(params string[] args) : base(args)
-        { }
+        {
+            Index = 12;
+            Enable = false;
+        }
 
         public override void Execute()
         {
             var filename = args[0];
             var outfilename = args[1];
 
-            var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_MPEG1VIDEO);
+            var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_H264);
             using (var f = File.OpenRead(filename))
             using (var of = File.Create(outfilename))
-            using (var pkt = new MediaPacket())
+            using (var pkt = new MediaPacket() { Dts = ffmpeg.AV_NOPTS_VALUE, Pts = ffmpeg.AV_NOPTS_VALUE, Pos = 0 })
             using (var parser = new MediaCodecParserContext(codec.Id))
-            using (var c = new MediaDecoder(MediaCodecContext.Create(_ =>
+            using (var c = new MediaDecoder(MediaCodecContext.Create(codec, _ =>
              {
                  /* For some codecs, such as msmpeg4 and mpeg4, width and height
                     MUST be initialized there because this information is not
                     available in the bitstream. */
-             }, codec)))
+                 _.Height = 288;
+                 _.Width = 352;
+             })))
             using (var frame = new MediaFrame())
             {
                 foreach (var oPacket in parser.ParserPackets(c, f, pkt))
@@ -36,6 +41,9 @@ namespace FFmpegSharp.Example
                     {
                         PgmSave(oFrame, of);
                     }
+                    pkt.Dts = ffmpeg.AV_NOPTS_VALUE;
+                    pkt.Pts = ffmpeg.AV_NOPTS_VALUE;
+                    pkt.Pos = 0;
                 }
 
                 /* flush the decoder */
