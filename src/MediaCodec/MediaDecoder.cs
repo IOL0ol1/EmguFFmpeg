@@ -30,7 +30,7 @@ namespace FFmpegSharp
             // If codec_id is AV_CODEC_ID_NONE return null
             return codec == null
                 ? null
-                : new MediaDecoder(MediaCodecContext.Create(_ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), codec, opts));
+                : new MediaDecoder(MediaCodecContext.Create(codec, _ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), opts));
         }
 
         #endregion

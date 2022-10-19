@@ -15,10 +15,26 @@ namespace FFmpegSharp
             ffmpeg.avdevice_register_all();
         }
 
-        private static InFormat av_input_audio_device_next_safe(InFormat format) => new InFormat(ffmpeg.av_input_audio_device_next(format));
-        private static InFormat av_input_video_device_next_safe(InFormat format) => new InFormat(ffmpeg.av_input_video_device_next(format));
-        private static OutFormat av_output_audio_device_next_safe(OutFormat format) => new OutFormat(ffmpeg.av_output_audio_device_next(format));
-        private static OutFormat av_output_video_device_next_safe(OutFormat format) => new OutFormat(ffmpeg.av_output_video_device_next(format));
+        private static InFormat av_input_audio_device_next_safe(InFormat format)
+        {
+            var f = ffmpeg.av_input_audio_device_next(format);
+            return f == null ? null : new InFormat(f);
+        }
+        private static InFormat av_input_video_device_next_safe(InFormat format)
+        {
+            var f = ffmpeg.av_input_video_device_next(format);
+            return f == null ? null : new InFormat(f);
+        }
+        private static OutFormat av_output_audio_device_next_safe(OutFormat format)
+        {
+            var f = ffmpeg.av_output_audio_device_next(format);
+            return f == null ? null : new OutFormat(f);
+        }
+        private static OutFormat av_output_video_device_next_safe(OutFormat format)
+        {
+            var f = ffmpeg.av_output_video_device_next(format);
+            return f == null ? null : new OutFormat(f);
+        }
 
         public static IEnumerable<InFormat> GetInputAudioDevices()
         {
@@ -59,22 +75,22 @@ namespace FFmpegSharp
 
         public static MediaDeviceInfoLists ListDevice(this MediaFormatContextBase value)
         {
-            AVDeviceInfoList** o = (AVDeviceInfoList**)IntPtr2Ptr.Ptr2Null.Ptr2Ptr;
+            AVDeviceInfoList** o = (AVDeviceInfoList**)(void**)IntPtr2Ptr.Ptr2Null;
             var count = ffmpeg.avdevice_list_devices(value, o).ThrowIfError();
             return new MediaDeviceInfoLists(o, count);
         }
 
 
-        public static MediaDeviceInfoLists ListInputSources(this InFormat value, string deviceName, MediaDictionary deviceOptions)
+        public static MediaDeviceInfoLists ListInputSources(InFormat value, string deviceName = null, MediaDictionary deviceOptions = null)
         {
-            AVDeviceInfoList** o = (AVDeviceInfoList**)IntPtr2Ptr.Ptr2Null.Ptr2Ptr;
+            AVDeviceInfoList** o = (AVDeviceInfoList**)(void**)IntPtr2Ptr.Ptr2Null;
             var count = ffmpeg.avdevice_list_input_sources(value, deviceName, deviceOptions, o).ThrowIfError();
             return new MediaDeviceInfoLists(o, count);
         }
 
-        public static MediaDeviceInfoLists ListOutputSinks(this OutFormat value, string deviceName, MediaDictionary deviceOptions)
+        public static MediaDeviceInfoLists ListOutputSinks(OutFormat value, string deviceName = null, MediaDictionary deviceOptions = null)
         {
-            AVDeviceInfoList** o = (AVDeviceInfoList**)IntPtr2Ptr.Ptr2Null.Ptr2Ptr;
+            AVDeviceInfoList** o = (AVDeviceInfoList**)(void**)IntPtr2Ptr.Ptr2Null;
             var count = ffmpeg.avdevice_list_output_sinks(value, deviceName, deviceOptions, o).ThrowIfError();
             return new MediaDeviceInfoLists(o, count);
         }

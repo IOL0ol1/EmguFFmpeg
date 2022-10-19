@@ -8,7 +8,7 @@ namespace FFmpegSharp
     {
         protected bool disposedValue;
 
-        public static MediaCodecContext Create(Action<MediaCodecContextBase> beforeOpenSetting, MediaCodec codec = null, MediaDictionary opts = null)
+        public static MediaCodecContext Create(MediaCodec codec, Action<MediaCodecContextBase> beforeOpenSetting, MediaDictionary opts = null)
         {
             return new MediaCodecContext(codec).Open(beforeOpenSetting, null, opts);
         }

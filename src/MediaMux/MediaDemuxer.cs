@@ -27,11 +27,11 @@ namespace FFmpegSharp
         /// <param name="options"></param>
         public static MediaDemuxer Open(Stream stream, InFormat iformat = null, MediaDictionary options = null)
         {
-            var output = Open(null, iformat, _ =>
+            var output = Open(null, iformat, options, _ =>
             {
                 AVFormatContext* f = _;
                 f->pb = stream.CreateIOContext();
-            }, options);
+            });
             output._stream = stream;
             return output;
         }
@@ -41,12 +41,12 @@ namespace FFmpegSharp
         /// </summary>
         /// <param name="url"></param>
         /// <param name="iformat"></param>
-        /// <param name="beforeSetting"></param>
         /// <param name="options"></param>
-        public static MediaDemuxer Open(string url, InFormat iformat = null, Action<MediaFormatContextBase> beforeSetting = null, MediaDictionary options = null)
+        /// <param name="beforeOpen"></param>
+        public static MediaDemuxer Open(string url, InFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContextBase> beforeOpen = null)
         {
             var output = new MediaDemuxer(new MediaFormatContext());
-            beforeSetting?.Invoke(output);
+            beforeOpen?.Invoke(output);
             fixed (AVFormatContext** ppFormatContext = &output.pFormatContext)
             {
                 ffmpeg.avformat_open_input(ppFormatContext, url, iformat, options).ThrowIfError();

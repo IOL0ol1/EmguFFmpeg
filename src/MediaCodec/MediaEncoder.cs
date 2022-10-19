@@ -164,7 +164,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return new MediaEncoder(new MediaCodecContext(MediaCodec.FindEncoder(format.VideoCodec)).Open(_ =>
+            return new MediaEncoder(new MediaCodecContext(MediaCodec.FindEncoder(format.AudioCodec)).Open(_ =>
             {
                 _.SampleRate = sampleRate;
                 _.ChLayout = chLayout;
@@ -295,7 +295,7 @@ namespace FFmpegSharp
             // If codec_id is AV_CODEC_ID_NONE return null
             return codec == null
                 ? null
-                : new MediaEncoder(MediaCodecContext.Create(_ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), codec, opts));
+                : new MediaEncoder(MediaCodecContext.Create(codec, _ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), opts));
         }
         #endregion
 

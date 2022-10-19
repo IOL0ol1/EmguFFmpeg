@@ -50,6 +50,13 @@ namespace FFmpegSharp
         {
             AVIOContext* pIOContext = null;
             ffmpeg.avio_open2(&pIOContext, url, flags, null, options).ThrowIfError();
+            return new MediaIOContext(pIOContext);
+        }
+
+        public static MediaIOContext Open(string url, int flags, AVIOInterruptCB interrupt, MediaDictionary options = null)
+        {
+            AVIOContext* pIOContext = null;
+            ffmpeg.avio_open2(&pIOContext, url, flags, &interrupt, options).ThrowIfError();
             return new MediaIOContext(pIOContext, true);
         }
 
@@ -119,8 +126,7 @@ namespace FFmpegSharp
             if (!disposedValue)
             {
                 if (_pIOContext != null)
-                {
-                    Flush();
+                {  
                     ffmpeg.avio_close(_pIOContext);
                     _pIOContext = null;
                 }
