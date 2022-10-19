@@ -4,7 +4,7 @@ namespace FFmpegSharp.Example.Other
 {
     internal class PrintList : ExampleBase
     {
-        public PrintList():base()
+        public PrintList() : base()
         {
             Index = -1;
         }

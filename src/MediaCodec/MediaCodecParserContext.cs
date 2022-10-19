@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal; 
+using FFmpegSharp.Internal;
 namespace FFmpegSharp
 {
     public unsafe class MediaCodecParserContext : IDisposable

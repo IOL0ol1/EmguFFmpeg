@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal; 
+using FFmpegSharp.Internal;
 namespace FFmpegSharp
 {
     public unsafe class MediaEncoder : MediaCodecContextBase, IDisposable
@@ -299,7 +299,7 @@ namespace FFmpegSharp
         }
         #endregion
 
-        public MediaEncoder(MediaCodecContext context) 
+        public MediaEncoder(MediaCodecContext context)
             : base(context)
         {
             if (context == null) throw new NullReferenceException();

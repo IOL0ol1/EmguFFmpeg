@@ -69,7 +69,7 @@ namespace FFmpegSharp
         {
             return (IntPtr)ffmpeg.av_demuxer_iterate(opaque);
         }
-         
+
         public string Name => ((IntPtr)pInputFormat->name).PtrToStringUTF8();
         public string LongName => ((IntPtr)pInputFormat->long_name).PtrToStringUTF8();
         public string Extensions => ((IntPtr)pInputFormat->extensions).PtrToStringUTF8();

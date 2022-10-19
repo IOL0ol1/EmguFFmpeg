@@ -101,7 +101,7 @@ namespace FFmpegSharp
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
-            { 
+            {
                 context.Dispose();
                 disposedValue = true;
             }

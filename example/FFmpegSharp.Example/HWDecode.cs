@@ -2,7 +2,7 @@
 {
     internal class HWDecode : ExampleBase
     {
-        public HWDecode() : base("","video-input.mp4","HWDecode-output.bin")
+        public HWDecode() : base("", "video-input.mp4", "HWDecode-output.bin")
         { }
 
         public override void Execute()

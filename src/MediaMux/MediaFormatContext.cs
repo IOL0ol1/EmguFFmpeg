@@ -27,8 +27,8 @@ namespace FFmpegSharp
                 {
                     if (pFormatContext->iformat != null)
                     {
-                        fixed(AVFormatContext** ppFormatContext = &pFormatContext)
-                        ffmpeg.avformat_close_input(ppFormatContext);
+                        fixed (AVFormatContext** ppFormatContext = &pFormatContext)
+                            ffmpeg.avformat_close_input(ppFormatContext);
                     }
                     else
                     {

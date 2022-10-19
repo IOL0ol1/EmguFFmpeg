@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using FFmpeg.AutoGen;
-using FFmpegSharp.Example.Other;
 
 namespace FFmpegSharp.Example
 {

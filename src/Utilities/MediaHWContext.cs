@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace FFmpegSharp.Utilities
+﻿namespace FFmpegSharp.Utilities
 {
     public class MediaHWContext
     {

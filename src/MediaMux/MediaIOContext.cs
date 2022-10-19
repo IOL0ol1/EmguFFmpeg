@@ -126,7 +126,7 @@ namespace FFmpegSharp
             if (!disposedValue)
             {
                 if (_pIOContext != null)
-                {  
+                {
                     ffmpeg.avio_close(_pIOContext);
                     _pIOContext = null;
                 }

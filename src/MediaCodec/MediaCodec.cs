@@ -82,7 +82,7 @@ namespace FFmpegSharp
         /// </summary>
         public static IEnumerable<MediaCodec> GetCodecs()
         {
-            IntPtr pCodec;  
+            IntPtr pCodec;
             IntPtr2Ptr opaque = IntPtr2Ptr.Ptr2Null;
             while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
             {
@@ -90,7 +90,7 @@ namespace FFmpegSharp
             }
         }
 
-      
+
 
         #endregion safe wapper for IEnumerable
 

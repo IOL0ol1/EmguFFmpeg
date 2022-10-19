@@ -19,7 +19,7 @@ namespace FFmpegSharp.Example
             var ctx = MediaDemuxer.Open(null, null, beforeOpen: _ =>
             {
                 ((AVFormatContext*)_)->pb = fs.CreateIOContext(4096);
-            });  
+            });
             ctx.DumpFormat();
             fs.Dispose();
             ctx.Dispose();
