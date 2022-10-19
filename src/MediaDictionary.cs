@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-
+using System.Net.Http.Headers;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
@@ -10,7 +10,6 @@ namespace FFmpegSharp
     public unsafe class MediaDictionary : IDictionary<string, string>, IDisposable
     {
         private AVDictionary** ppDictionary = null;
-        private readonly AVDictionary* holdPlace = null; // 
 
         public MediaDictionary(AVDictionary** ptr, bool isDisposeByOwner = true)
         {
@@ -19,10 +18,8 @@ namespace FFmpegSharp
         }
 
         public MediaDictionary()
-        {
-            fixed (AVDictionary** p = &holdPlace)
-                ppDictionary = p;
-        }
+            : this((AVDictionary**)(void**)IntPtr2Ptr.Ptr2Null)
+        { }
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
             : this()
@@ -48,19 +45,11 @@ namespace FFmpegSharp
             }
         }
 
-        public string this[string key, int flags]
+        public IEnumerable<string> Get(string key, AVDictReadFlags flags = 0)
         {
-            get
-            {
-                AVDictionaryEntry* entry;
-                if ((entry = (AVDictionaryEntry*)av_dict_get_safe(this, key, IntPtr.Zero, flags)) != null)
-                    return (*entry).GetValue();
-                throw new KeyNotFoundException();
-            }
-            set
-            {
-                Add(key, value, flags);
-            }
+            if (TryGetValues(key, flags, out var _v))
+                return _v;
+            return new string[0];
         }
 
         public ICollection<string> Keys => this.Select(_ => _.Key).ToArray();
@@ -77,17 +66,17 @@ namespace FFmpegSharp
                 throw new ArgumentNullException();
             if (ContainsKey(key))
                 throw new ArgumentException();
-            Add(key, value, (int)AVDictWriteFlags.DontOverwrite);
+            Add(key, value, AVDictWriteFlags.DontOverwrite);
         }
 
-        public int Add(string key, string value, int flags)
+        public int Add(string key, string value, AVDictWriteFlags flags)
         {
-            return ffmpeg.av_dict_set(this, key, value, flags).ThrowIfError();
+            return ffmpeg.av_dict_set(this, key, value, (int)flags).ThrowIfError();
         }
 
         public int Add(KeyValuePair<string, string> item, AVDictWriteFlags flags)
         {
-            return Add(item.Key, item.Value, (int)flags);
+            return Add(item.Key, item.Value, flags);
         }
 
         public void Add(KeyValuePair<string, string> item)
@@ -136,6 +125,11 @@ namespace FFmpegSharp
         {
             AVDictionary** ppDictionary = dict;
             return (IntPtr)ffmpeg.av_dict_get(*ppDictionary, key, (AVDictionaryEntry*)prev, flags);
+        }
+
+        private static string AVDictionaryEntryIntPtrGetValue(IntPtr intPtr)
+        {
+            return (*(AVDictionaryEntry*)intPtr).GetValue();
         }
 
         private static KeyValuePair<string, string> GetEntry(IntPtr intPtr)
@@ -282,6 +276,7 @@ namespace FFmpegSharp
         /// <returns></returns>
         public static string GetValue(this AVDictionaryEntry entry)
         {
+
             return ((IntPtr)entry.value).PtrToStringUTF8();
         }
     }
@@ -300,7 +295,7 @@ namespace FFmpegSharp
         /// <para>//get "k1" is "v1"</para>
         /// <para>//get "K1" is null</para>
         /// </summary>
-        MatchCase = 1,
+        MatchCase = ffmpeg.AV_DICT_MATCH_CASE,
 
         /// <summary>
         /// Return entry in a dictionary whose first part corresponds to the search key,
@@ -310,7 +305,7 @@ namespace FFmpegSharp
         /// <para>{"k2","v3"}</para>
         /// <para>get "k" is {"v1","v2","v3"}</para>
         /// </summary>
-        IgnoreSuffix = 2,
+        IgnoreSuffix = ffmpeg.AV_DICT_IGNORE_SUFFIX,
     }
 
     [Flags]
@@ -326,28 +321,28 @@ namespace FFmpegSharp
         /// allocated with av_malloc() or another memory allocation function.
         /// </summary>
         [Obsolete("Not suppord in managed code", true)]
-        DnotStrDupKey = 4,
+        DnotStrDupKey = ffmpeg.AV_DICT_DONT_STRDUP_KEY,
 
         /// <summary>
         /// Take ownership of a value that's been
         /// allocated with av_malloc() or another memory allocation function.
         /// </summary>
         [Obsolete("Not suppord in managed code", true)]
-        DontStrDupVal = 8,
+        DontStrDupVal = ffmpeg.AV_DICT_DONT_STRDUP_VAL,
 
         /// <summary>
         /// Don't overwrite existing key.
         /// </summary>
-        DontOverwrite = 16,
+        DontOverwrite = ffmpeg.AV_DICT_DONT_OVERWRITE,
 
         /// <summary>
         /// If the key already exists, append to it's value.
         /// </summary>
-        Append = 32,
+        Append = ffmpeg.AV_DICT_APPEND,
 
         /// <summary>
         /// Allow to store several equal keys in the dictionary
         /// </summary>
-        MultiKey = 64,
+        MultiKey = ffmpeg.AV_DICT_MULTIKEY,
     }
 }
