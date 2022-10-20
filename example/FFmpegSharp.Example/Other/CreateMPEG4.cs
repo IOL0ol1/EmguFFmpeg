@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
 
 namespace FFmpegSharp.Example
 {
@@ -6,7 +8,8 @@ namespace FFmpegSharp.Example
     {
 
         public CreateMPEG4() : this($"{nameof(CreateMPEG4)}-output.mp4")
-        { }
+        {
+        }
 
         public CreateMPEG4(params string[] args) : base(args)
         { }
@@ -17,9 +20,10 @@ namespace FFmpegSharp.Example
             var fps = 25.999d;
             var width = 800;
             var heith = 600;
+            var s = Stopwatch.StartNew();
             using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), OutFormat.GuessFormat(null, outputFile, null)))
             {
-                using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps))
+                using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.ThreadCount = 10))
                 {
                     var vStream = muxer.AddStream(vEncoder);
 
@@ -27,7 +31,7 @@ namespace FFmpegSharp.Example
 
                     using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, vEncoder.PixFmt))
                     {
-                        for (var i = 0; i < 30; i++)
+                        for (var i = 0; i < 3000; i++)
                         {
                             FillYuv420P(vFrame, i);
                             vFrame.Pts = i;
@@ -42,6 +46,7 @@ namespace FFmpegSharp.Example
                     muxer.WriteTrailer();
                 }
             }
+            Console.WriteLine($"{s.Elapsed.TotalMilliseconds}ms");
         }
 
         /// <summary>

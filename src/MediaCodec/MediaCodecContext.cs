@@ -117,16 +117,16 @@ namespace FFmpegSharp.Internal
         /// <param name="device"></param>
         /// <param name="opts"></param>
         /// <param name="flags"></param>
-        public int InitHWDeviceContext(AVHWDeviceType type, string device = null, MediaDictionary opts = null, int flags = 0)
+        public int InitHWDeviceContext(AVHWDeviceType? type = null, string device = null, MediaDictionary opts = null, int flags = 0)
         {
-            if (pCodecContext->codec != null && pCodecContext->hw_device_ctx == null)
+            if (type != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE && pCodecContext->codec != null && pCodecContext->hw_device_ctx == null)
             {
                 var codec = new MediaCodec(pCodecContext->codec);
 
                 if (codec.GetHWConfigs().Select(_ => (AVCodecHWConfig?)_)
-                    .FirstOrDefault(_ => _.Value.device_type == type && (_.Value.methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) != 0) is AVCodecHWConfig hWConfig)
+                    .FirstOrDefault(_ => (type == null || _.Value.device_type == type) && (_.Value.methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) != 0) is AVCodecHWConfig hWConfig)
                 {
-                    ffmpeg.av_hwdevice_ctx_create(&pCodecContext->hw_device_ctx, type, device, opts, flags).ThrowIfError();
+                    ffmpeg.av_hwdevice_ctx_create(&pCodecContext->hw_device_ctx, hWConfig.device_type, device, opts, flags).ThrowIfError();
                     pCodecContext->get_format = (AVCodecContext_get_format_func)((avctx, pix_fmts) => GetFormat(avctx, pix_fmts, hWConfig.pix_fmt));
                 }
             }
@@ -135,24 +135,13 @@ namespace FFmpegSharp.Internal
 
         public int InitHWDeviceContext(string typeName, string device = null, MediaDictionary opts = null, int flags = 0)
         {
-            var type = ffmpeg.av_hwdevice_find_type_by_name(typeName);
-            if (type != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE && pCodecContext->codec != null && pCodecContext->hw_device_ctx == null)
-            {
-                var codec = new MediaCodec(pCodecContext->codec);
-
-                if (codec.GetHWConfigs().Select(_ => (AVCodecHWConfig?)_)
-                    .FirstOrDefault(_ => _.Value.device_type == type && (_.Value.methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) != 0) is AVCodecHWConfig hWConfig)
-                {
-                    ffmpeg.av_hwdevice_ctx_create(&pCodecContext->hw_device_ctx, type, device, opts, flags).ThrowIfError();
-                    pCodecContext->get_format = (AVCodecContext_get_format_func)((avctx, pix_fmts) => GetFormat(avctx, pix_fmts, hWConfig.pix_fmt));
-                }
-            }
-            return IsHWDeviceCtxInit() ? AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX : 0;
+            var type = typeName == null ? (AVHWDeviceType?)null : ffmpeg.av_hwdevice_find_type_by_name(typeName);
+            return InitHWDeviceContext(type, device, opts, flags);
         }
 
         protected bool IsHWDeviceCtxInit() => pCodecContext->hw_device_ctx != null;
 
-        protected void HWFrameTransferData(MediaFrame dst,MediaFrame src,int flags = 0)
+        protected void HWFrameTransferData(MediaFrame dst, MediaFrame src, int flags = 0)
         {
             ffmpeg.av_hwframe_transfer_data(dst, src, flags).ThrowIfError();
         }
