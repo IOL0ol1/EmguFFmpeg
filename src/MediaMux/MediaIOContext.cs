@@ -7,13 +7,6 @@ namespace FFmpegSharp
     public unsafe class MediaIOContext : Stream
     {
         protected AVIOContext* _pIOContext;
-        // Hold ref for delegate, Otherwise, it will be recycled by GC
-        protected avio_alloc_context_read_packet _readfunc;
-        protected avio_alloc_context_write_packet _writefunc;
-        protected avio_alloc_context_seek _seekfunc;
-        private Func<IntPtr, IntPtr, int, int> _readSafe;
-        private Func<IntPtr, IntPtr, int, int> _writeSafe;
-        private Func<IntPtr, long, int, long> _seekSafe;
 
         public static implicit operator AVIOContext*(MediaIOContext value)
         {
@@ -36,12 +29,9 @@ namespace FFmpegSharp
         {
             var _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
             if (_buffer == null) throw new OutOfMemoryException();
-            _readSafe = read;
-            _writeSafe = write;
-            _seekSafe = seek;
-            _readfunc = read != null ? (o, b, s) => _readSafe.Invoke((IntPtr)o, (IntPtr)b, s) : (avio_alloc_context_read_packet)null;
-            _writefunc = write != null ? (o, b, s) => _writeSafe.Invoke((IntPtr)o, (IntPtr)b, s) : (avio_alloc_context_write_packet)null;
-            _seekfunc = seek != null ? (o, b, s) => _seekSafe.Invoke((IntPtr)o, b, s) : (avio_alloc_context_seek)null;
+            var _readfunc = read != null ? (avio_alloc_context_read_packet_func)((o, b, s) => read.Invoke((IntPtr)o, (IntPtr)b, s)) : null;
+            var _writefunc = write != null ? (avio_alloc_context_write_packet)((o, b, s) => write.Invoke((IntPtr)o, (IntPtr)b, s)) : null;
+            var _seekfunc = seek != null ? (avio_alloc_context_seek)((o, b, s) => seek.Invoke((IntPtr)o, b, s)) : null;
             _pIOContext = ffmpeg.avio_alloc_context(_buffer, bufferSize, _writefunc != null ? 1 : 0, null, _readfunc, _writefunc, _seekfunc);
             if (_pIOContext == null) throw new NullReferenceException();
         }
