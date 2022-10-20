@@ -288,14 +288,18 @@ namespace FFmpegSharp
         #endregion
 
         #region Create
-        public static MediaEncoder CreateEncoder(AVCodecParameters codecParameters, MediaDictionary opts = null)
+        public static MediaEncoder CreateEncoder(AVCodecParameters codecParameters,Action<MediaCodecContextBase> action = null, MediaDictionary opts = null)
         {
             var codec = MediaCodec.FindEncoder(codecParameters.codec_id);
             AVCodecParameters* pCodecParameters = &codecParameters;
             // If codec_id is AV_CODEC_ID_NONE return null
             return codec == null
                 ? null
-                : new MediaEncoder(MediaCodecContext.Create(codec, _ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), opts));
+                : new MediaEncoder(MediaCodecContext.Create(codec, _ =>
+                {
+                    ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError();
+                    action?.Invoke(_);
+                }, opts));
         }
         #endregion
 

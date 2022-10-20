@@ -21,16 +21,21 @@ namespace FFmpegSharp
         /// </para>
         /// </summary>
         /// <param name="codecParameters"></param>
+        /// <param name="action"></param>
         /// <param name="opts"></param>
         /// <returns></returns>
-        public static MediaDecoder CreateDecoder(AVCodecParameters codecParameters, MediaDictionary opts = null)
+        public static MediaDecoder CreateDecoder(AVCodecParameters codecParameters, Action<MediaCodecContextBase> action = null, MediaDictionary opts = null)
         {
             var codec = MediaCodec.FindDecoder(codecParameters.codec_id);
             AVCodecParameters* pCodecParameters = &codecParameters;
             // If codec_id is AV_CODEC_ID_NONE return null
             return codec == null
                 ? null
-                : new MediaDecoder(MediaCodecContext.Create(codec, _ => ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError(), opts));
+                : new MediaDecoder(MediaCodecContext.Create(codec, _ =>
+                {
+                    ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError();
+                    action?.Invoke(_);
+                }, opts));
         }
 
         #endregion
@@ -69,13 +74,17 @@ namespace FFmpegSharp
         /// </summary>
         /// <param name="packet"></param>
         /// <param name="inFrame"></param>
+        /// <param name="swFrame">av_hwframe_transfer_data dst</param>
+        /// <param name="flags">av_hwframe_transfer_data flags</param>
         /// <returns></returns>
-        public IEnumerable<MediaFrame> DecodePacket(MediaPacket packet, MediaFrame inFrame = null)
+        public IEnumerable<MediaFrame> DecodePacket(MediaPacket packet, MediaFrame inFrame = null, MediaFrame swFrame = null, int flags = 0)
         {
+            var isHWDeviceCtxInit = IsHWDeviceCtxInit();
             int ret = SendPacket(packet);
             if (ret < 0 && ret != ffmpeg.AVERROR(ffmpeg.EAGAIN) && ret != ffmpeg.AVERROR_EOF)
                 ret.ThrowIfError();
             MediaFrame frame = inFrame ?? new MediaFrame();
+            MediaFrame swframe = swFrame == null ? (isHWDeviceCtxInit ? new MediaFrame() : null) : swFrame;
             try
             {
                 while (true)
@@ -90,10 +99,22 @@ namespace FFmpegSharp
                         else
                             break;
                     }
-                    yield return frame;
+                    if (isHWDeviceCtxInit)
+                    {
+                        HWFrameTransferData(swframe, frame, flags);
+                        yield return swframe;
+                    }
+                    else
+                    {
+                        yield return frame;
+                    }
                 }
             }
-            finally { if (inFrame == null) frame.Dispose(); }
+            finally
+            {
+                if (inFrame == null) frame.Dispose();
+                if (swFrame == null) swframe?.Dispose();
+            }
         }
 
         #region IDisposable
