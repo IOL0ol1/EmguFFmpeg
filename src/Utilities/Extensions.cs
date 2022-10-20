@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
+using System.Security;
 using System.Text;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
 {
-
-
+ 
     public static class AVRationalExtension
     {
         public static AVRational ToInvert(this AVRational rational)
