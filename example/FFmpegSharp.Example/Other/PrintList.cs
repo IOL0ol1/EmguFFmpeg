@@ -1,4 +1,5 @@
 ﻿using System;
+using FFmpeg.AutoGen;
 
 namespace FFmpegSharp.Example.Other
 {
@@ -58,6 +59,13 @@ namespace FFmpegSharp.Example.Other
             foreach (var item in MediaDevice.GetOutputAudioDevices())
             {
                 Console.WriteLine($"{index++:D3}[{item.Name}]({item.LongName}){item.MimeType}");
+            }
+            index = 1;
+            Console.WriteLine("==============================HW device types==============================");
+            AVHWDeviceType hwDeviceType = AVHWDeviceType.AV_HWDEVICE_TYPE_NONE;
+            while ((hwDeviceType = ffmpeg.av_hwdevice_iterate_types(hwDeviceType)) != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
+            {
+                Console.WriteLine($"{index++:D3}[{hwDeviceType}]");
             }
         }
     }

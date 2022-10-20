@@ -21,7 +21,7 @@ namespace FFmpegSharp.Example.Other
             var input = args[0];
             var output = Directory.CreateDirectory(args[1]).FullName;
 
-            using (var mediaReader = MediaDemuxer.Open(input))
+            using (var mediaReader = MediaDemuxer.Open(File.OpenRead(input)))
             using (var srcPacket = new MediaPacket())
             using (var srcFrame = new MediaFrame())
             using (var convert = new PixelConverter())

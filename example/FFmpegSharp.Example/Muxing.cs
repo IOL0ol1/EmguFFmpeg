@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp.Example
@@ -15,7 +16,7 @@ namespace FFmpegSharp.Example
         {
             var filename = args[0];
 
-            var oc = MediaMuxer.Create(filename);
+            var oc = MediaMuxer.Create(File.OpenWrite(filename),OutFormat.GuessFormat(null,filename,null));
 
             var fmt = oc.Format;
 

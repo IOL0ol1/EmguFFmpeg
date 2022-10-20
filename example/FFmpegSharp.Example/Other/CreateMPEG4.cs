@@ -1,4 +1,6 @@
-﻿namespace FFmpegSharp.Example
+﻿using System.IO;
+
+namespace FFmpegSharp.Example
 {
     internal class CreateMPEG4 : ExampleBase
     {
@@ -15,7 +17,7 @@
             var fps = 25.999d;
             var width = 800;
             var heith = 600;
-            using (var muxer = MediaMuxer.Create(outputFile))
+            using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), OutFormat.GuessFormat(null, outputFile, null)))
             {
                 using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps))
                 {
