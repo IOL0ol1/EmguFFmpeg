@@ -33,16 +33,7 @@ namespace FFmpegSharp
         /// <returns></returns>
         public MediaPacket Clone()
         {
-            MediaPacket packet = new MediaPacket();
-            AVPacket* dstpkt = packet;
-            int ret;
-            if ((ret = ffmpeg.av_packet_ref(dstpkt, pPacket)) < 0)
-            {
-                ffmpeg.av_packet_free(&dstpkt);
-                throw new FFmpegException(ret);
-            }
-            ffmpeg.av_packet_copy_props(dstpkt, pPacket).ThrowIfError();
-            return packet;
+            return new MediaPacket(ffmpeg.av_packet_clone(this));
         }
 
         object ICloneable.Clone()

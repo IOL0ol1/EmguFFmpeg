@@ -7,7 +7,7 @@ using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaFrame : MediaFrameBase, IDisposable
+    public unsafe class MediaFrame : MediaFrameBase, IDisposable,ICloneable
     {
         public MediaFrame(AVFrame* frame, bool isDisposeByOwner = true)
             : base(frame)
@@ -47,7 +47,7 @@ namespace FFmpegSharp
             return CreateAudioFrame(channelLayout.nb_channels, nbSamples, format, sampleRate, align);
         }
 
-        private void AllocateBuffer(int align)
+        internal void AllocateBuffer(int align = 0)
         {
             ffmpeg.av_frame_get_buffer(pFrame, align).ThrowIfError();
         }
@@ -157,7 +157,19 @@ namespace FFmpegSharp
                 return result.ToArray();
             }
         }
+        object ICloneable.Clone()
+        {
+            return Clone();
+        }
 
+        /// <summary>
+        /// Deep copy a new frame.
+        /// </summary>
+        /// <returns></returns>
+        public MediaFrame Clone()
+        {
+            return new MediaFrame(ffmpeg.av_frame_clone(this));
+        }
 
         /// <summary>
         /// <see cref="ffmpeg.av_frame_unref(AVFrame*)"/>
@@ -165,6 +177,11 @@ namespace FFmpegSharp
         public void Unref()
         {
             ffmpeg.av_frame_unref(pFrame);
+        }
+
+        public void CopyProps(MediaFrame dstframe)
+        {
+            ffmpeg.av_frame_copy_props(dstframe, this);
         }
 
         public int MakeWritable() => ffmpeg.av_frame_make_writable(pFrame).ThrowIfError();
