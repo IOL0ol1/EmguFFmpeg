@@ -16,7 +16,7 @@ namespace FFmpegSharp.Example
             var fmt = MediaDemuxer.Open(input);
 
             var a = fmt.Ref.metadata;
-            var m = new MediaDictionary(&a);
+            var m = new MediaDictionary(&a, false);
             foreach (var item in m)
             {
                 Console.WriteLine($"{item.Key}={item.Value}");

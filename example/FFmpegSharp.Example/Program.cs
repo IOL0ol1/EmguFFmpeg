@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace FFmpegSharp.Example
 {
-    internal unsafe class Program
+    internal class Program
     {
         private static void Main(string[] args)
         {
@@ -19,20 +21,44 @@ namespace FFmpegSharp.Example
                 //var b = dict.Get("texst").ToList();
                 //ffmpeg.avformat_network_init();
                 //MediaIOContext.Open("http://localhost:10010", ffmpeg.AVIO_FLAG_WRITE, dict);
-
+                Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        await Task.Delay(500);
+                        GC.Collect();
+                    }
+                });
                 typeof(Program).Assembly
                     .GetTypes()
                     .Where(_ => _.IsAssignableTo(typeof(ExampleBase)) && !_.IsAbstract)
                     .Select(_ => Activator.CreateInstance(_)).OfType<ExampleBase>()
                     .Where(_ => _.Enable)
                     .OrderBy(_ => _.Index).ToList()
-                    .ForEach(_ => _.Execute());
+                    .ForEach(_ =>
+                    {
+                        var name = _.GetType().Name;
+                        var fColor = Console.ForegroundColor;
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"-------------------{name} start----------------------");
+                        Console.ForegroundColor = fColor;
+                        _.Execute();
+                        var s = Stopwatch.StartNew();
+                        _.Execute();
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"-------------------{name} end[{s.Elapsed.TotalMilliseconds}ms]----------------------");
+                        Console.ForegroundColor = fColor;
+                    });
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
             }
+#if RELEASE
+            Console.WriteLine("Pause 'Enter' to exit");
+            Console.ReadLine();
+#endif
         }
     }
 
