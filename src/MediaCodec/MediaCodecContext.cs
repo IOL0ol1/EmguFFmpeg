@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
 using FFmpegSharp.Internal;
 
@@ -40,6 +37,8 @@ namespace FFmpegSharp
             return this;
         }
 
+
+
         #region IDisposable
         protected virtual void Dispose(bool disposing)
         {
@@ -74,6 +73,8 @@ namespace FFmpegSharp.Internal
 {
     public unsafe partial class MediaCodecContextBase
     {
+        public MediaCodec GetCodec() => pCodecContext->codec == null ? null : new MediaCodec(pCodecContext->codec);
+
         /// 
         /// The codec supports this format via the hw_device_ctx interface.
         /// 
