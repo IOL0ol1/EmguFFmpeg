@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
@@ -9,9 +10,12 @@ namespace FFmpegSharp
     /// </summary>
     public unsafe class SampleConverter : IFrameConverter, IDisposable
     {
-        private bool disposedValue;
-        protected SwrContext* pSwrContext = null;
-        public readonly AudioFifo AudioFifo; // TODO: maybe remove
+        protected SwrContext* pSwrContext;
+        protected AVChannelLayout dstChLayout;
+        protected int dstSampleRate;
+        protected AVSampleFormat dstFormat;
+        protected int dstSamples;
+        protected AudioFifo AudioFifo; // TODO: maybe remove
 
         public SampleConverter(SwrContext* pSwrContext, bool isDisposeByOwner = true)
         {
@@ -22,11 +26,36 @@ namespace FFmpegSharp
         public SampleConverter() : this(ffmpeg.swr_alloc())
         { }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dstChLayout"></param>
+        /// <param name="dstSampleRate"></param>
+        /// <param name="dstFormat"></param>
+        /// <param name="dstSamples">set 0 will use src frame's NbSamples</param>
+        /// <returns></returns>
+        public static SampleConverter Create(AVChannelLayout dstChLayout, int dstSampleRate, AVSampleFormat dstFormat, int dstSamples = 0)
+        {
+            var sampleConverter = new SampleConverter();
+            sampleConverter.SetOpts(dstChLayout, dstSampleRate, dstFormat, dstSamples);
+            return sampleConverter;
+        }
+
+
+        public void SetOpts(AVChannelLayout dstChLayout, int dstSampleRate, AVSampleFormat dstFormat, int dstSamples = 0)
+        {
+            this.dstChLayout = dstChLayout;
+            this.dstSampleRate = dstSampleRate;
+            this.dstFormat = dstFormat;
+            this.dstSamples = dstSamples;
+            AudioFifo = new AudioFifo(dstFormat, dstChLayout.nb_channels, dstSampleRate);
+        }
+
+
         #region safe wapper for IEnumerable
 
-        private void SwrCheckInit(MediaFrame srcFrame, MediaFrame dstframe)
+        private void SwrCheckInit(MediaFrame srcFrame, AVChannelLayout dstChLayout, int dstSampleRate, AVSampleFormat dstFormat)
         {
-            var output = dstframe;//?? MediaFrame.CreateAudioFrame(DstChLayout, DstNbSamples, DstFormat, DstSampleRate);
             AVChannelLayout inChLayout;
             ffmpeg.av_opt_get_chlayout(pSwrContext, "in_ch_layout", 0, &inChLayout).ThrowIfError();
             AVChannelLayout outChLayout;
@@ -39,26 +68,28 @@ namespace FFmpegSharp
             ffmpeg.av_opt_get_sample_fmt(pSwrContext, "out_sample_fmt", 0, &outFmt).ThrowIfError();
             AVSampleFormat inFmt;
             ffmpeg.av_opt_get_sample_fmt(pSwrContext, "in_sample_fmt", 0, &inFmt).ThrowIfError();
-            if (ffmpeg.swr_is_initialized(pSwrContext) == 0
-                || inChLayout.IsContentEqual(srcFrame.ChLayout)
+            if (inChLayout.IsContentEqual(srcFrame.ChLayout)
                 || inSampleRate != srcFrame.SampleRate
                 || (int)inFmt != srcFrame.Format
-                || outChLayout.IsContentEqual(dstframe.ChLayout)
-                || outSampleRate != dstframe.SampleRate
-                || (int)outFmt != dstframe.Format)
+                || outChLayout.IsContentEqual(dstChLayout)
+                || outSampleRate != dstSampleRate
+                || outFmt != dstFormat) // need reset
             {
                 AVFrame* src = srcFrame;
-                AVFrame* dst = output;
-
                 fixed (SwrContext** ppSwrContext = &pSwrContext)
                 {
-                    ffmpeg.swr_alloc_set_opts2(ppSwrContext, &outChLayout, outFmt, (int)outSampleRate,
+                    ffmpeg.swr_alloc_set_opts2(ppSwrContext, &dstChLayout, dstFormat, dstSampleRate,
                         &src->ch_layout, (AVSampleFormat)src->format, src->sample_rate, 0, null).ThrowIfError();
                 }
                 ffmpeg.swr_init(pSwrContext).ThrowIfError();
             }
+            else
+            {
+                if (ffmpeg.swr_is_initialized(pSwrContext) == 0) // just init
+                    ffmpeg.swr_init(pSwrContext).ThrowIfError();
+            }
         }
-
+ 
         private int FifoPush(MediaFrame srcFrame, MediaFrame dstFrame)
         {
             AVFrame* src = srcFrame;
@@ -82,40 +113,62 @@ namespace FFmpegSharp
             return dstFrame;
         }
 
+        private int GetOutSamples(int inSamples)
+        {
+            return ffmpeg.swr_get_out_samples(pSwrContext, inSamples);
+        }
+
         #endregion safe wapper for IEnumerable
 
         /// <summary>
-        /// Convert <paramref name="srcFrame"/>.
+        /// Convert <paramref name="srcframe"/>.
         /// <para>
         /// sometimes audio inputs and outputs are used at different
         /// frequencies and need to be resampled using fifo,
         /// so use <see cref="IEnumerable{T}"/>.
         /// </para>
         /// </summary>
-        /// <param name="srcFrame"></param>
-        /// <param name="dstFrame"></param>
+        /// <param name="srcframe"></param>
+        /// <param name="dstframe"></param>
         /// <returns></returns>
-        public IEnumerable<MediaFrame> Convert(MediaFrame srcFrame, MediaFrame dstFrame)
+        public IEnumerable<MediaFrame> Convert(MediaFrame srcframe, MediaFrame dstframe = null)
         {
-            SwrCheckInit(srcFrame, dstFrame);
-            FifoPush(srcFrame, dstFrame);
-            while (AudioFifo.Size >= dstFrame.NbSamples)
+            if (dstframe == null)
+                dstframe = new MediaFrame();
+            else
+                dstframe.Unref();
+            srcframe.CopyProps(dstframe);
+            dstframe.ChLayout = dstChLayout;
+            dstframe.Format = (int)dstFormat;
+            dstframe.SampleRate = dstSampleRate;
+            SwrCheckInit(srcframe, dstChLayout, dstSampleRate, dstFormat);
+            var samples = GetOutSamples(srcframe.NbSamples);
+            dstframe.NbSamples = dstSamples == 0 ? (samples < 0 ? srcframe.NbSamples : samples) : dstSamples;
+            dstframe.AllocateBuffer();
+            FifoPush(srcframe, dstframe);
+            while (AudioFifo.Size >= dstframe.NbSamples)
             {
-                yield return FifoPop(dstFrame);
+                yield return FifoPop(dstframe);
             }
+            if (dstframe == null) dstframe?.Dispose();
         }
 
         /// <summary>
         /// convert input audio frame to output frame
         /// </summary>
         /// <param name="srcFrame">input audio frame</param>
-        /// <param name="dstFrame"></param>
         /// <param name="outSamples">number of samples actually output</param>
         /// <param name="cacheSamples">number of samples in the internal cache</param>
         /// <returns></returns>
-        public MediaFrame ConvertFrame(MediaFrame srcFrame, MediaFrame dstFrame, out int outSamples, out int cacheSamples)
+        public MediaFrame ConvertFrame(MediaFrame srcFrame, out int outSamples, out int cacheSamples)
         {
-            SwrCheckInit(srcFrame, dstFrame);
+            var dstFrame = new MediaFrame();
+            dstFrame.ChLayout = dstChLayout;
+            dstFrame.Format = (int)dstFormat;
+            dstFrame.SampleRate = dstSampleRate;
+            SwrCheckInit(srcFrame, dstChLayout, dstSampleRate, dstFormat);
+            dstFrame.NbSamples = dstSamples == 0 ? GetOutSamples(srcFrame.NbSamples) : dstSamples;
+            dstFrame.AllocateBuffer();
             int curSamples = FifoPush(srcFrame, dstFrame);
             var dstframe = FifoPop(dstFrame);
             cacheSamples = AudioFifo.Size;
@@ -128,6 +181,9 @@ namespace FFmpegSharp
             if (value is null) return null;
             return value.pSwrContext;
         }
+
+        #region 
+        private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {
@@ -152,5 +208,6 @@ namespace FFmpegSharp
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+        #endregion
     }
 }
