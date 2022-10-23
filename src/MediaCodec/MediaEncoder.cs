@@ -20,7 +20,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return new MediaEncoder(new MediaCodecContext(MediaCodec.FindEncoder(format.VideoCodec)).Open(_ =>
+            return CreateEncoder(MediaCodec.FindEncoder(format.VideoCodec), _ =>
             {
                 _.Width = width;
                 _.Height = height;
@@ -37,7 +37,7 @@ namespace FFmpegSharp
                 if ((format.Flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
                     _.Flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
                 otherSettings?.Invoke(_);
-            }, null, opts));
+            }, opts);
         }
 
         public static MediaEncoder CreateVideoEncoder(
@@ -51,7 +51,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return new MediaEncoder(new MediaCodecContext(codec).Open(_ =>
+            return CreateEncoder(codec, _ =>
             {
                 _.Width = width;
                 _.Height = height;
@@ -66,7 +66,7 @@ namespace FFmpegSharp
                 _.BitRate = bitrate;
                 _.Flags |= flags;
                 otherSettings?.Invoke(_);
-            }, null, opts));
+            }, opts);
         }
 
         public static MediaEncoder CreateVideoEncoder(
@@ -164,7 +164,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return new MediaEncoder(new MediaCodecContext(MediaCodec.FindEncoder(format.AudioCodec)).Open(_ =>
+            return CreateEncoder(MediaCodec.FindEncoder(format.AudioCodec), _ =>
             {
                 _.SampleRate = sampleRate;
                 _.ChLayout = chLayout;
@@ -179,7 +179,7 @@ namespace FFmpegSharp
                 if ((format.Flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
                     _.Flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
                 otherSettings?.Invoke(_);
-            }, null, opts));
+            }, opts);
         }
 
         public static MediaEncoder CreateAudioEncoder(
@@ -204,7 +204,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return new MediaEncoder(new MediaCodecContext(codec).Open(_ =>
+            return CreateEncoder(codec, _ =>
             {
                 _.SampleRate = sampleRate;
                 _.ChLayout = chLayout;
@@ -218,7 +218,7 @@ namespace FFmpegSharp
                 _.BitRate = bitrate;
                 _.Flags |= flags;
                 otherSettings?.Invoke(_);
-            }, null, opts));
+            }, opts);
         }
         public static MediaEncoder CreateAudioEncoder(
             MediaCodec codec,
@@ -288,18 +288,24 @@ namespace FFmpegSharp
         #endregion
 
         #region Create
-        public static MediaEncoder CreateEncoder(AVCodecParameters codecParameters,Action<MediaCodecContextBase> action = null, MediaDictionary opts = null)
+
+        public static MediaEncoder CreateEncoder(MediaCodec codec, Action<MediaCodecContextBase> beforeOpenSetting, MediaDictionary opts = null)
+        {
+            return new MediaEncoder(new MediaCodecContext(codec).Open(beforeOpenSetting, null, opts));
+        }
+
+        public static MediaEncoder CreateEncoder(AVCodecParameters codecParameters, Action<MediaCodecContextBase> action = null, MediaDictionary opts = null)
         {
             var codec = MediaCodec.FindEncoder(codecParameters.codec_id);
             AVCodecParameters* pCodecParameters = &codecParameters;
             // If codec_id is AV_CODEC_ID_NONE return null
             return codec == null
                 ? null
-                : new MediaEncoder(MediaCodecContext.Create(codec, _ =>
+                : CreateEncoder(codec, _ =>
                 {
                     ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError();
                     action?.Invoke(_);
-                }, opts));
+                }, opts);
         }
         #endregion
 

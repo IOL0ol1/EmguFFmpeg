@@ -11,6 +11,11 @@ namespace FFmpegSharp
 
         #region Create
 
+        public static MediaDecoder CreateDecoder(MediaCodec codec, Action<MediaCodecContextBase> beforeOpenSetting, MediaDictionary opts = null)
+        {
+            return new MediaDecoder(new MediaCodecContext(codec).Open(beforeOpenSetting, null, opts));
+        }
+
         /// <summary>
         /// Create <see cref="AVCodecContext"/> by <see cref="AVCodecParameters"/>.
         /// <para>
@@ -31,11 +36,11 @@ namespace FFmpegSharp
             // If codec_id is AV_CODEC_ID_NONE return null
             return codec == null
                 ? null
-                : new MediaDecoder(MediaCodecContext.Create(codec, _ =>
+                : CreateDecoder(codec, _ =>
                 {
                     ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError();
                     action?.Invoke(_);
-                }, opts));
+                }, opts);
         }
 
         #endregion
@@ -83,13 +88,13 @@ namespace FFmpegSharp
             int ret = SendPacket(packet);
             if (ret < 0 && ret != ffmpeg.AVERROR(ffmpeg.EAGAIN) && ret != ffmpeg.AVERROR_EOF)
                 ret.ThrowIfError();
-            MediaFrame frame = inFrame ?? new MediaFrame();
-            MediaFrame swframe = swFrame == null ? (isHWDeviceCtxInit ? new MediaFrame() : null) : swFrame;
+            MediaFrame _frame = inFrame ?? new MediaFrame();
+            MediaFrame _swframe = swFrame == null ? (isHWDeviceCtxInit ? new MediaFrame() : null) : swFrame;
             try
             {
                 while (true)
                 {
-                    ret = ReceiveFrame(frame);
+                    ret = ReceiveFrame(_frame);
                     if (ret < 0)
                     {
                         // those two return values are special and mean there is no output
@@ -101,19 +106,20 @@ namespace FFmpegSharp
                     }
                     if (isHWDeviceCtxInit)
                     {
-                        HWFrameTransferData(swframe, frame, flags);
-                        yield return swframe;
+                        _frame.CopyProps(_swframe);
+                        HWFrameTransferData(_swframe, _frame, flags);
+                        yield return _swframe;
                     }
                     else
                     {
-                        yield return frame;
+                        yield return _frame;
                     }
                 }
             }
             finally
             {
-                if (inFrame == null) frame.Dispose();
-                if (swFrame == null) swframe?.Dispose();
+                if (inFrame == null) _frame.Dispose();
+                if (swFrame == null) _swframe?.Dispose();
             }
         }
 
