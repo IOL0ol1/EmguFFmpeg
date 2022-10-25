@@ -72,7 +72,7 @@ namespace FFmpegSharp
 
         #region safe wapper for IEnumerable
 
-        protected static IntPtr av_codec_iterate_safe(IntPtr2Ptr opaque)
+        protected static IntPtr av_codec_iterate_safe(Iterate opaque)
         {
             return (IntPtr)ffmpeg.av_codec_iterate(opaque);
         }
@@ -83,11 +83,11 @@ namespace FFmpegSharp
         public static IEnumerable<MediaCodec> GetCodecs()
         {
             IntPtr pCodec;
-            IntPtr2Ptr opaque = IntPtr2Ptr.Ptr2Null;
+            Iterate opaque = new Iterate();
             while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new MediaCodec(pCodec);
-            }
+            } 
         }
 
 

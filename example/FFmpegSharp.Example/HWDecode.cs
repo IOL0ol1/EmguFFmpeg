@@ -10,8 +10,7 @@ namespace FFmpegSharp.Example
     {
         public HWDecode() : base("d3d11va", "video-input.mp4", "HWDecode-output.bin")
         {
-
-            Index = -999;
+             
         }
 
         public override void Execute()
@@ -38,8 +37,7 @@ namespace FFmpegSharp.Example
                 foreach (var p in demuxer.ReadPackets(packet))
                 {
                     if (p.StreamIndex == video_stream)
-                    {
-                        //Trace.TraceInformation($"{p.Pos}\t{p.Pts}\t{p.Dts}");
+                    { 
                         foreach (var inFrame in vDecoder.DecodePacket(p, frame, sw_frame))
                         {
                             Write(output_file, inFrame);

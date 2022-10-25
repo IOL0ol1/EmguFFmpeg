@@ -8,7 +8,8 @@ namespace FFmpegSharp.Example
     internal class Muxing : ExampleBase
     {
         public Muxing() : this($"Muxing-output.mp4")
-        { }
+        { 
+        }
 
         public Muxing(params string[] args) : base(args)
         { }

@@ -4,9 +4,15 @@ using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
 {
+
+
     public unsafe class MediaIOContext : Stream
     {
         protected AVIOContext* _pIOContext;
+        private avio_alloc_context_read_packet _read;
+        private avio_alloc_context_write_packet _write;
+        private avio_alloc_context_seek _seek;
+        private Stream stream;
 
         public static implicit operator AVIOContext*(MediaIOContext value)
         {
@@ -22,18 +28,60 @@ namespace FFmpegSharp
         }
 
         public MediaIOContext(
-            Func<IntPtr, IntPtr, int, int> read,
-            Func<IntPtr, IntPtr, int, int> write = null,
-            Func<IntPtr, long, int, long> seek = null,
+            Stream stream,
             int bufferSize = 4096)
         {
             var _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
             if (_buffer == null) throw new OutOfMemoryException();
-            var _readfunc = read != null ? (avio_alloc_context_read_packet_func)((o, b, s) => read.Invoke((IntPtr)o, (IntPtr)b, s)) : null;
-            var _writefunc = write != null ? (avio_alloc_context_write_packet)((o, b, s) => write.Invoke((IntPtr)o, (IntPtr)b, s)) : null;
-            var _seekfunc = seek != null ? (avio_alloc_context_seek)((o, b, s) => seek.Invoke((IntPtr)o, b, s)) : null;
-            _pIOContext = ffmpeg.avio_alloc_context(_buffer, bufferSize, _writefunc != null ? 1 : 0, null, _readfunc, _writefunc, _seekfunc);
+            this.stream = stream;
+            _read = new avio_alloc_context_read_packet(Read);
+            _write = new avio_alloc_context_write_packet(Write);
+            _seek = new avio_alloc_context_seek(Seek);
+            _pIOContext = ffmpeg.avio_alloc_context(_buffer, bufferSize, stream.CanWrite ? 1 : 0, null, stream.CanRead ? _read : null, stream.CanWrite ? _write : null, stream.CanSeek ? _seek : null);
             if (_pIOContext == null) throw new NullReferenceException();
+        }
+
+        private int Write(void* opaque, byte* buf, int buf_size)
+        {
+#if NETSTANDARD2_0
+            var buffer = new byte[buf_size];
+            System.Runtime.InteropServices.Marshal.Copy((IntPtr)buf, buffer, 0, buf_size);
+            stream.Write(buffer, 0, buf_size);
+#else
+            var buffer = new Span<byte>((void*)buf, buf_size);
+            stream.Write(buffer);
+#endif
+            return buf_size;
+        }
+
+        int Read(void* opaque, byte* buf, int buf_size)
+        {
+#if NETSTANDARD2_0
+            var buffer = new byte[buf_size];
+            var count = stream.Read(buffer, 0, buf_size);
+            System.Runtime.InteropServices.Marshal.Copy(buffer, 0, (IntPtr)buf, count);
+#else
+            var buffer = new Span<byte>((void*)buf, buf_size);
+            var count = stream.Read(buffer);
+
+#endif
+            return count == 0 ? ffmpeg.AVERROR_EOF : count;
+        }
+
+        long Seek(void* opaque, long offset, int whence)
+        {
+            if (whence == ffmpeg.AVSEEK_SIZE)
+            {
+                return stream.Length;
+            }
+            else if (whence < 3)
+            {
+                return stream.Seek(offset, (SeekOrigin)whence);
+            }
+            else
+            {
+                return -1;
+            }
         }
 
         public static MediaIOContext Open(string url, int flags, MediaDictionary options = null)
@@ -117,7 +165,9 @@ namespace FFmpegSharp
             {
                 if (_pIOContext != null)
                 {
-                    ffmpeg.avio_close(_pIOContext);
+                    stream?.Dispose();
+                    fixed (AVIOContext** pp = &_pIOContext)
+                        ffmpeg.avio_closep(pp);
                     _pIOContext = null;
                 }
                 disposedValue = true;

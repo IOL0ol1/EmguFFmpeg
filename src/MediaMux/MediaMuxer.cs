@@ -11,8 +11,8 @@ namespace FFmpegSharp
         protected bool hasWriteHeader; // Fixed: use ffmpeg's flag is better.
         protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
 
-        private Stream _stream;
-        private MediaFormatContext context;
+        private MediaIOContext _ioContext;
+        private MediaFormatContext _context;
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
@@ -25,12 +25,13 @@ namespace FFmpegSharp
         /// <param name="oformat"></param>
         public static MediaMuxer Create(Stream stream, OutFormat oformat)
         {
+            var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768);
             var formatContext = new MediaFormatContext();
             AVFormatContext* pFormatContext = formatContext;
             pFormatContext->oformat = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                pFormatContext->pb = stream.CreateIOContext();
-            var output = new MediaMuxer(formatContext) { _stream = stream };
+                pFormatContext->pb = ioContext;
+            var output = new MediaMuxer(formatContext) { _ioContext = ioContext };
             return output;
         }
 
@@ -47,17 +48,20 @@ namespace FFmpegSharp
         {
             AVFormatContext* pFormatContext = null;
             ffmpeg.avformat_alloc_output_context2(&pFormatContext, oformat, formatName, fileName).ThrowIfError();
-
+            var o = new MediaMuxer(new MediaFormatContext(pFormatContext));
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0 && fileName != null)
-                pFormatContext->pb = MediaIOContext.Open(fileName, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
-            return new MediaMuxer(new MediaFormatContext(pFormatContext));
+            {
+                o._ioContext = MediaIOContext.Open(fileName, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
+                pFormatContext->pb = o._ioContext;
+            }
+            return o;
         }
 
         public MediaMuxer(MediaFormatContext openedFormatContext)
             : base(openedFormatContext)
         {
             if (openedFormatContext == null) throw new NullReferenceException();
-            context = openedFormatContext;
+            _context = openedFormatContext;
         }
 
         /// <summary>
@@ -221,10 +225,6 @@ namespace FFmpegSharp
         {
             if (!disposedValue)
             {
-                if (disposing)
-                {
-                    _stream?.Dispose();
-                }
                 if (pFormatContext != null)
                 {
                     // If no trailer is written, it is written automatically.
@@ -232,7 +232,14 @@ namespace FFmpegSharp
                     // and ffmpeg.av_write_trailer function may cause errors.
                     if (hasWriteHeader && !hasWriteTrailer)
                         ffmpeg.av_write_trailer(pFormatContext);
-                    context.Dispose();
+                    if (_ioContext != null)
+                    {
+                        AVIOContext* pb = _ioContext;
+                        _ioContext.Dispose();
+                        if (pb == pFormatContext->pb)
+                            pFormatContext->pb = null;
+                    }
+                    _context.Dispose();
                     pFormatContext = null;
                 }
                 disposedValue = true;

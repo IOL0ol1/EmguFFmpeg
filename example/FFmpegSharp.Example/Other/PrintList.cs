@@ -7,7 +7,7 @@ namespace FFmpegSharp.Example.Other
     {
         public PrintList() : base()
         {
-            Index = -1;
+            Index = -9;
         }
 
         public override void Execute()

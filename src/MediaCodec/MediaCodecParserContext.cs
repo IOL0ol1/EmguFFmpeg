@@ -25,7 +25,7 @@ namespace FFmpegSharp
             : this((int)codecId)
         { }
 
-        private static AVCodecParser? av_parser_iterate_safe(IntPtr2Ptr opaque)
+        private static AVCodecParser? av_parser_iterate_safe(Iterate opaque)
         {
             var ret = ffmpeg.av_parser_iterate(opaque);
             return ret == null ? (AVCodecParser?)null : *ret;
@@ -34,7 +34,7 @@ namespace FFmpegSharp
         public static IEnumerable<AVCodecParser> GetParsers()
         {
             AVCodecParser? output;
-            IntPtr2Ptr opaque = IntPtr2Ptr.Ptr2Null;
+            Iterate opaque = new Iterate();
             while ((output = av_parser_iterate_safe(opaque)) != null)
             {
                 yield return output.Value;
@@ -86,13 +86,13 @@ namespace FFmpegSharp
         /// <param name="dts"></param>
         /// <param name="pos"></param>
         /// <returns></returns>
-        public int Parser2(MediaCodecContextBase codecContext, IntPtr2Ptr poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
+        public int Parser2(MediaCodecContextBase codecContext, Iterate poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
         {
             return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, (byte**)(void**)poutbuf, (int*)poutbufSize, (byte*)buf, bufSize, pts, dts, pos);
         }
 
 
-        public int Parser2(MediaCodecContextBase codecContext, IntPtr2Ptr poutbuf, IntPtr poutbufSize, byte[] buf, long pts, long dts, long pos)
+        public int Parser2(MediaCodecContextBase codecContext, Iterate poutbuf, IntPtr poutbufSize, byte[] buf, long pts, long dts, long pos)
         {
             fixed (byte* pbuf = buf)
             {

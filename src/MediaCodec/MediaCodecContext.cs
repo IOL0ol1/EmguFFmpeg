@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
 using FFmpegSharp.Internal;
 
@@ -128,7 +129,8 @@ namespace FFmpegSharp.Internal
                     .FirstOrDefault(_ => (type == null || _.Value.device_type == type) && (_.Value.methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) != 0) is AVCodecHWConfig hWConfig)
                 {
                     ffmpeg.av_hwdevice_ctx_create(&pCodecContext->hw_device_ctx, hWConfig.device_type, device, opts, flags).ThrowIfError();
-                    pCodecContext->get_format = (AVCodecContext_get_format_func)((avctx, pix_fmts) => GetFormat(avctx, pix_fmts, hWConfig.pix_fmt));
+                    GetFormatFunc = (avctx, pix_fmts) => GetFormat(avctx, pix_fmts, hWConfig.pix_fmt);
+                    pCodecContext->get_format = GetFormatFunc;
                 }
             }
             return IsHWDeviceCtxInit() ? AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX : 0;
@@ -147,7 +149,9 @@ namespace FFmpegSharp.Internal
             ffmpeg.av_hwframe_transfer_data(dst, src, flags).ThrowIfError();
         }
 
-        private AVPixelFormat GetFormat(AVCodecContext* avctx, AVPixelFormat* pix_fmts, AVPixelFormat hw_pix_fmts)
+        private AVCodecContext_get_format GetFormatFunc;
+
+        private static AVPixelFormat GetFormat(AVCodecContext* avctx, AVPixelFormat* pix_fmts, AVPixelFormat hw_pix_fmts)
         {
             while (*pix_fmts != AVPixelFormat.AV_PIX_FMT_NONE)
             {

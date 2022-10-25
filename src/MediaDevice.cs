@@ -75,7 +75,7 @@ namespace FFmpegSharp
 
         public static MediaDeviceInfoLists ListDevice(this MediaFormatContextBase value)
         {
-            AVDeviceInfoList** o = (AVDeviceInfoList**)(void**)IntPtr2Ptr.Ptr2Null;
+            AVDeviceInfoList** o = (AVDeviceInfoList**)(void**)(new Iterate());
             var count = ffmpeg.avdevice_list_devices(value, o).ThrowIfError();
             return new MediaDeviceInfoLists(o, count);
         }
@@ -83,14 +83,14 @@ namespace FFmpegSharp
 
         public static MediaDeviceInfoLists ListInputSources(InFormat value, string deviceName = null, MediaDictionary deviceOptions = null)
         {
-            AVDeviceInfoList** o = (AVDeviceInfoList**)(void**)IntPtr2Ptr.Ptr2Null;
+            AVDeviceInfoList** o = (AVDeviceInfoList**)(void**)(new Iterate());
             var count = ffmpeg.avdevice_list_input_sources(value, deviceName, deviceOptions, o).ThrowIfError();
             return new MediaDeviceInfoLists(o, count);
         }
 
         public static MediaDeviceInfoLists ListOutputSinks(OutFormat value, string deviceName = null, MediaDictionary deviceOptions = null)
         {
-            AVDeviceInfoList** o = (AVDeviceInfoList**)(void**)IntPtr2Ptr.Ptr2Null;
+            AVDeviceInfoList** o = (AVDeviceInfoList**)(void**)(new Iterate());
             var count = ffmpeg.avdevice_list_output_sinks(value, deviceName, deviceOptions, o).ThrowIfError();
             return new MediaDeviceInfoLists(o, count);
         }

@@ -17,7 +17,7 @@ namespace FFmpegSharp
         }
 
         public MediaDictionary()
-            : this((AVDictionary**)(void**)IntPtr2Ptr.Ptr2Null)
+            : this((AVDictionary**)(void**)(new Iterate()))
         { }
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)

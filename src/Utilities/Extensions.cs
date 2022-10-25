@@ -7,7 +7,7 @@ using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
 {
- 
+
     public static class AVRationalExtension
     {
         public static AVRational ToInvert(this AVRational rational)
@@ -93,6 +93,17 @@ namespace FFmpegSharp
         }
     }
 
+    public unsafe class Iterate
+    {
+        private void* ptr = null;
+
+        public static implicit operator void**(Iterate ptr2Ptr)
+        {
+            fixed (void** pp = &ptr2Ptr.ptr)
+                return pp;
+        }
+    }
+
     internal static class TExtension
     {
 
@@ -107,55 +118,5 @@ namespace FFmpegSharp
         }
     }
 
-
-    public static class StreamExtension
-    {
-        public unsafe static MediaIOContext CreateIOContext(this Stream stream, int bufferSize = 4096)
-        {
-            Func<IntPtr, IntPtr, int, int> WriteFunc = (IntPtr opaque, IntPtr buf, int buf_size) =>
-            {
-#if NETSTANDARD2_0
-                var buffer = new byte[buf_size];
-                System.Runtime.InteropServices.Marshal.Copy((IntPtr)buf, buffer, 0, buf_size);
-                stream.Write(buffer, 0, buf_size);
-#else
-                var buffer = new Span<byte>((void*)buf, buf_size);
-                stream.Write(buffer);
-#endif
-                return buf_size;
-            };
-
-            Func<IntPtr, IntPtr, int, int> ReadFunc = (IntPtr opaque, IntPtr buf, int buf_size) =>
-            {
-#if NETSTANDARD2_0
-                var buffer = new byte[buf_size];
-                var count = stream.Read(buffer, 0, buf_size);
-                System.Runtime.InteropServices.Marshal.Copy(buffer, 0, (IntPtr)buf, count);
-#else
-                var buffer = new Span<byte>((void*)buf, buf_size);
-                var count = stream.Read(buffer);
-
-#endif
-                return count == 0 ? ffmpeg.AVERROR_EOF : count;
-            };
-
-            Func<IntPtr, long, int, long> SeekFunc = (IntPtr opaque, long offset, int whence) =>
-            {
-                if (whence == ffmpeg.AVSEEK_SIZE)
-                {
-                    return stream.Length;
-                }
-                else if (whence < 3)
-                {
-                    return stream.Seek(offset, (SeekOrigin)whence);
-                }
-                else
-                {
-                    return -1;
-                }
-            };
-            return new MediaIOContext(stream.CanRead ? ReadFunc : null, stream.CanWrite ? WriteFunc : null, stream.CanSeek ? SeekFunc : null, bufferSize);
-        }
-    }
 }
 

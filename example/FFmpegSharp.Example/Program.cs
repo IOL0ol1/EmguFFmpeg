@@ -25,7 +25,7 @@ namespace FFmpegSharp.Example
                 {
                     while (true)
                     {
-                        await Task.Delay(500);
+                        await Task.Delay(10);
                         GC.Collect();
                     }
                 });

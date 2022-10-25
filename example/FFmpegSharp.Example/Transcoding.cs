@@ -12,7 +12,7 @@ namespace FFmpegSharp.Example
         public Transcoding(params string[] args) : base(args)
         { }
 
-        public unsafe override void Execute()
+        public override unsafe void Execute()
         {
             var input = args[0];
             var output = args[1];

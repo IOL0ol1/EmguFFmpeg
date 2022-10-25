@@ -9,8 +9,8 @@ namespace FFmpegSharp
 {
     public unsafe class MediaDemuxer : MediaFormatContextBase, IReadOnlyList<MediaStream>, IDisposable
     {
-        private Stream _stream;
-        protected MediaFormatContext context;
+        private MediaIOContext _ioContext;
+        protected MediaFormatContext _context;
 
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
@@ -27,12 +27,13 @@ namespace FFmpegSharp
         /// <param name="options"></param>
         public static MediaDemuxer Open(Stream stream, InFormat iformat = null, MediaDictionary options = null)
         {
+            var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768);
             var output = Open(null, iformat, options, _ =>
             {
                 AVFormatContext* f = _;
-                f->pb = stream.CreateIOContext();
+                f->pb = ioContext;
             });
-            output._stream = stream;
+            output._ioContext = ioContext;
             return output;
         }
 
@@ -59,7 +60,7 @@ namespace FFmpegSharp
             : base(context)
         {
             if (context == null) throw new NullReferenceException();
-            this.context = context;
+            this._context = context;
         }
 
         public int FindStreamInfo(MediaDictionary options)
@@ -199,13 +200,16 @@ namespace FFmpegSharp
         {
             if (!disposedValue)
             {
-                if (disposing)
-                {
-                    _stream?.Dispose();
-                }
                 if (pFormatContext != null)
                 {
-                    context.Dispose();
+                    if (_ioContext != null)
+                    {
+                        AVIOContext* pb = _ioContext;
+                        _ioContext.Dispose();
+                        if (pb == pFormatContext->pb)
+                            pFormatContext->pb = null;
+                    }
+                    _context.Dispose();
                     pFormatContext = null;
                 }
                 disposedValue = true;

@@ -11,8 +11,7 @@ namespace FFmpegSharp.Example
 
         public DecodeVideo(params string[] args) : base(args)
         {
-            Index = 12;
-            Enable = false;
+            Index = 12; 
         }
 
         public override void Execute()

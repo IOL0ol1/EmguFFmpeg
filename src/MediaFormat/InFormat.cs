@@ -58,14 +58,14 @@ namespace FFmpegSharp
         public static IEnumerable<InFormat> GetFormats()
         {
             IntPtr iformat;
-            IntPtr2Ptr ifmtOpaque = IntPtr2Ptr.Ptr2Null;
-            while ((iformat = av_demuxer_iterate_safe(ifmtOpaque)) != IntPtr.Zero)
+            Iterate opaque = new Iterate();
+            while ((iformat = av_demuxer_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new InFormat(iformat);
             }
         }
 
-        private static IntPtr av_demuxer_iterate_safe(IntPtr2Ptr opaque)
+        private static IntPtr av_demuxer_iterate_safe(Iterate opaque)
         {
             return (IntPtr)ffmpeg.av_demuxer_iterate(opaque);
         }
