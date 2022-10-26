@@ -8,17 +8,15 @@ namespace FFmpegSharp
 {
     public unsafe class MediaDictionary : IDictionary<string, string>, IDisposable
     {
-        private AVDictionary** ppDictionary = null;
+        private AVDictionary* zero = null; 
 
-        public MediaDictionary(AVDictionary** ptr, bool isDisposeByOwner = true)
+        public MediaDictionary(AVDictionary* ptr, bool isDisposeByOwner = true)
         {
-            ppDictionary = ptr;
+            zero = ptr;
             disposedValue = !isDisposeByOwner;
         }
 
-        public MediaDictionary()
-            : this((AVDictionary**)(void**)(new Iterate()))
-        { }
+        public MediaDictionary()  { }
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
             : this()
@@ -55,7 +53,7 @@ namespace FFmpegSharp
 
         public ICollection<string> Values => this.Select(_ => _.Value).ToArray();
 
-        public int Count => ffmpeg.av_dict_count(*ppDictionary);
+        public int Count => ffmpeg.av_dict_count(zero);
 
         public bool IsReadOnly => false;
 
@@ -172,7 +170,10 @@ namespace FFmpegSharp
         /// </summary>
         public void Clear()
         {
-            ffmpeg.av_dict_free(ppDictionary);
+            fixed (AVDictionary** pp = &zero)
+            {
+                ffmpeg.av_dict_free(pp);
+            }
         }
 
         public bool TryGetValue(string key, out string value)
@@ -202,7 +203,7 @@ namespace FFmpegSharp
         public MediaDictionary Copy(int flags = 0)
         {
             var output = new MediaDictionary();
-            ffmpeg.av_dict_copy(output, *ppDictionary, flags);
+            ffmpeg.av_dict_copy(output, zero, flags);
             return output;
         }
 
@@ -211,13 +212,14 @@ namespace FFmpegSharp
         public static implicit operator AVDictionary**(MediaDictionary value)
         {
             if (value == null) return null;
-            return value.ppDictionary;
+            fixed (AVDictionary** pp = &value.zero)
+                return pp;
         }
 
         public static implicit operator AVDictionary*(MediaDictionary value)
         {
             if (value == null) return null;
-            return *value.ppDictionary;
+            return value.zero;
         }
 
         private bool disposedValue;
@@ -226,8 +228,8 @@ namespace FFmpegSharp
         {
             if (!disposedValue)
             {
-                Clear();
-                ppDictionary = null;
+                Clear(); 
+                zero = null;
                 disposedValue = true;
             }
         }
