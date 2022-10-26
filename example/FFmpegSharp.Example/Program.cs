@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using FFmpeg.AutoGen;
 
 namespace FFmpegSharp.Example
 {
@@ -11,6 +12,14 @@ namespace FFmpegSharp.Example
         {
             try
             {
+                Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        await Task.Delay(10);
+                        GC.Collect();
+                    }
+                });
                 //var dict = new MediaDictionary()
                 //{
                 //    ["texst"] = "12",
@@ -21,14 +30,7 @@ namespace FFmpegSharp.Example
                 //var b = dict.Get("texst").ToList();
                 //ffmpeg.avformat_network_init();
                 //MediaIOContext.Open("http://localhost:10010", ffmpeg.AVIO_FLAG_WRITE, dict);
-                Task.Run(async () =>
-                {
-                    while (true)
-                    {
-                        await Task.Delay(10);
-                        GC.Collect();
-                    }
-                });
+
                 typeof(Program).Assembly
                     .GetTypes()
                     .Where(_ => _.IsAssignableTo(typeof(ExampleBase)) && !_.IsAbstract)
