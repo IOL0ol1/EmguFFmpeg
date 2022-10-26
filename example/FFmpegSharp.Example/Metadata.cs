@@ -5,7 +5,10 @@ namespace FFmpegSharp.Example
     internal class Metadata : ExampleBase
     {
         public Metadata() : this($"video-input.mp4")
-        { }
+        {
+
+            Index = -99999;
+        }
 
         public Metadata(params string[] args) : base(args)
         { }
@@ -16,7 +19,7 @@ namespace FFmpegSharp.Example
             var fmt = MediaDemuxer.Open(input);
 
             var a = fmt.Ref.metadata;
-            var m = new MediaDictionary(&a, false);
+            var m = new MediaDictionary(a, false);
             foreach (var item in m)
             {
                 Console.WriteLine($"{item.Key}={item.Value}");
