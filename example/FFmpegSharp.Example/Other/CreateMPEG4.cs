@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using FFmpeg.AutoGen;
+using OpenCvSharp;
 
 namespace FFmpegSharp.Example
 {
@@ -22,23 +24,28 @@ namespace FFmpegSharp.Example
             var heith = 600;
             var s = Stopwatch.StartNew();
             using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), OutFormat.GuessFormat(null, outputFile, null)))
+            using (var convert = new PixelConverter())
             {
                 using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.ThreadCount = 10))
                 {
+                    convert.SetOpts(width, heith, vEncoder.PixFmt);
                     var vStream = muxer.AddStream(vEncoder);
-
                     muxer.WriteHeader();
 
-                    using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, vEncoder.PixFmt))
+                    using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, AVPixelFormat.AV_PIX_FMT_BGR24))
                     {
                         for (var i = 0; i < 3000; i++)
                         {
-                            FillYuv420P(vFrame, i);
-                            vFrame.Pts = i;
-                            foreach (var packet in vEncoder.EncodeFrame(vFrame))
+                            FillBgr24(vFrame, i);
+                            foreach (var frame in convert.Convert(vFrame))
                             {
-                                packet.StreamIndex = vStream.Index;
-                                muxer.WritePacket(packet, vEncoder.TimeBase);
+                                //FillYuv420P(vFrame, i);
+                                frame.Pts = i;
+                                foreach (var packet in vEncoder.EncodeFrame(frame))
+                                {
+                                    packet.StreamIndex = vStream.Index;
+                                    muxer.WritePacket(packet, vEncoder.TimeBase);
+                                }
                             }
                         }
                     }
@@ -47,6 +54,19 @@ namespace FFmpegSharp.Example
                 }
             }
             Console.WriteLine($"{s.Elapsed.TotalMilliseconds}ms");
+        }
+
+
+        private static unsafe void FillBgr24(MediaFrame frame, int i)
+        {
+            using (var mat = new Mat(frame.Height, frame.Width, MatType.CV_8UC3, Scalar.RandomColor()))
+            {
+                mat.PutText($"{i}", new Point(50, 50), HersheyFonts.HersheyPlain, 5, Scalar.White, 1, LineTypes.AntiAlias);
+                var srcLineSize = (int)mat.Step();
+                var dstLineSize = frame.Linesize[0];
+                FFmpegUtil.CopyPlane(mat.Data, srcLineSize,
+                   (IntPtr)frame.Ref.data[0], dstLineSize, Math.Min(srcLineSize, dstLineSize), frame.Height);
+            }
         }
 
         /// <summary>
