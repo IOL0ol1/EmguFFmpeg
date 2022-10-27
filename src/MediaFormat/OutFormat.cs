@@ -71,7 +71,7 @@ namespace FFmpegSharp
         public static IEnumerable<OutFormat> GetFormats()
         {
             IntPtr oformat;
-            Iterate opaque = new Iterate();
+            IntPtrPtr opaque = new IntPtrPtr();
             while ((oformat = av_muxer_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new OutFormat(oformat);
@@ -80,9 +80,12 @@ namespace FFmpegSharp
 
         #region Safe wapper for IEnumerable
 
-        private static IntPtr av_muxer_iterate_safe(Iterate ptr)
+        private static IntPtr av_muxer_iterate_safe(IntPtrPtr ptr)
         {
-            return (IntPtr)ffmpeg.av_muxer_iterate(ptr);
+            fixed (void** pp = &ptr.Ptr)
+            {
+                return (IntPtr)ffmpeg.av_muxer_iterate(pp);
+            }
         }
 
         #endregion Safe wapper for IEnumerable

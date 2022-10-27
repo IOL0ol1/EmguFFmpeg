@@ -24,14 +24,14 @@ namespace FFmpegSharp.Example
             using (var of = File.Create(outfilename))
             using (var pkt = new MediaPacket() { Dts = ffmpeg.AV_NOPTS_VALUE, Pts = ffmpeg.AV_NOPTS_VALUE, Pos = 0 })
             using (var parser = new MediaCodecParserContext(codec.Id))
-            using (var c = new MediaDecoder(MediaCodecContext.Create(codec, _ =>
+            using (var c = MediaDecoder.Create(codec, _ =>
              {
                  /* For some codecs, such as msmpeg4 and mpeg4, width and height
                     MUST be initialized there because this information is not
                     available in the bitstream. */
                  _.Height = 288;
                  _.Width = 352;
-             })))
+             }))
             using (var frame = new MediaFrame())
             {
                 foreach (var oPacket in parser.ParserPackets(c, f, pkt))

@@ -7,7 +7,6 @@ namespace FFmpegSharp.Example
         public Metadata() : this($"video-input.mp4")
         {
 
-            Index = -99999;
         }
 
         public Metadata(params string[] args) : base(args)

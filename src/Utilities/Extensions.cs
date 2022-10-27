@@ -92,15 +92,18 @@ namespace FFmpegSharp
             return new string(psbyte, 0, length, Encoding.UTF8);
         }
     }
+ 
 
-    public unsafe class Iterate
+    public unsafe class IntPtrPtr
     {
-        private void* ptr = null;
+        public void* Ptr = null;
 
-        public static implicit operator void**(Iterate ptr2Ptr)
+        public IntPtrPtr()
+        { }
+
+        public IntPtrPtr(IntPtr ptr)
         {
-            fixed (void** pp = &ptr2Ptr.ptr)
-                return pp;
+            this.Ptr =  (void*)ptr;
         }
     }
 

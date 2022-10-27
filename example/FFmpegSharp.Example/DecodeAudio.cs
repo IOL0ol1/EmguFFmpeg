@@ -20,7 +20,7 @@ namespace FFmpegSharp.Example
             var output = args[1];
 
             var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_MP2);
-            using (var decoder = new MediaDecoder(new MediaCodecContext(codec).Open()))
+            using (var decoder = MediaDecoder.Create(codec))
             using (var parser = new MediaCodecParserContext(codec.Id))
             using (var pkt = new MediaPacket())
             using (var decoded_frame = new MediaFrame())

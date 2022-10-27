@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
 using FFmpegSharp.Internal;
 
@@ -8,11 +7,14 @@ namespace FFmpegSharp
 {
     public unsafe partial class MediaCodecContext : MediaCodecContextBase, IDisposable
     {
-        protected bool disposedValue;
+        private bool disposedValue;
 
-        public static MediaCodecContext Create(MediaCodec codec, Action<MediaCodecContextBase> beforeOpenSetting, MediaDictionary opts = null)
+        public static MediaCodecContext Open(MediaCodec codec, Action<MediaCodecContextBase> beforeOpenSetting, MediaDictionary opts = null)
         {
-            return new MediaCodecContext(codec).Open(beforeOpenSetting, null, opts);
+            var output = new MediaCodecContext(codec);
+            beforeOpenSetting?.Invoke(output);
+            ffmpeg.avcodec_open2(output, codec, opts).ThrowIfError();
+            return output;
         }
 
         public MediaCodecContext(AVCodecContext* pAVCodecContext, bool isDisposeByOwner = true)
@@ -24,20 +26,6 @@ namespace FFmpegSharp
         public MediaCodecContext(MediaCodec codec = null)
                     : this(ffmpeg.avcodec_alloc_context3(codec), true)
         { }
-
-        /// <summary>
-        /// <see cref="ffmpeg.avcodec_open2(AVCodecContext*, AVCodec*, AVDictionary**)"/>
-        /// </summary>
-        /// <param name="beforeOpenSetting"></param>
-        /// <param name="codec"></param>
-        /// <param name="opts"></param>
-        public virtual MediaCodecContext Open(Action<MediaCodecContextBase> beforeOpenSetting = null, MediaCodec codec = null, MediaDictionary opts = null)
-        {
-            beforeOpenSetting?.Invoke(this);
-            ffmpeg.avcodec_open2(pCodecContext, codec, opts).ThrowIfError();
-            return this;
-        }
-
 
 
         #region IDisposable

@@ -8,7 +8,7 @@ namespace FFmpegSharp
 {
     public unsafe class MediaDictionary : IDictionary<string, string>, IDisposable
     {
-        private AVDictionary* zero = null; 
+        private AVDictionary* zero = null;
 
         public MediaDictionary(AVDictionary* ptr, bool isDisposeByOwner = true)
         {
@@ -16,7 +16,7 @@ namespace FFmpegSharp
             disposedValue = !isDisposeByOwner;
         }
 
-        public MediaDictionary()  { }
+        public MediaDictionary() { }
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
             : this()
@@ -68,7 +68,10 @@ namespace FFmpegSharp
 
         public int Add(string key, string value, AVDictWriteFlags flags)
         {
-            return ffmpeg.av_dict_set(this, key, value, (int)flags).ThrowIfError();
+            fixed (AVDictionary** p = &zero)
+            {
+                return ffmpeg.av_dict_set(p, key, value, (int)flags).ThrowIfError();
+            }
         }
 
         public int Add(KeyValuePair<string, string> item, AVDictWriteFlags flags)
@@ -120,8 +123,7 @@ namespace FFmpegSharp
 
         private static IntPtr av_dict_get_safe(MediaDictionary dict, string key, IntPtr prev, int flags)
         {
-            AVDictionary** ppDictionary = dict;
-            return (IntPtr)ffmpeg.av_dict_get(*ppDictionary, key, (AVDictionaryEntry*)prev, flags);
+            return (IntPtr)ffmpeg.av_dict_get(dict, key, (AVDictionaryEntry*)prev, flags);
         }
 
         private static string AVDictionaryEntryIntPtrGetValue(IntPtr intPtr)
@@ -228,7 +230,7 @@ namespace FFmpegSharp
         {
             if (!disposedValue)
             {
-                Clear(); 
+                Clear();
                 zero = null;
                 disposedValue = true;
             }

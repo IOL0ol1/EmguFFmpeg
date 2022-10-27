@@ -1,4 +1,4 @@
-using FFmpeg.AutoGen;
+﻿using FFmpeg.AutoGen;
 namespace FFmpegSharp.Internal
 {
     public abstract unsafe partial class MediaPacketBase

@@ -27,7 +27,7 @@ namespace CodeGenerator
             foreach (var type in types)
             {
                 var g = CodeGenerator(type.Item1, dstTypeName: type.Item2);
-                File.WriteAllText($"../../../{g.OutTypeName}.cs", g.SourceCode);
+                File.WriteAllText($"../../../{g.OutTypeName}.cs", g.SourceCode,System.Text.Encoding.UTF8);
             }
 
         }
@@ -54,7 +54,7 @@ namespace CodeGenerator
                 sw.WriteLine(@"");
                 sw.WriteLine($"        public static implicit operator {srcTypeName}*({dstTypeName} value)");
                 sw.WriteLine(@"        {");
-                sw.WriteLine($"            if(value == null) return null;");
+                sw.WriteLine($"            if (value == null) return null;");
                 sw.WriteLine($"            return value.{pTypeName};");
                 sw.WriteLine(@"        }");
                 sw.WriteLine(@"");
@@ -91,8 +91,8 @@ namespace CodeGenerator
                     var dstName = string.Join("", tmp[1].Split('_').Select(_ => $"{char.ToUpper(_[0])}{_.Substring(1)}"));
                     sw.WriteLine($"        public {dstType} {dstName}");
                     sw.WriteLine(@"        {");
-                    sw.WriteLine($"            get=> {pTypeName}->{srcName};");
-                    sw.WriteLine($"            set=> {pTypeName}->{srcName} = value;");
+                    sw.WriteLine($"            get => {pTypeName}->{srcName};");
+                    sw.WriteLine($"            set => {pTypeName}->{srcName} = value;");
                     sw.WriteLine(@"        }");
                     sw.WriteLine("");
                 }

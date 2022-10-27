@@ -5,10 +5,8 @@ using FFmpeg.AutoGen;
 using FFmpegSharp.Internal;
 namespace FFmpegSharp
 {
-    public unsafe class MediaEncoder : MediaCodecContextBase, IDisposable
+    public unsafe class MediaEncoder : MediaCodecContext
     {
-        protected readonly MediaCodecContext context;
-
         #region Video
         public static MediaEncoder CreateVideoEncoder(
             OutFormat format,
@@ -20,7 +18,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return CreateEncoder(MediaCodec.FindEncoder(format.VideoCodec), _ =>
+            return Create(MediaCodec.FindEncoder(format.VideoCodec), _ =>
             {
                 _.Width = width;
                 _.Height = height;
@@ -51,7 +49,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return CreateEncoder(codec, _ =>
+            return Create(codec, _ =>
             {
                 _.Width = width;
                 _.Height = height;
@@ -164,7 +162,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return CreateEncoder(MediaCodec.FindEncoder(format.AudioCodec), _ =>
+            return Create(MediaCodec.FindEncoder(format.AudioCodec), _ =>
             {
                 _.SampleRate = sampleRate;
                 _.ChLayout = chLayout;
@@ -204,7 +202,7 @@ namespace FFmpegSharp
             Action<MediaCodecContextBase> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return CreateEncoder(codec, _ =>
+            return Create(codec, _ =>
             {
                 _.SampleRate = sampleRate;
                 _.ChLayout = chLayout;
@@ -287,11 +285,22 @@ namespace FFmpegSharp
 
         #endregion
 
+        public MediaEncoder(AVCodecContext* pAVCodecContext, bool isDisposeByOwner = true)
+            : base(pAVCodecContext, isDisposeByOwner)
+        { }
+
+        public MediaEncoder(MediaCodec codec = null)
+            : base(codec)
+        { }
+
         #region Create
 
-        public static MediaEncoder CreateEncoder(MediaCodec codec, Action<MediaCodecContextBase> beforeOpenSetting, MediaDictionary opts = null)
+        public static MediaEncoder Create(MediaCodec codec, Action<MediaCodecContextBase> beforeOpenSetting, MediaDictionary opts = null)
         {
-            return new MediaEncoder(new MediaCodecContext(codec).Open(beforeOpenSetting, null, opts));
+            var output = new MediaEncoder(codec);
+            beforeOpenSetting?.Invoke(output);
+            ffmpeg.avcodec_open2(output, codec, opts).ThrowIfError();
+            return output;
         }
 
         public static MediaEncoder CreateEncoder(AVCodecParameters codecParameters, Action<MediaCodecContextBase> action = null, MediaDictionary opts = null)
@@ -301,21 +310,14 @@ namespace FFmpegSharp
             // If codec_id is AV_CODEC_ID_NONE return null
             return codec == null
                 ? null
-                : CreateEncoder(codec, _ =>
+                : Create(codec, _ =>
                 {
                     ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError();
                     action?.Invoke(_);
                 }, opts);
         }
         #endregion
-
-        public MediaEncoder(MediaCodecContext context)
-            : base(context)
-        {
-            if (context == null) throw new NullReferenceException();
-            this.context = context;
-        }
-
+ 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_send_frame(AVCodecContext*, AVFrame*)"/>
         /// </summary>
@@ -371,26 +373,5 @@ namespace FFmpegSharp
                 frame?.MakeWritable();
             }
         }
-
-        #region IDisposable
-        private bool disposedValue;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                context.Dispose();
-                disposedValue = true;
-            }
-        }
-        ~MediaEncoder()
-        {
-            Dispose(disposing: false);
-        }
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 }

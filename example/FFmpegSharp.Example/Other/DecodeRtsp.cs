@@ -14,24 +14,24 @@ namespace FFmpegSharp.Example
     {
         public DecodeRtsp() : base("your-rtsp-url") // eg. "rtsp://192.168.0.105:8554/mystream"
         {
-            Index = -999;
+            Index = -9999;
         }
 
         public unsafe override void Execute()
         {
-            var rtspUrl = args[0]; 
+            var rtspUrl = args[0];
 
             var output = Directory.CreateDirectory("DecodeRtsp").FullName;
 
             // rtsp settings
-            var options = new MediaDictionary()
+            using (var options = new MediaDictionary()
             {
+                ["rtsp_transport"] = "tcp",
                 ["rtsp_transport"] = "tcp",
                 ["max_delay"] = "5",
                 ["fflags"] = "nobuffer",
                 ["stimeout"] = "3000000",
-            };
-
+            })
             using (var demuxer = MediaDemuxer.Open(rtspUrl, options: options))
             using (var convert = new PixelConverter()) // pixel converter for YUV => RGB
             {

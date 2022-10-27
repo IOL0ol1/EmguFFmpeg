@@ -12,11 +12,10 @@ namespace FFmpegSharp.Example
         {
             try
             {
-                Task.Run(async () =>
+                Task.Run(() =>
                 {
                     while (true)
                     {
-                        await Task.Delay(10);
                         GC.Collect();
                     }
                 });
@@ -44,11 +43,28 @@ namespace FFmpegSharp.Example
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine($"-------------------{name} start----------------------");
                         Console.ForegroundColor = fColor;
-                        _.Execute();
+                        try
+                        {
+                            _.Execute();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.Message + ex.StackTrace);
+                        }
                         var s = Stopwatch.StartNew();
-                        _.Execute();
+                        var count = 10;
+                        for (int i = 0; i < count; i++)
+                        {
+                            try
+                            {
+                                _.Execute();
+                            }
+                            catch (Exception)
+                            { 
+                            }
+                        }
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"-------------------{name} end[{s.Elapsed.TotalMilliseconds}ms]----------------------");
+                        Console.WriteLine($"-------------------{name} end[{s.Elapsed.TotalMilliseconds / count}ms]----------------------");
                         Console.ForegroundColor = fColor;
                     });
             }

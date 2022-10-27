@@ -7,10 +7,9 @@ using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaDemuxer : MediaFormatContextBase, IReadOnlyList<MediaStream>, IDisposable
+    public unsafe class MediaDemuxer : MediaFormatContext, IReadOnlyList<MediaStream>
     {
         private MediaIOContext _ioContext;
-        protected MediaFormatContext _context;
 
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
@@ -45,23 +44,22 @@ namespace FFmpegSharp
         /// <param name="options"></param>
         /// <param name="beforeOpen"></param>
         public static MediaDemuxer Open(string url, InFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContextBase> beforeOpen = null)
-        {
-            var output = new MediaDemuxer(new MediaFormatContext());
+        { 
+            var output = new MediaDemuxer();
             beforeOpen?.Invoke(output);
-            fixed (AVFormatContext** ppFormatContext = &output.pFormatContext)
-            {
-                ffmpeg.avformat_open_input(ppFormatContext, url, iformat, options).ThrowIfError();
-            }
+            AVFormatContext* p = output;
+            ffmpeg.avformat_open_input(&p, url, iformat, options).ThrowIfError();
             output.FindStreamInfo(options);
             return output;
         }
 
-        public MediaDemuxer(MediaFormatContext context)
-            : base(context)
-        {
-            if (context == null) throw new NullReferenceException();
-            this._context = context;
-        }
+        public MediaDemuxer(AVFormatContext* pAVCodecContext, bool isDisposeByOwner = true)
+            : base(pAVCodecContext, isDisposeByOwner)
+        { }
+
+        public MediaDemuxer()
+            : base()
+        { }
 
         public int FindStreamInfo(MediaDictionary options)
         {
@@ -196,7 +194,7 @@ namespace FFmpegSharp
         #region IDisposable
         private bool disposedValue;
 
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -209,23 +207,13 @@ namespace FFmpegSharp
                         if (pb == pFormatContext->pb)
                             pFormatContext->pb = null;
                     }
-                    _context.Dispose();
+                    base.Dispose(disposing);
                     pFormatContext = null;
                 }
                 disposedValue = true;
             }
         }
 
-        ~MediaDemuxer()
-        {
-            Dispose(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
         #endregion IDisposable
     }
 }
