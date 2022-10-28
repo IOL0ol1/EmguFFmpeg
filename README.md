@@ -15,6 +15,7 @@ This branch is under construction, or use old version
 ## Usage
 
 Manually download the *.dll files that comply with the license from [ffmpeg.org](http://www.ffmpeg.org/download.html).    
+### Encode to mp4
 ```csharp
 using FFmpeg.AutoGen;
 using FFmpeg4Sharp;
@@ -52,6 +53,9 @@ using (var muxer = MediaMuxer.Create(outputFile))
         muxer.WriteTrailer();
     }
 }
+```
+### Decode from mp4
+```csharp
 //////////// Video to images ///////////
 var input = "path-to-your-input-file.mp4";
 using (var mediaReader = MediaDemuxer.Open(input))
@@ -60,20 +64,17 @@ using (var srcFrame = new MediaFrame())
 using (var convert = new PixelConverter())
 {
     var decoders = mediaReader.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef)).ToList(); // create decoder for each AVStream
-    MediaFrame dstFrame = null;
     foreach (var inPacket in mediaReader.ReadPackets(srcPacket))
     {
         var decoder = decoders[inPacket.StreamIndex];
         if (decoder != null)
         {
-            dstFrame = dstFrame == null 
-            ? MediaFrame.CreateVideoFrame(decoder.Width, decoder.Height, FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24) 
-            : dstFrame;
+            convert.SetOpts(decoder.Width, decoder.Height, AVPixelFormat.AV_PIX_FMT_BGR24); // set dst frame format
             foreach (var inFrame in decoder.DecodePacket(inPacket, srcFrame))
             {
-                if (decoder.CodecType == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO) // Only Video AVStream
+                if (decoder.CodecType == AVMediaType.AVMEDIA_TYPE_VIDEO) // Only video AVStream
                 {
-                    foreach (var outFrame in convert.Convert(inFrame, dstFrame)) // Convert to rgb frame(mp4 frame is yuv frame)
+                    foreach (var outFrame in convert.Convert(inFrame)) // Convert yuv to rgb frame
                     {
                         using (var bitmap = new Bitmap(outFrame.Width, outFrame.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb))
                         {
@@ -89,8 +90,7 @@ using (var convert = new PixelConverter())
                 }
             }
         }
-    }
-    dstFrame?.Dispose();
+    } 
     decoders.ForEach(_ => _?.Dispose()); // Dispose all decoder
 }
 ```
