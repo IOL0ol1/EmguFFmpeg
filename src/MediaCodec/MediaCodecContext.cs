@@ -13,7 +13,8 @@ namespace FFmpegSharp
         {
             var output = new MediaCodecContext(codec);
             beforeOpenSetting?.Invoke(output);
-            ffmpeg.avcodec_open2(output, codec, opts).ThrowIfError();
+            fixed (AVDictionary** pOpts = &opts.pDictionary)
+                ffmpeg.avcodec_open2(output, codec, pOpts).ThrowIfError();
             return output;
         }
 

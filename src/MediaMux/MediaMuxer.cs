@@ -10,7 +10,7 @@ namespace FFmpegSharp
         protected bool hasWriteHeader; // Fixed: use ffmpeg's flag is better.
         protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
 
-        private MediaIOContext _ioContext;
+        protected MediaIOContext _ioContext;
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
@@ -161,10 +161,14 @@ namespace FFmpegSharp
         public int WriteHeader(MediaDictionary options = null)
         {
             hasWriteHeader = true;
-            return ffmpeg.avformat_write_header(pFormatContext, options).ThrowIfError();
+            fixed (AVDictionary** pOptions = &options.pDictionary)
+            {
+                return ffmpeg.avformat_write_header(pFormatContext, pOptions).ThrowIfError();
+            }
         }
 
         /// <summary>
+        /// <para><see cref="ffmpeg.av_packet_rescale_ts(AVPacket*, AVRational, AVRational)"/></para>
         /// <para><see cref="ffmpeg.av_interleaved_write_frame(AVFormatContext*, AVPacket*)"/></para>
         /// <para><see cref="ffmpeg.av_packet_unref"/></para>
         /// </summary>

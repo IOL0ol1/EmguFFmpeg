@@ -50,8 +50,15 @@ namespace CodeGenerator
                 sw.WriteLine(@"{");
                 sw.WriteLine($"    public abstract unsafe partial class {dstTypeName}");
                 sw.WriteLine(@"    {");
-                sw.WriteLine($"        protected {srcTypeName}* {pTypeName} = null;");
+                sw.WriteLine(@"        /// <summary>");
+                sw.WriteLine(@"        /// Be careful!!!");
+                sw.WriteLine(@"        /// </summary>");
+                sw.WriteLine($"        protected internal {srcTypeName}* {pTypeName} = null;");
                 sw.WriteLine(@"");
+                sw.WriteLine(@"        /// <summary>");
+                sw.WriteLine($"        /// const {srcTypeName}*");
+                sw.WriteLine(@"        /// </summary>");
+                sw.WriteLine(@"        /// <param name=""value""></param>");
                 sw.WriteLine($"        public static implicit operator {srcTypeName}*({dstTypeName} value)");
                 sw.WriteLine(@"        {");
                 sw.WriteLine($"            if (value == null) return null;");

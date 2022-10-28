@@ -86,15 +86,21 @@ namespace FFmpegSharp
 
         public static MediaIOContext Open(string url, int flags, MediaDictionary options = null)
         {
-            AVIOContext* pIOContext = null;
-            ffmpeg.avio_open2(&pIOContext, url, flags, null, options).ThrowIfError();
+            AVIOContext* pIOContext;
+            fixed (AVDictionary** pOptions = &options.pDictionary)
+            {
+                ffmpeg.avio_open2(&pIOContext, url, flags, null, pOptions).ThrowIfError();
+            }
             return new MediaIOContext(pIOContext);
         }
 
         public static MediaIOContext Open(string url, int flags, AVIOInterruptCB interrupt, MediaDictionary options = null)
         {
-            AVIOContext* pIOContext = null;
-            ffmpeg.avio_open2(&pIOContext, url, flags, &interrupt, options).ThrowIfError();
+            AVIOContext* pIOContext;
+            fixed (AVDictionary** pOptions = &options.pDictionary)
+            {
+                ffmpeg.avio_open2(&pIOContext, url, flags, &interrupt, pOptions).ThrowIfError();
+            }
             return new MediaIOContext(pIOContext, true);
         }
 

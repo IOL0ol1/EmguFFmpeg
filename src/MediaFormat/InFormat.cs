@@ -67,8 +67,8 @@ namespace FFmpegSharp
 
         private static IntPtr av_demuxer_iterate_safe(IntPtrPtr opaque)
         {
-            fixed(void** pp = &opaque.Ptr)
-            return (IntPtr)ffmpeg.av_demuxer_iterate(pp);
+            fixed (void** pp = &opaque.Ptr)
+                return (IntPtr)ffmpeg.av_demuxer_iterate(pp);
         }
 
         public string Name => ((IntPtr)pInputFormat->name).PtrToStringUTF8();

@@ -8,7 +8,7 @@ namespace FFmpegSharp.Example.Other
         public PrintList() : base()
         {
             Index = -9;
-            //Enable = false;
+            Enable = false;
         }
 
         public override void Execute()

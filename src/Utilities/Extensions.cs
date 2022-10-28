@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using System.IO;
-using System.Security;
 using System.Text;
 using FFmpeg.AutoGen;
 
@@ -90,9 +88,22 @@ namespace FFmpegSharp
             while (psbyte[length] != 0)
                 length++;
             return new string(psbyte, 0, length, Encoding.UTF8);
+         
         }
     }
- 
+
+    public unsafe class IntPtrPtr<T> where T : unmanaged
+    {
+        public T* Ptr;
+
+        public IntPtrPtr()
+        { }
+
+        public IntPtrPtr(IntPtr ptr)
+        {
+            Ptr = (T*)ptr;
+        }
+    }
 
     public unsafe class IntPtrPtr
     {
@@ -103,7 +114,7 @@ namespace FFmpegSharp
 
         public IntPtrPtr(IntPtr ptr)
         {
-            this.Ptr =  (void*)ptr;
+            Ptr = (void*)ptr;
         }
     }
 

@@ -3,8 +3,15 @@ namespace FFmpegSharp.Internal
 {
     public abstract unsafe partial class MediaFrameBase
     {
-        protected AVFrame* pFrame = null;
+        /// <summary>
+        /// Be careful!!!
+        /// </summary>
+        protected internal AVFrame* pFrame = null;
 
+        /// <summary>
+        /// const AVFrame*
+        /// </summary>
+        /// <param name="value"></param>
         public static implicit operator AVFrame*(MediaFrameBase value)
         {
             if (value == null) return null;

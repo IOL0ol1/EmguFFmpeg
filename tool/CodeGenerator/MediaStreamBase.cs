@@ -3,8 +3,15 @@ namespace FFmpegSharp.Internal
 {
     public abstract unsafe partial class MediaStreamBase
     {
-        protected AVStream* pStream = null;
+        /// <summary>
+        /// Be careful!!!
+        /// </summary>
+        protected internal AVStream* pStream = null;
 
+        /// <summary>
+        /// const AVStream*
+        /// </summary>
+        /// <param name="value"></param>
         public static implicit operator AVStream*(MediaStreamBase value)
         {
             if (value == null) return null;

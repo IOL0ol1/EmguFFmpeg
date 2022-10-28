@@ -52,7 +52,7 @@ namespace FFmpegSharp.Example
                             Console.WriteLine(ex.Message + ex.StackTrace);
                         }
                         var s = Stopwatch.StartNew();
-                        var count = 10;
+                        var count = 2;
                         for (int i = 0; i < count; i++)
                         {
                             try

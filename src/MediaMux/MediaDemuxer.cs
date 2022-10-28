@@ -9,7 +9,7 @@ namespace FFmpegSharp
 {
     public unsafe class MediaDemuxer : MediaFormatContext, IReadOnlyList<MediaStream>
     {
-        private MediaIOContext _ioContext;
+        protected MediaIOContext _ioContext;
 
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
@@ -44,11 +44,14 @@ namespace FFmpegSharp
         /// <param name="options"></param>
         /// <param name="beforeOpen"></param>
         public static MediaDemuxer Open(string url, InFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContextBase> beforeOpen = null)
-        { 
+        {
             var output = new MediaDemuxer();
             beforeOpen?.Invoke(output);
-            AVFormatContext* p = output;
-            ffmpeg.avformat_open_input(&p, url, iformat, options).ThrowIfError();
+            fixed (AVFormatContext** ps = &output.pFormatContext)
+            fixed (AVDictionary** pOptions = &options.pDictionary)
+            {
+                ffmpeg.avformat_open_input(ps, url, iformat, pOptions).ThrowIfError();
+            }
             output.FindStreamInfo(options);
             return output;
         }
@@ -63,7 +66,10 @@ namespace FFmpegSharp
 
         public int FindStreamInfo(MediaDictionary options)
         {
-            return ffmpeg.avformat_find_stream_info(pFormatContext, options).ThrowIfError();
+            fixed (AVDictionary** pOptions = &options.pDictionary)
+            {
+                return ffmpeg.avformat_find_stream_info(pFormatContext, pOptions).ThrowIfError();
+            }
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ namespace FFmpegSharp
 
         public MediaDecoder(AVCodecContext* pAVCodecContext, bool isDisposeByOwner = true)
             : base(pAVCodecContext, isDisposeByOwner)
-        {  }
+        { }
 
         public MediaDecoder(MediaCodec codec = null)
                     : base(codec)
@@ -22,7 +22,10 @@ namespace FFmpegSharp
         {
             var output = new MediaDecoder(codec);
             beforeOpenSetting?.Invoke(output);
-            ffmpeg.avcodec_open2(output, codec, opts).ThrowIfError();
+            fixed (AVDictionary** pOpts = &opts.pDictionary)
+            {
+                ffmpeg.avcodec_open2(output, codec, pOpts).ThrowIfError();
+            }
             return output;
         }
 

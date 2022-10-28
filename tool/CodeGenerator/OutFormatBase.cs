@@ -3,8 +3,15 @@ namespace FFmpegSharp.Internal
 {
     public abstract unsafe partial class OutFormatBase
     {
-        protected AVOutputFormat* pOutputFormat = null;
+        /// <summary>
+        /// Be careful!!!
+        /// </summary>
+        protected internal AVOutputFormat* pOutputFormat = null;
 
+        /// <summary>
+        /// const AVOutputFormat*
+        /// </summary>
+        /// <param name="value"></param>
         public static implicit operator AVOutputFormat*(OutFormatBase value)
         {
             if (value == null) return null;

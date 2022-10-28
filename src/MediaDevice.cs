@@ -75,7 +75,7 @@ namespace FFmpegSharp
 
         public static MediaDeviceInfoLists ListDevice(this MediaFormatContextBase value)
         {
-            AVDeviceInfoList * @void = null;
+            AVDeviceInfoList* @void = null;
             AVDeviceInfoList** o = &@void;
             var count = ffmpeg.avdevice_list_devices(value, o).ThrowIfError();
             return new MediaDeviceInfoLists(o, count);

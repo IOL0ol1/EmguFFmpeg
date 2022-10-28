@@ -3,8 +3,15 @@ namespace FFmpegSharp.Internal
 {
     public abstract unsafe partial class MediaFormatContextBase
     {
-        protected AVFormatContext* pFormatContext = null;
+        /// <summary>
+        /// Be careful!!!
+        /// </summary>
+        protected internal AVFormatContext* pFormatContext = null;
 
+        /// <summary>
+        /// const AVFormatContext*
+        /// </summary>
+        /// <param name="value"></param>
         public static implicit operator AVFormatContext*(MediaFormatContextBase value)
         {
             if (value == null) return null;

@@ -3,8 +3,15 @@ namespace FFmpegSharp.Internal
 {
     public abstract unsafe partial class MediaCodecBase
     {
-        protected AVCodec* pCodec = null;
+        /// <summary>
+        /// Be careful!!!
+        /// </summary>
+        protected internal AVCodec* pCodec = null;
 
+        /// <summary>
+        /// const AVCodec*
+        /// </summary>
+        /// <param name="value"></param>
         public static implicit operator AVCodec*(MediaCodecBase value)
         {
             if (value == null) return null;

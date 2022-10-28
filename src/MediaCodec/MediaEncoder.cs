@@ -299,7 +299,10 @@ namespace FFmpegSharp
         {
             var output = new MediaEncoder(codec);
             beforeOpenSetting?.Invoke(output);
-            ffmpeg.avcodec_open2(output, codec, opts).ThrowIfError();
+            fixed (AVDictionary** pOpts = &opts.pDictionary)
+            {
+                ffmpeg.avcodec_open2(output, codec, pOpts).ThrowIfError();
+            }
             return output;
         }
 
@@ -317,7 +320,7 @@ namespace FFmpegSharp
                 }, opts);
         }
         #endregion
- 
+
         /// <summary>
         /// <see cref="ffmpeg.avcodec_send_frame(AVCodecContext*, AVFrame*)"/>
         /// </summary>

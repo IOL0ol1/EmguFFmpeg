@@ -30,7 +30,7 @@ namespace FFmpegSharp
         public static PixelConverter Create(int dstWidth, int dstHeight, AVPixelFormat dstFormat, SwsFilter dstFilter = default)
         {
             var pixelConverter = new PixelConverter();
-            pixelConverter.SetOpts(dstWidth,dstHeight,dstFormat,dstFilter);
+            pixelConverter.SetOpts(dstWidth, dstHeight, dstFormat, dstFilter);
             return pixelConverter;
         }
 
@@ -73,6 +73,7 @@ namespace FFmpegSharp
 
         private MediaFrame ConvertFrame(MediaFrame srcframe, MediaFrame dstframe, int flags = ffmpeg.SWS_BICUBIC, SwsFilter srcFilter = default, double[] param = null)
         {
+            if (srcframe == null) return null;
             if (dstframe == null)
                 dstframe = new MediaFrame();
             else

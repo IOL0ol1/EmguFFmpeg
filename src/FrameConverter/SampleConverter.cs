@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
@@ -68,9 +67,12 @@ namespace FFmpegSharp
             ffmpeg.av_opt_get_sample_fmt(pSwrContext, "out_sample_fmt", 0, &outFmt).ThrowIfError();
             AVSampleFormat inFmt;
             ffmpeg.av_opt_get_sample_fmt(pSwrContext, "in_sample_fmt", 0, &inFmt).ThrowIfError();
-            if (inChLayout.IsContentEqual(srcFrame.ChLayout)
-                || inSampleRate != srcFrame.SampleRate
-                || (int)inFmt != srcFrame.Format
+            var srcChLayout = srcFrame == null ? inChLayout : srcFrame.ChLayout;
+            var srcSampleRate = srcFrame == null ? (int)inSampleRate : srcFrame.SampleRate;
+            var srcFormat = srcFrame == null ? (int)inFmt : srcFrame.Format;
+            if (inChLayout.IsContentEqual(srcChLayout)
+                || inSampleRate != srcSampleRate
+                || (int)inFmt != srcFormat
                 || outChLayout.IsContentEqual(dstChLayout)
                 || outSampleRate != dstSampleRate
                 || outFmt != dstFormat) // need reset
@@ -79,7 +81,7 @@ namespace FFmpegSharp
                 fixed (SwrContext** ppSwrContext = &pSwrContext)
                 {
                     ffmpeg.swr_alloc_set_opts2(ppSwrContext, &dstChLayout, dstFormat, dstSampleRate,
-                        &src->ch_layout, (AVSampleFormat)src->format, src->sample_rate, 0, null).ThrowIfError();
+                        &srcChLayout, (AVSampleFormat)srcFormat, srcSampleRate, 0, null).ThrowIfError();
                 }
                 ffmpeg.swr_init(pSwrContext).ThrowIfError();
             }
@@ -89,7 +91,7 @@ namespace FFmpegSharp
                     ffmpeg.swr_init(pSwrContext).ThrowIfError();
             }
         }
- 
+
         private int FifoPush(MediaFrame srcFrame, MediaFrame dstFrame)
         {
             AVFrame* src = srcFrame;
@@ -142,7 +144,7 @@ namespace FFmpegSharp
             dstframe.Format = (int)dstFormat;
             dstframe.SampleRate = dstSampleRate;
             SwrCheckInit(srcframe, dstChLayout, dstSampleRate, dstFormat);
-            var samples = GetOutSamples(srcframe.NbSamples);
+            var samples = srcframe == null ? dstSamples : GetOutSamples(srcframe.NbSamples);
             dstframe.NbSamples = dstSamples == 0 ? (samples < 0 ? srcframe.NbSamples : samples) : dstSamples;
             dstframe.AllocateBuffer();
             FifoPush(srcframe, dstframe);

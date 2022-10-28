@@ -7,7 +7,7 @@ using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaFrame : MediaFrameBase, IDisposable,ICloneable
+    public unsafe class MediaFrame : MediaFrameBase, IDisposable, ICloneable
     {
         public MediaFrame(AVFrame* frame, bool isDisposeByOwner = true)
             : base(frame)

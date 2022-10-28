@@ -89,21 +89,21 @@ namespace FFmpegSharp
         /// <param name="dts"></param>
         /// <param name="pos"></param>
         /// <returns></returns>
-        public int Parser2(MediaCodecContextBase codecContext, IntPtrPtr poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
+        public int Parser2(MediaCodecContextBase codecContext, IntPtrPtr<byte> poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
         {
-            fixed (void** pp = &poutbuf.Ptr)
+            fixed (byte** pp = &poutbuf.Ptr)
             {
-                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, (byte**)pp, (int*)poutbufSize, (byte*)buf, bufSize, pts, dts, pos);
+                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, pp, (int*)poutbufSize, (byte*)buf, bufSize, pts, dts, pos);
             }
         }
 
 
-        public int Parser2(MediaCodecContextBase codecContext, IntPtrPtr poutbuf, IntPtr poutbufSize, byte[] buf, long pts, long dts, long pos)
+        public int Parser2(MediaCodecContextBase codecContext, IntPtrPtr<byte> poutbuf, IntPtr poutbufSize, byte[] buf, long pts, long dts, long pos)
         {
-            fixed (void** pp = &poutbuf.Ptr)
+            fixed (byte** pp = &poutbuf.Ptr)
             fixed (byte* pbuf = buf)
             {
-                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, (byte**)pp, (int*)poutbufSize, pbuf, buf.Length, pts, dts, pos);
+                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, pp, (int*)poutbufSize, pbuf, buf.Length, pts, dts, pos);
             }
         }
 
