@@ -13,9 +13,7 @@ namespace FFmpegSharp
 
         public OutFormat(AVOutputFormat* oformat)
             : base(oformat)
-        {
-            pOutputFormat = oformat;
-        }
+        {        }
 
         internal OutFormat(IntPtr pAVOutputFormat)
             : this((AVOutputFormat*)pAVOutputFormat)

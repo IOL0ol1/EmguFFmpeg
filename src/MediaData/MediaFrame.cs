@@ -47,7 +47,7 @@ namespace FFmpegSharp
             return CreateAudioFrame(channelLayout.nb_channels, nbSamples, format, sampleRate, align);
         }
 
-        internal void AllocateBuffer(int align = 0)
+        public void AllocateBuffer(int align = 0)
         {
             ffmpeg.av_frame_get_buffer(pFrame, align).ThrowIfError();
         }

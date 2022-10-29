@@ -86,22 +86,24 @@ namespace FFmpegSharp
 
         public static MediaIOContext Open(string url, int flags, MediaDictionary options = null)
         {
-            AVIOContext* pIOContext;
-            fixed (AVDictionary** pOptions = &options.pDictionary)
+            var tmp = options ?? new MediaDictionary();
+            fixed (AVDictionary** pOptions = &tmp.pDictionary)
             {
-                ffmpeg.avio_open2(&pIOContext, url, flags, null, pOptions).ThrowIfError();
+                AVIOContext* pIOContext = null;
+                ffmpeg.avio_open2(&pIOContext, url, flags, null, options == null ? null : pOptions).ThrowIfError();
+                return new MediaIOContext(pIOContext);
             }
-            return new MediaIOContext(pIOContext);
         }
 
         public static MediaIOContext Open(string url, int flags, AVIOInterruptCB interrupt, MediaDictionary options = null)
         {
-            AVIOContext* pIOContext;
-            fixed (AVDictionary** pOptions = &options.pDictionary)
+            var tmp = options ?? new MediaDictionary();
+            fixed (AVDictionary** pOptions = &tmp.pDictionary)
             {
-                ffmpeg.avio_open2(&pIOContext, url, flags, &interrupt, pOptions).ThrowIfError();
+                AVIOContext* pIOContext = null;
+                ffmpeg.avio_open2(&pIOContext, url, flags, &interrupt, options == null ? null : pOptions).ThrowIfError();
+                return new MediaIOContext(pIOContext);
             }
-            return new MediaIOContext(pIOContext, true);
         }
 
         public override bool CanRead => _pIOContext->read_packet.Pointer != IntPtr.Zero;

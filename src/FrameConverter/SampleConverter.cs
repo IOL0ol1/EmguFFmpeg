@@ -56,17 +56,17 @@ namespace FFmpegSharp
         private void SwrCheckInit(MediaFrame srcFrame, AVChannelLayout dstChLayout, int dstSampleRate, AVSampleFormat dstFormat)
         {
             AVChannelLayout inChLayout;
-            ffmpeg.av_opt_get_chlayout(pSwrContext, "in_ch_layout", 0, &inChLayout).ThrowIfError();
+            ffmpeg.av_opt_get_chlayout(pSwrContext, "ichl", 0, &inChLayout).ThrowIfError();
             AVChannelLayout outChLayout;
-            ffmpeg.av_opt_get_chlayout(pSwrContext, "out_ch_layout", 0, &outChLayout).ThrowIfError();
+            ffmpeg.av_opt_get_chlayout(pSwrContext, "ochl", 0, &outChLayout).ThrowIfError();
             long inSampleRate;
-            ffmpeg.av_opt_get_int(pSwrContext, "in_sample_rate", 0, &inSampleRate).ThrowIfError();
+            ffmpeg.av_opt_get_int(pSwrContext, "isr", 0, &inSampleRate).ThrowIfError();
             long outSampleRate;
-            ffmpeg.av_opt_get_int(pSwrContext, "out_sample_rate", 0, &outSampleRate).ThrowIfError();
-            AVSampleFormat outFmt;
-            ffmpeg.av_opt_get_sample_fmt(pSwrContext, "out_sample_fmt", 0, &outFmt).ThrowIfError();
+            ffmpeg.av_opt_get_int(pSwrContext, "osr", 0, &outSampleRate).ThrowIfError();
             AVSampleFormat inFmt;
-            ffmpeg.av_opt_get_sample_fmt(pSwrContext, "in_sample_fmt", 0, &inFmt).ThrowIfError();
+            ffmpeg.av_opt_get_sample_fmt(pSwrContext, "isf", 0, &inFmt).ThrowIfError();
+            AVSampleFormat outFmt;
+            ffmpeg.av_opt_get_sample_fmt(pSwrContext, "osf", 0, &outFmt).ThrowIfError();
             var srcChLayout = srcFrame == null ? inChLayout : srcFrame.ChLayout;
             var srcSampleRate = srcFrame == null ? (int)inSampleRate : srcFrame.SampleRate;
             var srcFormat = srcFrame == null ? (int)inFmt : srcFrame.Format;
@@ -139,7 +139,7 @@ namespace FFmpegSharp
                 dstframe = new MediaFrame();
             else
                 dstframe.Unref();
-            srcframe.CopyProps(dstframe);
+            srcframe?.CopyProps(dstframe);
             dstframe.ChLayout = dstChLayout;
             dstframe.Format = (int)dstFormat;
             dstframe.SampleRate = dstSampleRate;

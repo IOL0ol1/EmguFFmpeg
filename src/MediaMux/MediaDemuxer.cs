@@ -47,10 +47,11 @@ namespace FFmpegSharp
         {
             var output = new MediaDemuxer();
             beforeOpen?.Invoke(output);
+            var tmp = options ?? new MediaDictionary();
             fixed (AVFormatContext** ps = &output.pFormatContext)
-            fixed (AVDictionary** pOptions = &options.pDictionary)
+            fixed (AVDictionary** pOptions = &tmp.pDictionary)
             {
-                ffmpeg.avformat_open_input(ps, url, iformat, pOptions).ThrowIfError();
+                ffmpeg.avformat_open_input(ps, url, iformat, options == null ? null : pOptions).ThrowIfError();
             }
             output.FindStreamInfo(options);
             return output;
@@ -66,9 +67,10 @@ namespace FFmpegSharp
 
         public int FindStreamInfo(MediaDictionary options)
         {
-            fixed (AVDictionary** pOptions = &options.pDictionary)
+            var opts = options ?? new MediaDictionary();
+            fixed (AVDictionary** pOptions = &opts.pDictionary)
             {
-                return ffmpeg.avformat_find_stream_info(pFormatContext, pOptions).ThrowIfError();
+                return ffmpeg.avformat_find_stream_info(pFormatContext, options == null ? null : pOptions).ThrowIfError();
             }
         }
 

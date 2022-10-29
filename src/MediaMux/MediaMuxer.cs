@@ -24,12 +24,11 @@ namespace FFmpegSharp
         public static MediaMuxer Create(Stream stream, OutFormat oformat)
         {
             var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768);
-            var formatContext = new MediaFormatContext();
-            AVFormatContext* pFormatContext = formatContext;
+            AVFormatContext* pFormatContext = ffmpeg.avformat_alloc_context();
             pFormatContext->oformat = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                 pFormatContext->pb = ioContext;
-            var output = new MediaMuxer(formatContext) { _ioContext = ioContext };
+            var output = new MediaMuxer(pFormatContext) { _ioContext = ioContext };
             return output;
         }
 
@@ -46,7 +45,7 @@ namespace FFmpegSharp
         {
             AVFormatContext* pFormatContext = null;
             ffmpeg.avformat_alloc_output_context2(&pFormatContext, oformat, formatName, fileName).ThrowIfError();
-            var o = new MediaMuxer(new MediaFormatContext(pFormatContext));
+            var o = new MediaMuxer(pFormatContext);
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0 && fileName != null)
             {
                 o._ioContext = MediaIOContext.Open(fileName, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
@@ -161,9 +160,10 @@ namespace FFmpegSharp
         public int WriteHeader(MediaDictionary options = null)
         {
             hasWriteHeader = true;
-            fixed (AVDictionary** pOptions = &options.pDictionary)
+            var tmp = options ?? new MediaDictionary();
+            fixed (AVDictionary** pOptions = &tmp.pDictionary)
             {
-                return ffmpeg.avformat_write_header(pFormatContext, pOptions).ThrowIfError();
+                return ffmpeg.avformat_write_header(pFormatContext, options == null ? null : pOptions).ThrowIfError();
             }
         }
 

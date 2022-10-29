@@ -299,9 +299,10 @@ namespace FFmpegSharp
         {
             var output = new MediaEncoder(codec);
             beforeOpenSetting?.Invoke(output);
-            fixed (AVDictionary** pOpts = &opts.pDictionary)
+           var tmp = opts ?? new MediaDictionary();
+            fixed (AVDictionary** pOpts = &tmp.pDictionary)
             {
-                ffmpeg.avcodec_open2(output, codec, pOpts).ThrowIfError();
+                ffmpeg.avcodec_open2(output, codec, opts == null ? null : pOpts).ThrowIfError();
             }
             return output;
         }
