@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Runtime.CompilerServices;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
@@ -66,9 +66,9 @@ namespace FFmpegSharp
         /// <returns></returns>
         public IEnumerable<MediaFrame> Convert(MediaFrame srcframe, MediaFrame dstframe = null, int flags = ffmpeg.SWS_BICUBIC, SwsFilter srcFilter = default, double[] param = null)
         {
-            var tmpframe = ConvertFrame(srcframe, dstframe, flags, srcFilter, param);
-            yield return tmpframe;
-            if (dstframe == null) tmpframe?.Dispose();
+            var frame = ConvertFrame(srcframe, dstframe, flags, srcFilter, param);
+            yield return frame;
+            if (dstframe == null) frame?.Dispose();
         }
 
         private MediaFrame ConvertFrame(MediaFrame srcframe, MediaFrame dstframe, int flags = ffmpeg.SWS_BICUBIC, SwsFilter srcFilter = default, double[] param = null)
@@ -76,13 +76,14 @@ namespace FFmpegSharp
             if (srcframe == null) return null;
             if (dstframe == null)
                 dstframe = new MediaFrame();
-            else
-                dstframe.Unref();
+            if (!dstframe.IsWriteable())
+            {
+                dstframe.Width = dstWidth;
+                dstframe.Height = dstHeight;
+                dstframe.Format = (int)dstFormat;
+                dstframe.AllocateBuffer();
+            }
             srcframe.CopyProps(dstframe);
-            dstframe.Width = dstWidth;
-            dstframe.Height = dstHeight;
-            dstframe.Format = (int)dstFormat;
-            dstframe.AllocateBuffer();
             AVFrame* src = srcframe;
             AVFrame* dst = dstframe;
             fixed (SwsFilter* pDstFilter = &dstFilter)
@@ -138,5 +139,17 @@ namespace FFmpegSharp
         }
         #endregion
 
+    }
+
+    public static partial class MediaFrameExtension
+    {
+        public static MediaFrame Convert(this MediaFrame frame, int dstWidth, int dstHeight, AVPixelFormat dstFormat, int flags = ffmpeg.SWS_BICUBIC, SwsFilter srcFilter = default, SwsFilter dstFilter = default, double[] param = null)
+        {
+            using (var p = new PixelConverter())
+            {
+                p.SetOpts(dstWidth, dstHeight, dstFormat, dstFilter);
+                return p.ConvertFrame(frame, flags, srcFilter, param);
+            }
+        }
     }
 }
