@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FFmpeg.AutoGen;
+
 namespace FFmpegSharp
 {
     public unsafe class MediaMuxer : MediaFormatContext
@@ -68,10 +69,7 @@ namespace FFmpegSharp
         /// </summary>
         public void DumpFormat()
         {
-            for (int i = 0; i < pFormatContext->nb_streams; i++)
-            {
-                ffmpeg.av_dump_format(pFormatContext, i, ((IntPtr)pFormatContext->url).PtrToStringUTF8(), 1);
-            }
+            ffmpeg.av_dump_format(pFormatContext, 0, ((IntPtr)pFormatContext->url).PtrToStringUTF8(), 1);
         }
 
         /// <summary>
@@ -121,28 +119,16 @@ namespace FFmpegSharp
         /// <param name="codecpar">
         /// <see cref="ffmpeg.avcodec_parameters_copy(AVCodecParameters*, AVCodecParameters*)"/>
         /// </param>
-        /// <param name="timebase">stream's timebase</param>
         /// <returns>newly created stream or null on error.</returns>
-        public MediaStream AddStream(AVCodecParameters codecpar, AVRational timebase)
+        public MediaStream AddStream(AVCodecParameters codecpar)
         {
             AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
             if (pStream == null) return null;
             var stream = new MediaStream(pStream);
             ffmpeg.avcodec_parameters_copy(pStream->codecpar, &codecpar).ThrowIfError();
-            pStream->time_base = timebase;
             return stream;
         }
-
-        public MediaStream AddStream(IntPtr pAVCodecParameters, AVRational timebase)
-        {
-            AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
-            if (pStream == null) return null;
-            var stream = new MediaStream(pStream);
-            ffmpeg.avcodec_parameters_copy(pStream->codecpar, (AVCodecParameters*)pAVCodecParameters).ThrowIfError();
-            pStream->time_base = timebase;
-            return stream;
-        }
-
+ 
         /// <summary>
         /// <see cref="ffmpeg.avformat_write_header(AVFormatContext*, AVDictionary**)"/>
         /// </summary>
@@ -235,7 +221,7 @@ namespace FFmpegSharp
                     // and ffmpeg.av_write_trailer function may cause errors.
                     if (hasWriteHeader && !hasWriteTrailer)
                         ffmpeg.av_write_trailer(pFormatContext);
-                    if (_ioContext != null)
+                    if (_ioContext != null && (pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                     {
                         AVIOContext* pb = _ioContext;
                         _ioContext.Dispose();
