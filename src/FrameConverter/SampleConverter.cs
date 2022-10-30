@@ -148,7 +148,7 @@ namespace FFmpegSharp
                 dst.NbSamples = dstSamples;
                 dst.AllocateBuffer();
             }
-            srcframe?.CopyProps(dstframe);
+            srcframe?.CopyProps(dst);
             SwrCheckInit(srcframe, dstChLayout, dstSampleRate, dstFormat);
             FifoPush(srcframe, dst);
             while (AudioFifo.Size >= dst.NbSamples || (AudioFifo.Size > 0 && srcframe == null))
