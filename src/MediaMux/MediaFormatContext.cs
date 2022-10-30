@@ -15,8 +15,6 @@ namespace FFmpegSharp
                     : this(ffmpeg.avformat_alloc_context())
         { }
 
-
-
         #region IDisposable
         private bool disposedValue;
         protected virtual void Dispose(bool disposing)
@@ -32,7 +30,8 @@ namespace FFmpegSharp
                     }
                     else
                     {
-                        ffmpeg.avio_close(pFormatContext->pb);
+                        if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
+                            ffmpeg.avio_close(pFormatContext->pb);
                         ffmpeg.avformat_free_context(pFormatContext);
                     }
                     pFormatContext = null;
