@@ -184,6 +184,8 @@ namespace FFmpegSharp
             ffmpeg.av_frame_copy_props(dstframe, this);
         }
 
+        public bool IsWriteable() => ffmpeg.av_frame_is_writable(pFrame).ThrowIfError() != 0;
+
         public int MakeWritable() => ffmpeg.av_frame_make_writable(pFrame).ThrowIfError();
 
 
