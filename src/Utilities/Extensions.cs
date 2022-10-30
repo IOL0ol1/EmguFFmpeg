@@ -24,6 +24,11 @@ namespace FFmpegSharp
             return ffmpeg.av_d2q(value, max);
         }
 
+        public static AVRational ToRational(this int value)
+        {
+            return new AVRational { den = 1, num = value };
+        }
+
         public static double ToDouble(this AVRational rational)
         {
             return ffmpeg.av_q2d(rational);
@@ -88,7 +93,7 @@ namespace FFmpegSharp
             while (psbyte[length] != 0)
                 length++;
             return new string(psbyte, 0, length, Encoding.UTF8);
-         
+
         }
     }
 
