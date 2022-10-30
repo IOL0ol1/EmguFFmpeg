@@ -12,13 +12,13 @@ namespace FFmpegSharp.Example
         {
             try
             {
-                Task.Run(() =>
-                {
-                    while (true)
-                    {
-                        GC.Collect();
-                    }
-                });
+                //Task.Run(() =>
+                //{
+                //    while (true)
+                //    {
+                //        GC.Collect();
+                //    }
+                //});
                 //var dict = new MediaDictionary()
                 //{
                 //    ["texst"] = "12",
@@ -46,25 +46,26 @@ namespace FFmpegSharp.Example
                         try
                         {
                             _.Execute();
+                            //return;
                         }
                         catch (Exception ex)
                         {
                             Console.WriteLine(ex.Message + ex.StackTrace);
                         }
-                        var s = Stopwatch.StartNew();
-                        var count = 2;
-                        for (int i = 0; i < count; i++)
-                        {
-                            try
-                            {
-                                _.Execute();
-                            }
-                            catch (Exception)
-                            { 
-                            }
-                        }
+                        //var s = Stopwatch.StartNew();
+                        //var count = 2;
+                        //for (int i = 0; i < count; i++)
+                        //{
+                        //    try
+                        //    {
+                        //        _.Execute();
+                        //    }
+                        //    catch (Exception)
+                        //    { 
+                        //    }
+                        //}
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"-------------------{name} end[{s.Elapsed.TotalMilliseconds / count}ms]----------------------");
+                        //Console.WriteLine($"-------------------{name} end[{s.Elapsed.TotalMilliseconds / count}ms]----------------------");
                         Console.ForegroundColor = fColor;
                     });
             }
