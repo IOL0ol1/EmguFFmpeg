@@ -12,7 +12,6 @@ namespace FFmpegSharp.Example
     {
         public Muxing() : this($"Muxing-output.mp4")
         {
-            Index = -999999;
         }
 
         public Muxing(params string[] args) : base(args)
