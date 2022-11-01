@@ -29,7 +29,7 @@ var heith = 600;
 var output = "path-to-your-output-file.mp4";
 using (var muxer = MediaMuxer.Create(output))
 {
-    using (var encoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps))
+    using (var encoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.ThreadCount = 10))
     {
         var stream = muxer.AddStream(encoder);
         muxer.WriteHeader();
