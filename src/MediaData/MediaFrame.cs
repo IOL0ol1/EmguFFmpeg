@@ -105,10 +105,10 @@ namespace FFmpegSharp
 
             if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0) // packet
             {
-                result.Add(GetPlanar((IntPtr)pFrame->data[0], pFrame->linesize[0] * pFrame->height, pFrame->width * pFrame->height, 1, padding));
+                result.Add(GetPlane((IntPtr)pFrame->data[0], pFrame->linesize[0] * pFrame->height, pFrame->width * pFrame->height, 1, padding));
                 if (pFrame->data[1] != null) // AV_PIX_FMT_PAL8, 8 bits with AV_PIX_FMT_RGB32 palette
                 {
-                    result.Add(GetPlanar((IntPtr)pFrame->data[1], 4 * 256, 4 * 256, 1, padding));
+                    result.Add(GetPlane((IntPtr)pFrame->data[1], 4 * 256, 4 * 256, 1, padding));
                 }
             }
             else //planer
@@ -122,7 +122,7 @@ namespace FFmpegSharp
                     int bwidth = ffmpeg.av_image_get_linesize((AVPixelFormat)pFrame->format, pFrame->width, i);
                     if (i == 1 || i == 2)
                         h = (int)Math.Ceiling((double)pFrame->height / (1 << desc->log2_chroma_h));
-                    result.Add(GetPlanar((IntPtr)pFrame->data[(uint)i], pFrame->linesize[(uint)i], bwidth, h, padding));
+                    result.Add(GetPlane((IntPtr)pFrame->data[(uint)i], pFrame->linesize[(uint)i], bwidth, h, padding));
                 }
             }
             return result;
@@ -142,17 +142,19 @@ namespace FFmpegSharp
             IntPtr intPtr;
             for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)
             {
-                result.Add(GetPlanar(intPtr, data_size, data_size, 1, padding));
+                result.Add(GetPlane(intPtr, data_size, data_size, 1, padding));
             }
             return result;
         }
 
-        private byte[] GetPlanar(IntPtr srcData, int byteLinesize, int byteWidth, int height, bool padding = true)
+        private byte[] GetPlane(IntPtr srcData, int srcByteLinesize, int byteWidth, int height, bool padding = true)
         {
-            var byteOffset = padding ? byteLinesize : byteWidth;
-            var result = new byte[height * byteOffset];
-            for (int i = 0; i < height; i++)
-                Marshal.Copy(srcData + i * byteLinesize, result, i * byteOffset, byteWidth);
+            var dstByteLineSize = padding ? srcByteLinesize : byteWidth;
+            var result = new byte[height * dstByteLineSize];
+            fixed(void* ptr = result)
+            {
+                FFmpegUtil.CopyPlane(srcData, srcByteLinesize, (IntPtr)ptr, dstByteLineSize, byteWidth, height);
+            }
             return result;
         }
 
