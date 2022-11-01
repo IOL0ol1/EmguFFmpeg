@@ -83,7 +83,7 @@ namespace FFmpegSharp
             List<byte[]> result = new List<byte[]>();
             AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)pFrame->format);
             if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
-                throw new FFmpegException(ffmpeg.FFERRTAG('I', 'N', 'D', 'A'));
+                throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
 
             if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0)
             {

@@ -95,25 +95,29 @@ namespace FFmpegSharp
                 while (true)
                 {
                     ret = ReceiveFrame(_frame);
-                    if (ret < 0)
+                    try
                     {
-                        // those two return values are special and mean there is no output
-                        // frame available, but there were no errors during decoding
-                        if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
-                            yield break;
+                        if (ret < 0)
+                        {
+                            // those two return values are special and mean there is no output
+                            // frame available, but there were no errors during decoding
+                            if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
+                                yield break;
+                            else
+                                break; // if decode fail no exception, just break.
+                        }
+                        if (isHWDeviceCtxInit)
+                        {
+                            _frame.CopyProps(_swframe);
+                            HWFrameTransferData(_swframe, _frame, flags);
+                            yield return _swframe;
+                        }
                         else
-                            break;
+                        {
+                            yield return _frame;
+                        }
                     }
-                    if (isHWDeviceCtxInit)
-                    {
-                        _frame.CopyProps(_swframe);
-                        HWFrameTransferData(_swframe, _frame, flags);
-                        yield return _swframe;
-                    }
-                    else
-                    {
-                        yield return _frame;
-                    }
+                    finally { if (ret > 0) _frame.Unref(); }
                 }
             }
             finally
