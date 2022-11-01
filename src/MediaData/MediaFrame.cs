@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 using FFmpeg.AutoGen;
@@ -59,18 +61,34 @@ namespace FFmpegSharp
         #region Get Managed Copy Of Data
 
         /// <summary>
-        /// Get managed copy of <see cref="AVFrame.data"/>
+        /// Get managed data of <see cref="AVFrame.data"/>
         /// <para>
         /// reference <see cref="ffmpeg.av_frame_copy(AVFrame*, AVFrame*)"/>
         /// </para>
         /// </summary>
+        /// <param name="padding"><see langword="false"/> will remove ffmpeg padding bytes</param>
         /// <returns></returns>
-        public byte[][] GetData()
+        public byte[][] GetData(bool padding = true)
         {
             if (pFrame->width > 0 && pFrame->height > 0)
-                return GetVideoData();
+                return GetVideoData(padding).ToArray();
             else if (pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0)
-                return GetAudioData();
+                return GetAudioData(padding).ToArray();
+            throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
+        }
+
+        /// <summary>
+        /// Get managed bytes of <see cref="AVFrame.data"/>
+        /// </summary>
+        /// <param name="padding"><see langword="false"/> will remove ffmpeg padding bytes</param>
+        /// <returns></returns>
+        /// <exception cref="FFmpegException"></exception>
+        public byte[] GetBytes(bool padding = true)
+        {
+            if (pFrame->width > 0 && pFrame->height > 0)
+                return GetVideoData(padding).SelectMany(_ => _).ToArray();
+            else if (pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0)
+                return GetAudioData(padding).SelectMany(_ => _).ToArray();
             throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
         }
 
@@ -78,24 +96,22 @@ namespace FFmpegSharp
         /// reference <see cref="ffmpeg.av_image_copy(ref byte_ptrArray4, ref int_array4, ref byte_ptrArray4, int_array4, AVPixelFormat, int, int)"/>
         /// </summary>
         /// <returns></returns>
-        private byte[][] GetVideoData()
+        private List<byte[]> GetVideoData(bool padding)
         {
             List<byte[]> result = new List<byte[]>();
             AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)pFrame->format);
             if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
                 throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
 
-            if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0)
+            if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0) // packet
             {
-                result.Add(GetVideoPlane((IntPtr)pFrame->data[0], pFrame->linesize[0], pFrame->width, pFrame->height));
-                if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0 && pFrame->data[1] != null)
+                result.Add(GetPlanar((IntPtr)pFrame->data[0], pFrame->linesize[0] * pFrame->height, pFrame->width * pFrame->height, 1, padding));
+                if (pFrame->data[1] != null) // AV_PIX_FMT_PAL8, 8 bits with AV_PIX_FMT_RGB32 palette
                 {
-                    byte[] line1 = new byte[4 * 256];
-                    Marshal.Copy((IntPtr)pFrame->data[1], line1, 0, line1.Length);
-                    result.Add(line1);
+                    result.Add(GetPlanar((IntPtr)pFrame->data[1], 4 * 256, 4 * 256, 1, padding));
                 }
             }
-            else
+            else //planer
             {
                 int i, planes_nb = 0;
                 for (i = 0; i < desc->nb_components; i++)
@@ -104,22 +120,11 @@ namespace FFmpegSharp
                 {
                     int h = pFrame->height;
                     int bwidth = ffmpeg.av_image_get_linesize((AVPixelFormat)pFrame->format, pFrame->width, i);
-                    bwidth.ThrowIfError();
                     if (i == 1 || i == 2)
                         h = (int)Math.Ceiling((double)pFrame->height / (1 << desc->log2_chroma_h));
-                    result.Add(GetVideoPlane((IntPtr)pFrame->data[(uint)i], pFrame->linesize[(uint)i], bwidth, h));
+                    result.Add(GetPlanar((IntPtr)pFrame->data[(uint)i], pFrame->linesize[(uint)i], bwidth, h, padding));
                 }
             }
-            return result.ToArray();
-        }
-
-        private byte[] GetVideoPlane(IntPtr srcData, int linesize, int bytewidth, int height)
-        {
-            if (linesize < bytewidth)
-                throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
-            byte[] result = new byte[height * linesize];
-            for (int i = 0; i < height; i++)
-                Marshal.Copy(srcData + i * linesize, result, i * linesize, bytewidth);
             return result;
         }
 
@@ -127,7 +132,7 @@ namespace FFmpegSharp
         /// reference <see cref="ffmpeg.av_samples_copy(byte**, byte**, int, int, int, int, AVSampleFormat)"/>
         /// </summary>
         /// <returns></returns>
-        private byte[][] GetAudioData()
+        private List<byte[]> GetAudioData(bool padding)
         {
             List<byte[]> result = new List<byte[]>();
             int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format);
@@ -137,11 +142,18 @@ namespace FFmpegSharp
             IntPtr intPtr;
             for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)
             {
-                byte[] line = new byte[data_size];
-                Marshal.Copy(intPtr, line, 0, data_size);
-                result.Add(line);
+                result.Add(GetPlanar(intPtr, data_size, data_size, 1, padding));
             }
-            return result.ToArray();
+            return result;
+        }
+
+        private byte[] GetPlanar(IntPtr srcData, int byteLinesize, int byteWidth, int height, bool padding = true)
+        {
+            var byteOffset = padding ? byteLinesize : byteWidth;
+            var result = new byte[height * byteOffset];
+            for (int i = 0; i < height; i++)
+                Marshal.Copy(srcData + i * byteLinesize, result, i * byteOffset, byteWidth);
+            return result;
         }
 
         #endregion Get Managed Copy Of Data
