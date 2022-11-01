@@ -1,107 +1,99 @@
 FFmpeg4Sharp
 =====================
-**A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.**    
+**A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.**     
+
 [![NuGet version (FFmpeg4Sharp)](https://img.shields.io/nuget/v/FFmpeg4Sharp.svg)](https://www.nuget.org/packages/FFmpeg4Sharp/)
 [![NuGet downloads (FFmpeg4Sharp)](https://img.shields.io/nuget/dt/FFmpeg4Sharp.svg)](https://www.nuget.org/packages/FFmpeg4Sharp/)
 [![Build status](https://ci.appveyor.com/api/projects/status/rrsd6t3pn1gqurbt?svg=true)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg-hhiy2)    
 
-This's NOT a ffmpeg command-line library.    
-NOTE: FFmpeg's APIs are unstable.    
-Must use the corresponding version of the ffmpeg's dll file.
+This is **NOT** a ffmpeg command-line library.    
+dev branch is under construction.    
+FFmpeg API are unstable, please use ffmpeg library version > 5 
 
-This branch is under construction, or use old version    
-**"NuGet\Install-Package EmguFFmpeg"**.
 
 ## Usage
-
 Manually download the *.dll files that comply with the license from [ffmpeg.org](http://www.ffmpeg.org/download.html).    
-### Encode to mp4
+```
+NuGet\Install-Package FFmpeg4Sharp
+```
 ```csharp
 using FFmpeg.AutoGen;
-using FFmpeg4Sharp;
-
-///////////// Create a mp4 file ///////////
+using FFmpegSharp;
+```
+### Mux and encode
+```csharp
+/// Create a video file
 var fps = 29.97d;
 var width = 800;
 var heith = 600;
-var outputFile = "path-to-your-output-file.mp4"; 
-using (var muxer = MediaMuxer.Create(outputFile))
+var output = "path-to-your-output-file.mp4";
+using (var muxer = MediaMuxer.Create(output))
 {
-    using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps))
+    using (var encoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps))
     {
-        var vStream = muxer.AddStream(vEncoder);
-
+        var stream = muxer.AddStream(encoder);
         muxer.WriteHeader();
-
-        using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, vEncoder.PixFmt))
+        using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, encoder.PixFmt))
         {
-            for (var i = 0; i < 30; i++)
+            for (var i = 0; i < 300; i++)
             {
-                // your code to fill YUV AVFrame data, 
-                // default is green frame. 
-                // you can use PixelConverter: RGB AVFrame->YUV AVFrame
-                //FillYuv420P(vFrame, i); 
+                // Your code to fill AVFrame.data
                 vFrame.Pts = i;
-                foreach (var packet in vEncoder.EncodeFrame(vFrame))
+                foreach (var packet in encoder.EncodeFrame(vFrame))
                 {
-                    packet.StreamIndex = vStream.Index;
-                    muxer.WritePacket(packet, vEncoder.TimeBase);
+                    packet.StreamIndex = stream.Index;
+                    muxer.WritePacket(packet, encoder.TimeBase);
                 }
             }
         }
-        muxer.FlushCodecs(new[] { vEncoder });
+        muxer.FlushCodecs(new[] { encoder });
         muxer.WriteTrailer();
     }
 }
 ```
-### Decode from mp4
+### Demux and decode
 ```csharp
-//////////// Video to images ///////////
+/// Video to BGR images
 var input = "path-to-your-input-file.mp4";
-using (var mediaReader = MediaDemuxer.Open(input))
-using (var srcPacket = new MediaPacket())
-using (var srcFrame = new MediaFrame())
+var output = "path-to-your-output-dir";
+using (var demuxer = MediaDemuxer.Open(input))
 using (var convert = new PixelConverter())
 {
-    var decoders = mediaReader.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef)).ToList(); // create decoder for each AVStream
-    foreach (var inPacket in mediaReader.ReadPackets(srcPacket))
+    var decoders = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.ThreadCount = 10)).ToList();
+    foreach (var packet in demuxer.ReadPackets())
     {
-        var decoder = decoders[inPacket.StreamIndex];
-        if (decoder != null)
+        var decoder = decoders[packet.StreamIndex];
+        if (decoder != null && decoder.CodecType == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO)
         {
-            convert.SetOpts(decoder.Width, decoder.Height, AVPixelFormat.AV_PIX_FMT_BGR24); // set dst frame format
-            foreach (var inFrame in decoder.DecodePacket(inPacket, srcFrame))
+            convert.SetOpts(decoder.Width, decoder.Height, FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24);
+            foreach (var frame in decoder.DecodePacket(packet))
             {
-                if (decoder.CodecType == AVMediaType.AVMEDIA_TYPE_VIDEO) // Only video AVStream
+                // frame is YUV AVFrame
+                foreach (var bgrframe in convert.Convert(frame))
                 {
-                    foreach (var outFrame in convert.Convert(inFrame)) // Convert yuv to rgb frame
-                    {
-                        using (var bitmap = new Bitmap(outFrame.Width, outFrame.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb))
-                        {
-                            var bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
-                            var srcLineSize = outFrame.Linesize[0];
-                            var dstLineSize = bitmapData.Stride;
-                            FFmpegUtil.CopyPlane((IntPtr)outFrame.Ref.data[0], srcLineSize,
-                                bitmapData.Scan0, bitmapData.Stride, Math.Min(srcLineSize, dstLineSize), bitmap.Height); // rgb frame to bitmap
-                            bitmap.UnlockBits(bitmapData);
-                            bitmap.Save(Path.Combine(output, $"{mediaReader[inPacket.StreamIndex].ToTimeSpan(inPacket.Pts).TotalMilliseconds}ms.jpg"));
-                        }
-                    }
+                    // use opencvsharp save to jpg
+                    //using (var mat = new Mat(bgrframe.Height, bgrframe.Width, MatType.CV_8UC3))
+                    //{
+                    //    var srcLineSize = bgrframe.Linesize[0];
+                    //    var dstLineSize = (int)mat.Step();
+                    //    FFmpegUtil.CopyPlane((IntPtr)bgrframe.Ref.data[0], srcLineSize,
+                    //        mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
+                    //    if (frame.PktDts >= 0)
+                    //        mat.SaveImage(Path.Combine(output, $"{demuxer[packet.StreamIndex].ToTimeSpan(frame.PktDts).TotalMilliseconds}ms.jpg"));
+                    //}
                 }
             }
         }
-    } 
-    decoders.ForEach(_ => _?.Dispose()); // Dispose all decoder
+    }
+    decoders.ForEach(_ => _?.Dispose());
 }
 ```
-More see **example/FFmpegSharp.Example**
-
+More see **[Example](./example/FFmpegSharp.Example)**
 ## ROADMAP
 
 - Easy api to cut/seek/mute audio clip.
 - Easy api to cut/seek video clip.
 - More example and test.
-- Provides a queue for multiplexing/demultiplexing and encoding/decoding.
+- Filter support.
 - Data exchange with NAudio and SharpAVI.
 - Subtitle support.
-- Split the filter section into optional standalone nuget packages.
