@@ -23,11 +23,14 @@ namespace CodeGenerator
                  (typeof(AVPacket),       null),
                  (typeof(AVInputFormat),  "InFormatBase"),
                  (typeof(AVOutputFormat), "OutFormatBase"),
+                 (typeof(AVFilter),null),
+                 (typeof(AVFilterContext),null),
+                 (typeof(AVFilterGraph),null),
              };
             foreach (var type in types)
             {
                 var g = CodeGenerator(type.Item1, dstTypeName: type.Item2);
-                File.WriteAllText($"../../../{g.OutTypeName}.cs", g.SourceCode,System.Text.Encoding.UTF8);
+                File.WriteAllText($"../../../{g.OutTypeName}.cs", g.SourceCode, System.Text.Encoding.UTF8);
             }
 
         }
