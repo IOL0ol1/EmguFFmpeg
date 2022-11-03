@@ -1,8 +1,7 @@
-﻿using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.ComTypes;
+using FFmpeg.AutoGen;
+using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {

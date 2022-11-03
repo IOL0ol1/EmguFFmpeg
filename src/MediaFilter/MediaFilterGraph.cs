@@ -14,11 +14,11 @@ namespace FFmpegSharp
         { }
 
 
-        public MediaFilterContext CreateFilter(MediaFilter filter, string name, string args, IntPtr opaque = default)
+        public MediaFilterContext CreateFilter(MediaFilter filter, string name, string args)
         {
             var filterContext = new MediaFilterContext(null);
             fixed (AVFilterContext** pp = &filterContext.pFilterContext)
-                ffmpeg.avfilter_graph_create_filter(pp, filter, name, args, (void*)opaque, pFilterGraph).ThrowIfError();
+                ffmpeg.avfilter_graph_create_filter(pp, filter, name, args, null, pFilterGraph).ThrowIfError();
             return filterContext;
         }
 
@@ -156,6 +156,12 @@ namespace FFmpegSharp
             fixed (AVDictionary** opts = &options.pDictionary)
                 ffmpeg.avfilter_init_dict(p, opts).ThrowIfError();
             return CreateAndUpdate(p);
+        }
+
+        public MediaFilterContext GetFilter(string name)
+        {
+            var f = ffmpeg.avfilter_graph_get_filter(pFilterGraph, name);
+            return f == null ? null : new MediaFilterContext(f);
         }
 
         private MediaFilterContext CreateAndUpdate(AVFilterContext* pFilterContext)
