@@ -27,7 +27,6 @@ namespace FFmpegSharp.Example
             using (var options = new MediaDictionary()
             {
                 ["rtsp_transport"] = "tcp",
-                ["rtsp_transport"] = "tcp",
                 ["max_delay"] = "5",
                 ["fflags"] = "nobuffer",
                 ["stimeout"] = "3000000",
