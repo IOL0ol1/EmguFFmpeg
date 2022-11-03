@@ -47,7 +47,6 @@ namespace FFmpegSharp.Example
                             {
                                 foreach (var outFrame in convert.Convert(decodeFrame))
                                 {
-                                    // Original frame rate, you can drop some frames here.
                                     // use OpenCV mat write to file(or Bitmap)
                                     using (var mat = new Mat(outFrame.Height, outFrame.Width, MatType.CV_8UC3))
                                     {
