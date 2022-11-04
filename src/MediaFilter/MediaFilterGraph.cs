@@ -3,6 +3,7 @@ using FFmpegSharp.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 
 namespace FFmpegSharp
 {
@@ -136,26 +137,26 @@ namespace FFmpegSharp
 
         public MediaFilterContext AddFilter(MediaFilter filter, string options = null, string contextName = null)
         {
-            AVFilterContext* p = ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName);
-            ffmpeg.avfilter_init_str(p, options).ThrowIfError();
-            return CreateAndUpdate(p);
+            var context = new MediaFilterContext(ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName));
+            ffmpeg.avfilter_init_str(context, options).ThrowIfError();
+            return context;
         }
 
         public MediaFilterContext AddFilter(MediaFilter filter, Action<MediaFilterContext> options, string contextName = null)
         {
-            AVFilterContext* p = ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName);
+            var context = new MediaFilterContext(ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName));
             if (options != null)
-                options.Invoke(new MediaFilterContext(p));
-            ffmpeg.avfilter_init_str(p, null).ThrowIfError();
-            return CreateAndUpdate(p);
+                options.Invoke(context);
+            ffmpeg.avfilter_init_str(context, null).ThrowIfError();
+            return context;
         }
 
         public MediaFilterContext AddFilter(MediaFilter filter, MediaDictionary options, string contextName = null)
         {
-            AVFilterContext* p = ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName);
+            var context = new MediaFilterContext(ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName));
             fixed (AVDictionary** opts = &options.pDictionary)
-                ffmpeg.avfilter_init_dict(p, opts).ThrowIfError();
-            return CreateAndUpdate(p);
+                ffmpeg.avfilter_init_dict(context, opts).ThrowIfError();
+            return context;
         }
 
         public MediaFilterContext GetFilter(string name)
@@ -163,26 +164,6 @@ namespace FFmpegSharp
             var f = ffmpeg.avfilter_graph_get_filter(pFilterGraph, name);
             return f == null ? null : new MediaFilterContext(f);
         }
-
-        private MediaFilterContext CreateAndUpdate(AVFilterContext* pFilterContext)
-        {
-            MediaFilterContext filterContext = new MediaFilterContext(pFilterContext);
-
-            if (filterContext.NbInputs == 0)
-            {
-                inputs.Add(filterContext);
-            }
-            else if (filterContext.NbOutputs == 0)
-            {
-                outputs.Add(filterContext);
-            }
-            return filterContext;
-        }
-
-        private List<MediaFilterContext> inputs = new List<MediaFilterContext>();
-        private List<MediaFilterContext> outputs = new List<MediaFilterContext>();
-        public MediaFilterContext[] Outputs => outputs.ToArray();
-        public MediaFilterContext[] Inputs => inputs.ToArray();
 
         private List<MediaFilterContext> GetFilterContexts()
         {
@@ -194,9 +175,9 @@ namespace FFmpegSharp
             return filterContexts;
         }
 
-        public int Count => GetFilterContexts().Count;
+        public int Count => (int)pFilterGraph->nb_filters;
 
-        public MediaFilterContext this[int index] => GetFilterContexts()[index];
+        public MediaFilterContext this[int index] => new MediaFilterContext(pFilterGraph->filters[index]);
 
         public IEnumerator<MediaFilterContext> GetEnumerator()
         {
@@ -213,47 +194,59 @@ namespace FFmpegSharp
             ffmpeg.avfilter_graph_config(pFilterGraph, null).ThrowIfError();
         }
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        /// <param name="graphDesc"></param>
-        /// <returns></returns>
-        public static MediaFilterGraph CreateMediaFilterGraph(string graphDesc)
+        public string Dump()
         {
-            MediaFilterGraph filterGraph = new MediaFilterGraph();
-            AVFilterInOut* inputs;
-            AVFilterInOut* outputs;
-            ffmpeg.avfilter_graph_parse2(filterGraph, graphDesc, &inputs, &outputs).ThrowIfError();
-            AVFilterInOut* cur = inputs;
-            for (cur = inputs; cur != null; cur = cur->next)
+            var str = ffmpeg.avfilter_graph_dump(pFilterGraph, null);
+            if (str != null)
             {
-                ffmpeg.av_log(null, (int)LogLevel.Debug, $"{((IntPtr)cur->name).PtrToStringUTF8()}{Environment.NewLine}");
-                filterGraph.inputs.Add(new MediaFilterContext(cur->filter_ctx));
+                var o = ((IntPtr)str).PtrToStringUTF8();
+                ffmpeg.av_free(str);
+                return o;
             }
-            for (cur = outputs; cur != null; cur = cur->next)
-            {
-                ffmpeg.av_log(null, (int)LogLevel.Debug, $"{((IntPtr)cur->name).PtrToStringUTF8()}{Environment.NewLine}");
-                filterGraph.outputs.Add(new MediaFilterContext(cur->filter_ctx));
-            }
-
-            foreach (var item in filterGraph)
-            {
-                ffmpeg.av_log(null, (int)LogLevel.Debug, $"{item.Name}{Environment.NewLine}");
-                for (int i = 0; i < item.NbInputs; i++)
-                {
-                    ffmpeg.av_log(null, (int)LogLevel.Debug, $"{ffmpeg.avfilter_pad_get_name(item.Ref.input_pads, i)}{Environment.NewLine}");
-                }
-                for (int i = 0; i < item.NbOutputs; i++)
-                {
-                    ffmpeg.av_log(null, (int)LogLevel.Debug, $"{ffmpeg.avfilter_pad_get_name(item.Ref.output_pads, i)}{Environment.NewLine}");
-                }
-            }
-            // TODO: Link
-            filterGraph.Initialize();
-            ffmpeg.avfilter_inout_free(&inputs);
-            ffmpeg.avfilter_inout_free(&outputs);
-            return filterGraph;
+            return null;
         }
+
+        ///// <summary>
+        ///// TODO
+        ///// </summary>
+        ///// <param name="graphDesc"></param>
+        ///// <returns></returns>
+        //public static MediaFilterGraph CreateMediaFilterGraph(string graphDesc)
+        //{
+        //    MediaFilterGraph filterGraph = new MediaFilterGraph();
+        //    AVFilterInOut* inputs;
+        //    AVFilterInOut* outputs;
+        //    ffmpeg.avfilter_graph_parse2(filterGraph, graphDesc, &inputs, &outputs).ThrowIfError();
+        //    AVFilterInOut* cur = inputs;
+        //    for (cur = inputs; cur != null; cur = cur->next)
+        //    {
+        //        ffmpeg.av_log(null, (int)LogLevel.Debug, $"{((IntPtr)cur->name).PtrToStringUTF8()}{Environment.NewLine}");
+        //        //filterGraph.inputs.Add(new MediaFilterContext(cur->filter_ctx));
+        //    }
+        //    for (cur = outputs; cur != null; cur = cur->next)
+        //    {
+        //        ffmpeg.av_log(null, (int)LogLevel.Debug, $"{((IntPtr)cur->name).PtrToStringUTF8()}{Environment.NewLine}");
+        //        //filterGraph.outputs.Add(new MediaFilterContext(cur->filter_ctx));
+        //    }
+
+        //    foreach (var item in filterGraph)
+        //    {
+        //        ffmpeg.av_log(null, (int)LogLevel.Debug, $"{item.Name}{Environment.NewLine}");
+        //        for (int i = 0; i < item.NbInputs; i++)
+        //        {
+        //            ffmpeg.av_log(null, (int)LogLevel.Debug, $"{ffmpeg.avfilter_pad_get_name(item.Ref.input_pads, i)}{Environment.NewLine}");
+        //        }
+        //        for (int i = 0; i < item.NbOutputs; i++)
+        //        {
+        //            ffmpeg.av_log(null, (int)LogLevel.Debug, $"{ffmpeg.avfilter_pad_get_name(item.Ref.output_pads, i)}{Environment.NewLine}");
+        //        }
+        //    }
+        //    // TODO: Link
+        //    filterGraph.Initialize();
+        //    ffmpeg.avfilter_inout_free(&inputs);
+        //    ffmpeg.avfilter_inout_free(&outputs);
+        //    return filterGraph;
+        //}
 
         #region IDisposable Support
 
