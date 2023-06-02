@@ -49,23 +49,5 @@ namespace FFmpegSharp.Internal
             set => pOutputFormat->flags = value;
         }
 
-        public int PrivDataSize
-        {
-            get => pOutputFormat->priv_data_size;
-            set => pOutputFormat->priv_data_size = value;
-        }
-
-        public int FlagsInternal
-        {
-            get => pOutputFormat->flags_internal;
-            set => pOutputFormat->flags_internal = value;
-        }
-
-        public AVCodecID DataCodec
-        {
-            get => pOutputFormat->data_codec;
-            set => pOutputFormat->data_codec = value;
-        }
-
     }
 }

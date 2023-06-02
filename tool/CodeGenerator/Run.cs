@@ -13,26 +13,35 @@ namespace CodeGenerator
         private static void Main(string[] args)
         {
 
-            var types = new List<(Type, string)>
+            var types = new List<Info>
              {
-                 (typeof(AVCodec),        null),
-                 (typeof(AVCodecContext), null),
-                 (typeof(AVFormatContext),null),
-                 (typeof(AVStream),       null),
-                 (typeof(AVFrame),        null),
-                 (typeof(AVPacket),       null),
-                 (typeof(AVInputFormat),  "InFormatBase"),
-                 (typeof(AVOutputFormat), "OutFormatBase"),
-                 (typeof(AVFilter),null),
-                 (typeof(AVFilterContext),null),
-                 (typeof(AVFilterGraph),null),
+                new Info{Type = typeof(AVCodec)},
+                new Info{Type = typeof(AVCodecContext) },
+                new Info{Type = typeof(AVFormatContext) },
+                new Info{Type = typeof(AVStream) },
+                new Info{Type = typeof(AVFrame)  },
+                new Info{Type = typeof(AVPacket) },
+                new Info{Type = typeof(AVInputFormat), Name = "InFormatBase" },
+                new Info{Type = typeof(AVOutputFormat), Name = "OutFormatBase" },
+                new Info{Type = typeof(AVFilter) },
+                new Info{Type = typeof(AVFilterContext) },
+                new Info{Type = typeof(AVFilterGraph) },
              };
             foreach (var type in types)
             {
-                var g = CodeGenerator(type.Item1, dstTypeName: type.Item2);
+                var g = CodeGenerator(type);
                 File.WriteAllText($"../../../{g.OutTypeName}.cs", g.SourceCode, System.Text.Encoding.UTF8);
             }
 
+        }
+
+        public class Info
+        {
+            public Type Type { get; set; }
+
+            public string Name { get; set; }
+
+            public bool IsDisposable { get; set; }
         }
 
         public class GeneratorOutput
@@ -41,17 +50,23 @@ namespace CodeGenerator
             public string OutTypeName { get; set; }
         }
 
-        public static GeneratorOutput CodeGenerator(Type type, string @namespace = "FFmpegSharp.Internal", string dstTypeName = null)
+        public static GeneratorOutput CodeGenerator(Info info, string @namespace = "FFmpegSharp.Internal")
         {
+            var type = info.Type;
+            var dstTypeName = info.Name;
+            var isDisposable = info.IsDisposable;
             using (var sw = new StringWriter())
             {
                 var srcTypeName = type.Name.Replace("FFmpeg.AutoGen.", "");
                 dstTypeName = dstTypeName == null ? $"{Regex.Replace(srcTypeName, @"^AV", "Media")}Base" : dstTypeName;
                 var pTypeName = $"{Regex.Replace(srcTypeName, @"^AV", "p")}";
+                if (isDisposable)
+                    sw.WriteLine($"using System;");
+
                 sw.WriteLine($"using FFmpeg.AutoGen;");
                 sw.WriteLine($"namespace {@namespace}");
                 sw.WriteLine(@"{");
-                sw.WriteLine($"    public abstract unsafe partial class {dstTypeName}");
+                sw.WriteLine($"    public abstract unsafe partial class {dstTypeName}{(isDisposable ? " : IDisposable" : "")}");
                 sw.WriteLine(@"    {");
                 sw.WriteLine(@"        /// <summary>");
                 sw.WriteLine(@"        /// Be careful!!!");
@@ -75,6 +90,11 @@ namespace CodeGenerator
                 sw.WriteLine(@"");
                 sw.WriteLine($"        public {srcTypeName} Ref => *{pTypeName};");
                 sw.WriteLine(@"");
+                if (isDisposable)
+                {
+                    sw.WriteLine($"        public abstract void Dispose();");
+                    sw.WriteLine(@"");
+                }
                 foreach (var element in type.GetMembers(BindingFlags.Public | BindingFlags.Instance))
                 {
                     var srcTypeWithName = $"{element}";

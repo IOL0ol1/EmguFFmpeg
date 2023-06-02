@@ -299,7 +299,7 @@ namespace FFmpegSharp
         {
             var output = new MediaEncoder(codec);
             beforeOpenSetting?.Invoke(output);
-           var tmp = opts ?? new MediaDictionary();
+            var tmp = opts ?? new MediaDictionary();
             fixed (AVDictionary** pOpts = &tmp.pDictionary)
             {
                 ffmpeg.avcodec_open2(output, codec, opts == null ? null : pOpts).ThrowIfError();
@@ -334,7 +334,7 @@ namespace FFmpegSharp
         /// sent to it AVERROR(EINVAL): codec not opened, it is a decoder, or requires flush
         /// AVERROR(ENOMEM): failed to add packet to internal queue, or similar other errors:
         /// legitimate encoding errors</returns>
-        public int SendFrame(MediaFrame frame) => ffmpeg.avcodec_send_frame(pCodecContext, frame);
+        public int SendFrame(MediaFrameBase frame) => ffmpeg.avcodec_send_frame(pCodecContext, frame);
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_receive_packet(AVCodecContext*, AVPacket*)"/>
@@ -349,7 +349,7 @@ namespace FFmpegSharp
         /// <param name="frame"></param>
         /// <param name="inPacket"></param>
         /// <returns></returns>
-        public IEnumerable<MediaPacket> EncodeFrame(MediaFrame frame, MediaPacket inPacket = null)
+        public IEnumerable<MediaPacket> EncodeFrame(MediaFrameBase frame, MediaPacket inPacket = null)
         {
             int ret = SendFrame(frame);
             if (ret == ffmpeg.AVERROR(ffmpeg.EAGAIN) || ret == ffmpeg.AVERROR_EOF)
@@ -374,8 +374,10 @@ namespace FFmpegSharp
             finally
             {
                 if (inPacket == null) packet.Dispose();
-                frame?.MakeWritable();
+                MakeWritable(frame);
             }
         }
+
+        private int MakeWritable(MediaFrameBase pFrame) => pFrame != null ? ffmpeg.av_frame_make_writable(pFrame).ThrowIfError() : 0;
     }
 }

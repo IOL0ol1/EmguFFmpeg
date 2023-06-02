@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
@@ -16,8 +15,6 @@ namespace FFmpegSharp
             pDictionary = ptr;
             disposedValue = !isDisposeByOwner;
         }
-
-
 
         public MediaDictionary() { }
 

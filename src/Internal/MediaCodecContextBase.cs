@@ -409,12 +409,6 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->frame_size = value;
         }
 
-        public int FrameNumber
-        {
-            get => pCodecContext->frame_number;
-            set => pCodecContext->frame_number = value;
-        }
-
         public int BlockAlign
         {
             get => pCodecContext->block_align;
@@ -545,12 +539,6 @@ namespace FFmpegSharp.Internal
         {
             get => pCodecContext->err_recognition;
             set => pCodecContext->err_recognition = value;
-        }
-
-        public long ReorderedOpaque
-        {
-            get => pCodecContext->reordered_opaque;
-            set => pCodecContext->reordered_opaque = value;
         }
 
         public ulong_array8 Error
@@ -779,6 +767,12 @@ namespace FFmpegSharp.Internal
         {
             get => pCodecContext->ch_layout;
             set => pCodecContext->ch_layout = value;
+        }
+
+        public long FrameNum
+        {
+            get => pCodecContext->frame_num;
+            set => pCodecContext->frame_num = value;
         }
 
     }

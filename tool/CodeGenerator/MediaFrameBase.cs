@@ -139,12 +139,6 @@ namespace FFmpegSharp.Internal
             set => pFrame->palette_has_changed = value;
         }
 
-        public long ReorderedOpaque
-        {
-            get => pFrame->reordered_opaque;
-            set => pFrame->reordered_opaque = value;
-        }
-
         public int SampleRate
         {
             get => pFrame->sample_rate;
@@ -217,12 +211,6 @@ namespace FFmpegSharp.Internal
             set => pFrame->pkt_pos = value;
         }
 
-        public long PktDuration
-        {
-            get => pFrame->pkt_duration;
-            set => pFrame->pkt_duration = value;
-        }
-
         public int DecodeErrorFlags
         {
             get => pFrame->decode_error_flags;
@@ -263,6 +251,12 @@ namespace FFmpegSharp.Internal
         {
             get => pFrame->ch_layout;
             set => pFrame->ch_layout = value;
+        }
+
+        public long Duration
+        {
+            get => pFrame->duration;
+            set => pFrame->duration = value;
         }
 
     }

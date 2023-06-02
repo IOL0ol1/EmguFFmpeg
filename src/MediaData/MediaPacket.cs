@@ -1,7 +1,7 @@
 ﻿using System;
 using FFmpeg.AutoGen;
 using FFmpegSharp.Internal;
-
+ 
 namespace FFmpegSharp
 {
     public unsafe class MediaPacket : MediaPacketBase, IDisposable, ICloneable

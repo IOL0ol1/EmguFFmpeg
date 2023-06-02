@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 using FFmpeg.AutoGen;
 using FFmpegSharp.Internal;
@@ -91,11 +89,7 @@ namespace FFmpegSharp
                 return GetAudioData(padding).SelectMany(_ => _).ToArray();
             throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
         }
-
-        /// <summary>
-        /// reference <see cref="ffmpeg.av_image_copy(ref byte_ptrArray4, ref int_array4, ref byte_ptrArray4, int_array4, AVPixelFormat, int, int)"/>
-        /// </summary>
-        /// <returns></returns>
+         
         private List<byte[]> GetVideoData(bool padding)
         {
             List<byte[]> result = new List<byte[]>();

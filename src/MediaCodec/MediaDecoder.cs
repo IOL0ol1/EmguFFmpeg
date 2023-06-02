@@ -61,7 +61,7 @@ namespace FFmpegSharp
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public int SendPacket(MediaPacket packet) => ffmpeg.avcodec_send_packet(pCodecContext, packet);
+        public int SendPacket(MediaPacketBase packet) => ffmpeg.avcodec_send_packet(pCodecContext, packet);
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_receive_frame(AVCodecContext*, AVFrame*)"/>
@@ -74,7 +74,7 @@ namespace FFmpegSharp
         /// decode packet to get frame.
         /// TODO: add SubtitleFrame support
         /// <para>
-        /// <see cref="SendPacket(MediaPacket)"/> and <see cref="ReceiveFrame(MediaFrame)"/>
+        /// <see cref="SendPacket(MediaPacketBase)"/> and <see cref="ReceiveFrame(MediaFrame)"/>
         /// </para>
         /// </summary>
         /// <param name="packet"></param>
@@ -82,7 +82,7 @@ namespace FFmpegSharp
         /// <param name="swFrame">av_hwframe_transfer_data dst</param>
         /// <param name="flags">av_hwframe_transfer_data flags</param>
         /// <returns></returns>
-        public IEnumerable<MediaFrame> DecodePacket(MediaPacket packet, MediaFrame inFrame = null, MediaFrame swFrame = null, int flags = 0)
+        public IEnumerable<MediaFrame> DecodePacket(MediaPacketBase packet, MediaFrame inFrame = null, MediaFrame swFrame = null, int flags = 0)
         {
             var isHWDeviceCtxInit = IsHWDeviceCtxInit();
             int ret = SendPacket(packet);

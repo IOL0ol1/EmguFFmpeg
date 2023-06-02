@@ -172,7 +172,7 @@ namespace FFmpegSharp
 
         /// <summary>
         /// Flush codecs cache.
-        /// <para><see cref="MediaEncoder.EncodeFrame(MediaFrame, MediaPacket)"/></para>
+        /// <para><see cref="MediaEncoder.EncodeFrame(Internal.MediaFrameBase, MediaPacket)"/></para>
         /// <para><see cref="WritePacket(MediaPacket, AVRational?)"/></para> 
         /// </summary>
         /// <param name="mediaCodecs">Flush encode list</param>
