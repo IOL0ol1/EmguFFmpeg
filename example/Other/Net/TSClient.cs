@@ -12,7 +12,7 @@ namespace FFmpegSharp.Example.Other.Net
 {
     internal class TSClient : ExampleBase
     {
-        public override async void Execute()
+        public override void Execute()
         {
 
             BlockingCollection<MediaFrame> frames = new BlockingCollection<MediaFrame>();

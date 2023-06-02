@@ -95,7 +95,7 @@ namespace FFmpegSharp.Example
             srcData.UpdateFrom(f.Data);
             var srcLinesize = new int_array4();
             srcLinesize.UpdateFrom(f.Linesize);
-            ffmpeg.av_image_copy(ref dstData, ref dstLinesize, ref srcData, srcLinesize, (AVPixelFormat)f.Format, f.Width, f.Height);
+            ffmpeg.av_image_copy(ref dstData, ref dstLinesize, srcData, srcLinesize, (AVPixelFormat)f.Format, f.Width, f.Height);
             var videoDstBufferSize = ffmpeg.av_image_get_buffer_size((AVPixelFormat)of.Format, of.Width, of.Height, 1);
             stream.Write(new ReadOnlySpan<byte>(dstData[0], videoDstBufferSize));
         }
