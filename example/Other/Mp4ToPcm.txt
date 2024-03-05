@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using FFmpeg.AutoGen;
+using NAudio.Wave;
 
 namespace FFmpegSharp.Example.Other
 {
@@ -32,8 +33,8 @@ namespace FFmpegSharp.Example.Other
                 var audioSrcStream = fmtctx.FirstOrDefault(_ => _.CodecparRef.codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO);
                 using (var audioDecCtx = MediaDecoder.CreateDecoder(audioSrcStream.CodecparRef))
                 /// it's important to use audio format conversion!!!
-                using (var converter = SampleConverter.Create(audioDecCtx.ChLayout, audioDecCtx.SampleRate, AVSampleFormat.AV_SAMPLE_FMT_S16, audioDecCtx.FrameSize))
-                using (var audioEncCtx = MediaEncoder.CreateAudioEncoder(wavOut.Format, audioDecCtx.SampleRate, audioDecCtx.ChLayout, AVSampleFormat.AV_SAMPLE_FMT_S16)) // it's for wav output
+                using (var converter = SampleConverter.Create(audioDecCtx.ChLayout, audioDecCtx.SampleRate, AVSampleFormat.AV_SAMPLE_FMT_FLT, audioDecCtx.FrameSize))
+                using (var audioEncCtx = MediaEncoder.CreateAudioEncoder(wavOut.Format, audioDecCtx.SampleRate, audioDecCtx.ChLayout, AVSampleFormat.AV_SAMPLE_FMT_FLT)) // it's for wav output
                 using (var pkt = new MediaPacket())
                 using (var frame = new MediaFrame())
                 {
@@ -60,6 +61,16 @@ namespace FFmpegSharp.Example.Other
 
         private unsafe void WriteAudioOut(MediaFrame f, Stream stream)
         {
+            WaveOut waveout = new WaveOut();
+
+            var bufferedWaveProvider = new BufferedWaveProvider(WaveFormat.CreateIeeeFloatWaveFormat(f.SampleRate, f.ChLayout.nb_channels));
+            bufferedWaveProvider.BufferLength = unpadded_linesize * 16; //16 is pretty good
+            bufferedWaveProvider.DiscardOnBufferOverflow = true;
+
+            bufferedWaveProvider.AddSamples(managed, 0, unpadded_linesize);
+
+            waveout.Init(bufferedWaveProvider);
+            waveout.Play();
             var unpadded_linesize = f.NbSamples * ffmpeg.av_get_bytes_per_sample((AVSampleFormat)f.Format);
             stream.Write(new ReadOnlySpan<byte>(f.Ref.extended_data[0], unpadded_linesize));
         }

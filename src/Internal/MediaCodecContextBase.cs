@@ -97,12 +97,6 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->time_base = value;
         }
 
-        public int TicksPerFrame
-        {
-            get => pCodecContext->ticks_per_frame;
-            set => pCodecContext->ticks_per_frame = value;
-        }
-
         public int Delay
         {
             get => pCodecContext->delay;

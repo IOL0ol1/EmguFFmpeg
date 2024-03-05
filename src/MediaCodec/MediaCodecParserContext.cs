@@ -56,7 +56,7 @@ namespace FFmpegSharp
             var bufSize = 20480 + 64; // buffer size + AV_INPUT_BUFFER_PADDING_SIZE
             var buf = new byte[bufSize];
             int outSize;
-            var pkt = packet == null ? new MediaPacket() { Dts = ffmpeg.AV_NOPTS_VALUE, Pts = ffmpeg.AV_NOPTS_VALUE, Pos = 0 } : packet;
+            var pkt = packet ?? new MediaPacket() { Dts = ffmpeg.AV_NOPTS_VALUE, Pts = ffmpeg.AV_NOPTS_VALUE, Pos = 0 };
             try
             {
                 while ((outSize = stream.Read(buf, 0, bufSize)) != 0)

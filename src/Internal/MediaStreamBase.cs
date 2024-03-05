@@ -91,12 +91,6 @@ namespace FFmpegSharp.Internal
             set => pStream->attached_pic = value;
         }
 
-        public int NbSideData
-        {
-            get => pStream->nb_side_data;
-            set => pStream->nb_side_data = value;
-        }
-
         public int EventFlags
         {
             get => pStream->event_flags;

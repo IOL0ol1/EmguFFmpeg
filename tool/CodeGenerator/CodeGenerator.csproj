@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;</TargetFrameworks>
-    <OutputType>Exe</OutputType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen" Version="6.0.0.2" />
-  </ItemGroup>
-
+    <PropertyGroup>
+        <TargetFramework>net6</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
  
+    <ItemGroup>
+        <PackageReference Include="FFmpeg.AutoGen" Version="6.1.0" />
+    </ItemGroup>
+
+
 </Project>

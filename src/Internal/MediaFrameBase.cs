@@ -61,12 +61,6 @@ namespace FFmpegSharp.Internal
             set => pFrame->format = value;
         }
 
-        public int KeyFrame
-        {
-            get => pFrame->key_frame;
-            set => pFrame->key_frame = value;
-        }
-
         public AVPictureType PictType
         {
             get => pFrame->pict_type;
@@ -119,18 +113,6 @@ namespace FFmpegSharp.Internal
         {
             get => pFrame->repeat_pict;
             set => pFrame->repeat_pict = value;
-        }
-
-        public int InterlacedFrame
-        {
-            get => pFrame->interlaced_frame;
-            set => pFrame->interlaced_frame = value;
-        }
-
-        public int TopFieldFirst
-        {
-            get => pFrame->top_field_first;
-            set => pFrame->top_field_first = value;
         }
 
         public int PaletteHasChanged
@@ -205,22 +187,10 @@ namespace FFmpegSharp.Internal
             set => pFrame->best_effort_timestamp = value;
         }
 
-        public long PktPos
-        {
-            get => pFrame->pkt_pos;
-            set => pFrame->pkt_pos = value;
-        }
-
         public int DecodeErrorFlags
         {
             get => pFrame->decode_error_flags;
             set => pFrame->decode_error_flags = value;
-        }
-
-        public int PktSize
-        {
-            get => pFrame->pkt_size;
-            set => pFrame->pkt_size = value;
         }
 
         public ulong CropTop

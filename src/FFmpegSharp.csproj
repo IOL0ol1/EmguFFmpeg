@@ -17,13 +17,13 @@
     <PackageIcon>icon.png</PackageIcon>
     <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet ffmpeg4sharp ffmpegsharp</PackageTags>
     <RepositoryType>git</RepositoryType>
-    <Version>6.0.0</Version>
+    <Version>6.1.0</Version>
     <NoWarn>1701;1702;1591</NoWarn>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen" Version="[6.0.0,)" />
+    <PackageReference Include="FFmpeg.AutoGen" Version="[6.1.0,)" />
   </ItemGroup>
 
   <ItemGroup> 

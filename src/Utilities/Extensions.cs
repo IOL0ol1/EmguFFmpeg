@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using FFmpeg.AutoGen;
 
@@ -37,14 +38,14 @@ namespace FFmpegSharp
 
     public static class AVChannelLayoutExtension
     {
-        public unsafe static AVChannelLayout ToDefaultChLayout(this int nb_channels)
+        public static unsafe AVChannelLayout ToDefaultChLayout(this int nb_channels)
         {
             var chLayout = new AVChannelLayout();
             ffmpeg.av_channel_layout_default(&chLayout, nb_channels);
             return chLayout;
         }
 
-        public unsafe static AVChannelLayout Copy(this AVChannelLayout channelLayout)
+        public static unsafe AVChannelLayout Copy(this AVChannelLayout channelLayout)
         {
             var chLayout = new AVChannelLayout();
             ffmpeg.av_channel_layout_copy(&chLayout, &channelLayout);
@@ -84,8 +85,11 @@ namespace FFmpegSharp
         /// </summary>
         /// <param name="ptr"></param>
         /// <returns></returns>
-        public unsafe static string PtrToStringUTF8(this IntPtr ptr)
+        public static unsafe string PtrToStringUTF8(this IntPtr ptr)
         {
+#if NETSTANDARD2_1_OR_GREATER
+            return Marshal.PtrToStringUTF8(ptr);
+#else
             if (IntPtr.Zero == ptr)
                 return null;
             var length = 0;
@@ -93,7 +97,7 @@ namespace FFmpegSharp
             while (psbyte[length] != 0)
                 length++;
             return new string(psbyte, 0, length, Encoding.UTF8);
-
+#endif
         }
     }
 
@@ -126,14 +130,14 @@ namespace FFmpegSharp
     internal static class TExtension
     {
 
-        internal static T ThrowIfError<T>(this T error) where T : struct, IComparable, IFormattable, IConvertible, IComparable<T>, IEquatable<T>
+        internal static int ThrowIfError(this int error)
         {
-            if (error is int _int)
-                return _int < 0 ? throw new FFmpegException(_int) : error;
-            else if (error is long _long)
-                return _long < 0 ? throw new FFmpegException((int)_long) : error;
-            else
-                return error.CompareTo(default) < 0 ? throw new FFmpegException(error.ToInt32(NumberFormatInfo.InvariantInfo)) : error;
+            return error < 0 ? throw new FFmpegException(error) : error;
+        }
+
+        internal static long ThrowIfError(this long error)
+        {
+            return error < 0 ? throw new FFmpegException((int)error) : error;
         }
     }
 
