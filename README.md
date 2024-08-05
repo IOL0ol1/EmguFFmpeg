@@ -12,15 +12,25 @@ FFmpeg API are unstable, please use ffmpeg library version > 5
 
 
 ## Usage
-Manually download the *.dll files that comply with the license from [ffmpeg.org](http://www.ffmpeg.org/download.html).    
+### Get ffmpeg *.dll    
+Manually download the *.dll files that comply with the license from [ffmpeg.org](http://www.ffmpeg.org/download.html).   
+You can get the nightly version on Nuget    
+```
+NuGet\Install-Package FFmpeg.GPL
+NuGet\Install-Package FFmpeg.LGPL 
+```
+
+### Install FFmpeg4Sharp 
 ```
 NuGet\Install-Package FFmpeg4Sharp
 ```
+add namespace 
 ```csharp
 using FFmpeg.AutoGen;
 using FFmpegSharp;
 ```
-### Mux and encode
+### Quick start
+#### Mux and encode
 ```csharp
 /// Create a video file
 var fps = 29.97d;
@@ -51,7 +61,7 @@ using (var muxer = MediaMuxer.Create(output))
     }
 }
 ```
-### Demux and decode
+#### Demux and decode
 ```csharp
 /// Video to BGR images
 var input = "path-to-your-input-file.mp4";
@@ -97,3 +107,9 @@ More see **[Example](./example/FFmpegSharp.Example)**
 - Filter support.
 - Data exchange with NAudio and SharpAVI.
 - Subtitle support.
+
+## License
+This project is licensed under the MIT license.    
+
+But if you use the part of FFmpeg licensed under the GPL,    
+the whole project will be contagious by the GPL.
