@@ -10,10 +10,10 @@ namespace FFmpegSharp
     {
         protected internal AVDictionary* pDictionary = null;
 
-        public MediaDictionary(AVDictionary* ptr, bool isDisposeByOwner = true)
+        public MediaDictionary(AVDictionary* ptr, bool leaveOpen = true)
         {
             pDictionary = ptr;
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
 
         public MediaDictionary() { }
@@ -221,7 +221,7 @@ namespace FFmpegSharp
             return value.pDictionary;
         }
 
-        private bool disposedValue;
+        private bool disposedValue = true;
 
         protected virtual void Dispose(bool disposing)
         {

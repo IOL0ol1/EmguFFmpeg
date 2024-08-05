@@ -1,29 +1,34 @@
-﻿using FFmpeg.AutoGen;
-namespace FFmpegSharp.Internal
+﻿using System;
+using FFmpeg.AutoGen;
+
+namespace FFmpegSharp
 {
-    public abstract unsafe partial class MediaPacketBase
+    public unsafe partial class MediaPacket
     {
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVPacket* pPacket = null;
+        protected AVPacket* pPacket = null;
 
         /// <summary>
         /// const AVPacket*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVPacket*(MediaPacketBase value)
+        public static implicit operator AVPacket*(MediaPacket value)
         {
-            if (value == null) return null;
-            return value.pPacket;
+            return value == null ? null : value.pPacket;
         }
 
-        public MediaPacketBase(AVPacket* value)
+        public MediaPacket(AVPacket* pAVPacket)
         {
-            pPacket = value;
+            pPacket = pAVPacket;
         }
 
-        public AVPacket Ref => *pPacket;
+        public MediaPacket(IntPtr pAVPacket)
+            : this((AVPacket*)pAVPacket)
+        { }
+
+        public AVPacket Const => *pPacket;
 
         public long Pts
         {

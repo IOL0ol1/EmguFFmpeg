@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
@@ -29,45 +30,51 @@ namespace FFmpegSharp.Example
                 //var b = dict.Get("texst").ToList();
                 //ffmpeg.avformat_network_init();
                 //MediaIOContext.Open("http://localhost:10010", ffmpeg.AVIO_FLAG_WRITE, dict);
+                ffmpeg.RootPath = Path.Combine(AppContext.BaseDirectory, "runtimes\\win-x64\\native");
+                foreach (var codec in MediaCodec.GetCodecs()) 
+                {
+                    Console.WriteLine(codec.Name);
+                }
 
-                typeof(Program).Assembly
-                    .GetTypes()
-                    .Where(_ => _.IsAssignableTo(typeof(ExampleBase)) && !_.IsAbstract)
-                    .Select(_ => Activator.CreateInstance(_)).OfType<ExampleBase>()
-                    .Where(_ => _.Enable)
-                    .OrderBy(_ => _.Index).ToList()
-                    .ForEach(_ =>
-                    {
-                        var name = _.GetType().Name;
-                        var fColor = Console.ForegroundColor;
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"-------------------{name} start----------------------");
-                        Console.ForegroundColor = fColor;
-                        try
-                        {
-                            _.Execute();
-                            //return;
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex.Message + ex.StackTrace);
-                        }
-                        //var s = Stopwatch.StartNew();
-                        //var count = 2;
-                        //for (int i = 0; i < count; i++)
-                        //{
-                        //    try
-                        //    {
-                        //        _.Execute();
-                        //    }
-                        //    catch (Exception)
-                        //    { 
-                        //    }
-                        //}
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        //Console.WriteLine($"-------------------{name} end[{s.Elapsed.TotalMilliseconds / count}ms]----------------------");
-                        Console.ForegroundColor = fColor;
-                    });
+
+                //typeof(Program).Assembly
+                //    .GetTypes()
+                //    .Where(_ => _.IsAssignableTo(typeof(ExampleBase)) && !_.IsAbstract)
+                //    .Select(_ => Activator.CreateInstance(_)).OfType<ExampleBase>()
+                //    .Where(_ => _.Enable)
+                //    .OrderBy(_ => _.Index).ToList()
+                //    .ForEach(_ =>
+                //    {
+                //        var name = _.GetType().Name;
+                //        var fColor = Console.ForegroundColor;
+                //        Console.ForegroundColor = ConsoleColor.Red;
+                //        Console.WriteLine($"-------------------{name} start----------------------");
+                //        Console.ForegroundColor = fColor;
+                //        try
+                //        {
+                //            _.Execute();
+                //            //return;
+                //        }
+                //        catch (Exception ex)
+                //        {
+                //            Console.WriteLine(ex.Message + ex.StackTrace);
+                //        }
+                //        //var s = Stopwatch.StartNew();
+                //        //var count = 2;
+                //        //for (int i = 0; i < count; i++)
+                //        //{
+                //        //    try
+                //        //    {
+                //        //        _.Execute();
+                //        //    }
+                //        //    catch (Exception)
+                //        //    { 
+                //        //    }
+                //        //}
+                //        Console.ForegroundColor = ConsoleColor.Red;
+                //        //Console.WriteLine($"-------------------{name} end[{s.Elapsed.TotalMilliseconds / count}ms]----------------------");
+                //        Console.ForegroundColor = fColor;
+                //    });
             }
             catch (Exception ex)
             {

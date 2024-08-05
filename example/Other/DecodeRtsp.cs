@@ -50,7 +50,7 @@ namespace FFmpegSharp.Example
                                     // use OpenCV mat write to file(or Bitmap)
                                     using (var mat = new Mat(outFrame.Height, outFrame.Width, MatType.CV_8UC3))
                                     {
-                                        var srcPtr = (IntPtr)outFrame.Ref.data[0];
+                                        var srcPtr = (IntPtr)outFrame.Const.data[0];
                                         var srcLineSize = outFrame.Linesize[0];
                                         var dstPtr = mat.Data; // Bitmap.Scan0
                                         var dstLineSize = (int)mat.Step(); // Bitmap.Stride

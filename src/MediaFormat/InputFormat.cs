@@ -1,37 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
     /// <summary>
     /// <see cref="AVInputFormat"/> wapper
     /// </summary>
-    public unsafe class InFormat : InFormatBase
+    public unsafe partial class InputFormat 
     {
 
-        public InFormat(AVInputFormat* iformat) : base(iformat)
-        {
-            pInputFormat = iformat;
-        }
-
-        internal InFormat(IntPtr pAVInputFormat)
-            : this((AVInputFormat*)pAVInputFormat)
-        { }
-
-
-        public static InFormat FindFormat(string shortName)
+        public static InputFormat FindFormat(string shortName)
         {
             var f = ffmpeg.av_find_input_format(shortName);
-            return f == null ? null : new InFormat(f);
+            return f == null ? null : new InputFormat(f);
         }
 
         /// <summary>
         /// get demuxer format by name
         /// </summary>
         /// <param name="name">e.g. mov,mp4 ...</param>
-        public static InFormat Get(string name)
+        public static InputFormat Get(string name)
         {
             name = name.Trim().TrimStart('.');
             if (!string.IsNullOrEmpty(name))
@@ -55,19 +44,19 @@ namespace FFmpegSharp
         /// <summary>
         /// get all supported input formats.
         /// </summary>
-        public static IEnumerable<InFormat> GetFormats()
+        public static IEnumerable<InputFormat> GetFormats()
         {
             IntPtr iformat;
             IntPtrPtr opaque = new IntPtrPtr();
             while ((iformat = av_demuxer_iterate_safe(opaque)) != IntPtr.Zero)
             {
-                yield return new InFormat(iformat);
+                yield return new InputFormat(iformat);
             }
         }
 
-        private static IntPtr av_demuxer_iterate_safe(IntPtrPtr opaque)
+        protected static IntPtr av_demuxer_iterate_safe(IntPtrPtr opaque)
         {
-            fixed (void** pp = &opaque.Ptr)
+            fixed (void** pp = &opaque.ptr)
                 return (IntPtr)ffmpeg.av_demuxer_iterate(pp);
         }
 

@@ -15,14 +15,14 @@ namespace FFmpegSharp
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
-        public OutFormat Format => new OutFormat(pFormatContext->oformat);
+        public OutputFormat Format => new OutputFormat(pFormatContext->oformat);
 
         /// <summary>
         /// write to stream
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="oformat"></param>
-        public static MediaMuxer Create(Stream stream, OutFormat oformat)
+        public static MediaMuxer Create(Stream stream, OutputFormat oformat)
         {
             var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768);
             AVFormatContext* pFormatContext = ffmpeg.avformat_alloc_context();
@@ -42,7 +42,7 @@ namespace FFmpegSharp
         /// <param name="oformat"></param>
         /// <param name="formatName"></param>
         /// <param name="options"></param>
-        public static MediaMuxer Create(string fileName, OutFormat oformat = null, string formatName = null, MediaDictionary options = null)
+        public static MediaMuxer Create(string fileName, OutputFormat oformat = null, string formatName = null, MediaDictionary options = null)
         {
             AVFormatContext* pFormatContext = null;
             ffmpeg.avformat_alloc_output_context2(&pFormatContext, oformat, formatName, fileName).ThrowIfError();
@@ -172,7 +172,7 @@ namespace FFmpegSharp
 
         /// <summary>
         /// Flush codecs cache.
-        /// <para><see cref="MediaEncoder.EncodeFrame(Internal.MediaFrameBase, MediaPacket)"/></para>
+        /// <para><see cref="MediaEncoder.EncodeFrame(MediaFrame, MediaPacket)"/></para>
         /// <para><see cref="WritePacket(MediaPacket, AVRational?)"/></para> 
         /// </summary>
         /// <param name="mediaCodecs">Flush encode list</param>

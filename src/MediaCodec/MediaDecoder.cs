@@ -1,24 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
+
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaDecoder : MediaCodecContext
-    {
+    public unsafe partial class MediaDecoder  : MediaCodecContext
+    { 
 
-        public MediaDecoder(AVCodecContext* pAVCodecContext, bool isDisposeByOwner = true)
-            : base(pAVCodecContext, isDisposeByOwner)
+        public MediaDecoder(AVCodecContext* pAVCodecContext, bool leaveOpen)
+            : base(pAVCodecContext, leaveOpen)
         { }
 
         public MediaDecoder(MediaCodec codec = null)
-                    : base(codec)
+            : base(codec)
         { }
 
         #region Create
 
-        public static MediaDecoder Create(MediaCodec codec, Action<MediaCodecContextBase> beforeOpenSetting = null, MediaDictionary opts = null)
+        public static MediaDecoder Create(MediaCodec codec, Action<MediaCodecContext> beforeOpenSetting = null, MediaDictionary opts = null)
         {
             var output = new MediaDecoder(codec);
             beforeOpenSetting?.Invoke(output);
@@ -40,7 +40,7 @@ namespace FFmpegSharp
         /// <param name="action"></param>
         /// <param name="opts"></param>
         /// <returns></returns>
-        public static MediaDecoder CreateDecoder(AVCodecParameters codecParameters, Action<MediaCodecContextBase> action = null, MediaDictionary opts = null)
+        public static MediaDecoder CreateDecoder(AVCodecParameters codecParameters, Action<MediaCodecContext> action = null, MediaDictionary opts = null)
         {
             var codec = MediaCodec.FindDecoder(codecParameters.codec_id);
             AVCodecParameters* pCodecParameters = &codecParameters;
@@ -61,7 +61,7 @@ namespace FFmpegSharp
         /// </summary>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public int SendPacket(MediaPacketBase packet) => ffmpeg.avcodec_send_packet(pCodecContext, packet);
+        public int SendPacket(MediaPacket packet) => ffmpeg.avcodec_send_packet(pCodecContext, packet);
 
         /// <summary>
         /// <see cref="ffmpeg.avcodec_receive_frame(AVCodecContext*, AVFrame*)"/>
@@ -74,7 +74,7 @@ namespace FFmpegSharp
         /// decode packet to get frame.
         /// TODO: add SubtitleFrame support
         /// <para>
-        /// <see cref="SendPacket(MediaPacketBase)"/> and <see cref="ReceiveFrame(MediaFrame)"/>
+        /// <see cref="SendPacket(MediaPacket)"/> and <see cref="ReceiveFrame(MediaFrame)"/>
         /// </para>
         /// </summary>
         /// <param name="packet"></param>
@@ -82,14 +82,14 @@ namespace FFmpegSharp
         /// <param name="swFrame">av_hwframe_transfer_data dst</param>
         /// <param name="flags">av_hwframe_transfer_data flags</param>
         /// <returns></returns>
-        public IEnumerable<MediaFrame> DecodePacket(MediaPacketBase packet, MediaFrame inFrame = null, MediaFrame swFrame = null, int flags = 0)
+        public IEnumerable<MediaFrame> DecodePacket(MediaPacket packet, MediaFrame inFrame = null, MediaFrame swFrame = null, int flags = 0)
         {
             var isHWDeviceCtxInit = IsHWDeviceCtxInit();
             int ret = SendPacket(packet);
             if (ret < 0 && ret != ffmpeg.AVERROR(ffmpeg.EAGAIN) && ret != ffmpeg.AVERROR_EOF)
                 ret.ThrowIfError();
             MediaFrame _frame = inFrame ?? new MediaFrame();
-            MediaFrame _swframe = swFrame == null ? (isHWDeviceCtxInit ? new MediaFrame() : null) : swFrame;
+            MediaFrame _swframe = swFrame ?? (isHWDeviceCtxInit ? new MediaFrame() : null);
             try
             {
                 while (true)

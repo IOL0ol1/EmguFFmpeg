@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
+
 
 namespace FFmpegSharp
 {
@@ -15,57 +15,57 @@ namespace FFmpegSharp
             ffmpeg.avdevice_register_all();
         }
 
-        private static InFormat av_input_audio_device_next_safe(InFormat format)
+        private static InputFormat av_input_audio_device_next_safe(InputFormat format)
         {
             var f = ffmpeg.av_input_audio_device_next(format);
-            return f == null ? null : new InFormat(f);
+            return f == null ? null : new InputFormat(f);
         }
-        private static InFormat av_input_video_device_next_safe(InFormat format)
+        private static InputFormat av_input_video_device_next_safe(InputFormat format)
         {
             var f = ffmpeg.av_input_video_device_next(format);
-            return f == null ? null : new InFormat(f);
+            return f == null ? null : new InputFormat(f);
         }
-        private static OutFormat av_output_audio_device_next_safe(OutFormat format)
+        private static OutputFormat av_output_audio_device_next_safe(OutputFormat format)
         {
             var f = ffmpeg.av_output_audio_device_next(format);
-            return f == null ? null : new OutFormat(f);
+            return f == null ? null : new OutputFormat(f);
         }
-        private static OutFormat av_output_video_device_next_safe(OutFormat format)
+        private static OutputFormat av_output_video_device_next_safe(OutputFormat format)
         {
             var f = ffmpeg.av_output_video_device_next(format);
-            return f == null ? null : new OutFormat(f);
+            return f == null ? null : new OutputFormat(f);
         }
 
-        public static IEnumerable<InFormat> GetInputAudioDevices()
+        public static IEnumerable<InputFormat> GetInputAudioDevices()
         {
-            InFormat format = null;
+            InputFormat format = null;
             while ((format = av_input_audio_device_next_safe(format)) != null)
             {
                 yield return format;
             }
         }
 
-        public static IEnumerable<InFormat> GetInputVideoDevices()
+        public static IEnumerable<InputFormat> GetInputVideoDevices()
         {
-            InFormat format = null;
+            InputFormat format = null;
             while ((format = av_input_video_device_next_safe(format)) != null)
             {
                 yield return format;
             }
         }
 
-        public static IEnumerable<OutFormat> GetOutputAudioDevices()
+        public static IEnumerable<OutputFormat> GetOutputAudioDevices()
         {
-            OutFormat format = null;
+            OutputFormat format = null;
             while ((format = av_output_audio_device_next_safe(format)) != null)
             {
                 yield return format;
             }
         }
 
-        public static IEnumerable<OutFormat> GetOutputVideoDevices()
+        public static IEnumerable<OutputFormat> GetOutputVideoDevices()
         {
-            OutFormat format = null;
+            OutputFormat format = null;
             while ((format = av_output_video_device_next_safe(format)) != null)
             {
                 yield return format;
@@ -73,7 +73,7 @@ namespace FFmpegSharp
         }
 
 
-        public static MediaDeviceInfoLists ListDevice(this MediaFormatContextBase value)
+        public static MediaDeviceInfoLists ListDevice(this MediaFormatContext value)
         {
             AVDeviceInfoList* @void = null;
             AVDeviceInfoList** o = &@void;
@@ -82,7 +82,7 @@ namespace FFmpegSharp
         }
 
 
-        public static MediaDeviceInfoLists ListInputSources(InFormat value, string deviceName = null, MediaDictionary deviceOptions = null)
+        public static MediaDeviceInfoLists ListInputSources(InputFormat value, string deviceName = null, MediaDictionary deviceOptions = null)
         {
             AVDeviceInfoList* @void = null;
             AVDeviceInfoList** o = &@void;
@@ -90,7 +90,7 @@ namespace FFmpegSharp
             return new MediaDeviceInfoLists(o, count);
         }
 
-        public static MediaDeviceInfoLists ListOutputSinks(OutFormat value, string deviceName = null, MediaDictionary deviceOptions = null)
+        public static MediaDeviceInfoLists ListOutputSinks(OutputFormat value, string deviceName = null, MediaDictionary deviceOptions = null)
         {
             AVDeviceInfoList* @void = null;
             AVDeviceInfoList** o = &@void;

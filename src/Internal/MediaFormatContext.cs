@@ -1,29 +1,34 @@
-﻿using FFmpeg.AutoGen;
-namespace FFmpegSharp.Internal
+﻿using System;
+using FFmpeg.AutoGen;
+
+namespace FFmpegSharp
 {
-    public abstract unsafe partial class MediaFormatContextBase
+    public unsafe partial class MediaFormatContext
     {
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVFormatContext* pFormatContext = null;
+        protected AVFormatContext* pFormatContext = null;
 
         /// <summary>
         /// const AVFormatContext*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVFormatContext*(MediaFormatContextBase value)
+        public static implicit operator AVFormatContext*(MediaFormatContext value)
         {
-            if (value == null) return null;
-            return value.pFormatContext;
+            return value == null ? null : value.pFormatContext;
         }
 
-        public MediaFormatContextBase(AVFormatContext* value)
+        public MediaFormatContext(AVFormatContext* pAVFormatContext)
         {
-            pFormatContext = value;
+            pFormatContext = pAVFormatContext;
         }
 
-        public AVFormatContext Ref => *pFormatContext;
+        public MediaFormatContext(IntPtr pAVFormatContext)
+            : this((AVFormatContext*)pAVFormatContext)
+        { }
+
+        public AVFormatContext Const => *pFormatContext;
 
         public int CtxFlags
         {
@@ -35,6 +40,18 @@ namespace FFmpegSharp.Internal
         {
             get => pFormatContext->nb_streams;
             set => pFormatContext->nb_streams = value;
+        }
+
+        public uint NbStreamGroups
+        {
+            get => pFormatContext->nb_stream_groups;
+            set => pFormatContext->nb_stream_groups = value;
+        }
+
+        public uint NbChapters
+        {
+            get => pFormatContext->nb_chapters;
+            set => pFormatContext->nb_chapters = value;
         }
 
         public long StartTime
@@ -115,22 +132,10 @@ namespace FFmpegSharp.Internal
             set => pFormatContext->subtitle_codec_id = value;
         }
 
-        public uint MaxIndexSize
+        public AVCodecID DataCodecId
         {
-            get => pFormatContext->max_index_size;
-            set => pFormatContext->max_index_size = value;
-        }
-
-        public uint MaxPictureBuffer
-        {
-            get => pFormatContext->max_picture_buffer;
-            set => pFormatContext->max_picture_buffer = value;
-        }
-
-        public uint NbChapters
-        {
-            get => pFormatContext->nb_chapters;
-            set => pFormatContext->nb_chapters = value;
+            get => pFormatContext->data_codec_id;
+            set => pFormatContext->data_codec_id = value;
         }
 
         public long StartTimeRealtime
@@ -163,46 +168,34 @@ namespace FFmpegSharp.Internal
             set => pFormatContext->debug = value;
         }
 
+        public int MaxStreams
+        {
+            get => pFormatContext->max_streams;
+            set => pFormatContext->max_streams = value;
+        }
+
+        public uint MaxIndexSize
+        {
+            get => pFormatContext->max_index_size;
+            set => pFormatContext->max_index_size = value;
+        }
+
+        public uint MaxPictureBuffer
+        {
+            get => pFormatContext->max_picture_buffer;
+            set => pFormatContext->max_picture_buffer = value;
+        }
+
         public long MaxInterleaveDelta
         {
             get => pFormatContext->max_interleave_delta;
             set => pFormatContext->max_interleave_delta = value;
         }
 
-        public int StrictStdCompliance
-        {
-            get => pFormatContext->strict_std_compliance;
-            set => pFormatContext->strict_std_compliance = value;
-        }
-
-        public int EventFlags
-        {
-            get => pFormatContext->event_flags;
-            set => pFormatContext->event_flags = value;
-        }
-
         public int MaxTsProbe
         {
             get => pFormatContext->max_ts_probe;
             set => pFormatContext->max_ts_probe = value;
-        }
-
-        public int AvoidNegativeTs
-        {
-            get => pFormatContext->avoid_negative_ts;
-            set => pFormatContext->avoid_negative_ts = value;
-        }
-
-        public int TsId
-        {
-            get => pFormatContext->ts_id;
-            set => pFormatContext->ts_id = value;
-        }
-
-        public int AudioPreload
-        {
-            get => pFormatContext->audio_preload;
-            set => pFormatContext->audio_preload = value;
         }
 
         public int MaxChunkDuration
@@ -217,10 +210,46 @@ namespace FFmpegSharp.Internal
             set => pFormatContext->max_chunk_size = value;
         }
 
+        public int MaxProbePackets
+        {
+            get => pFormatContext->max_probe_packets;
+            set => pFormatContext->max_probe_packets = value;
+        }
+
+        public int StrictStdCompliance
+        {
+            get => pFormatContext->strict_std_compliance;
+            set => pFormatContext->strict_std_compliance = value;
+        }
+
+        public int EventFlags
+        {
+            get => pFormatContext->event_flags;
+            set => pFormatContext->event_flags = value;
+        }
+
+        public int AvoidNegativeTs
+        {
+            get => pFormatContext->avoid_negative_ts;
+            set => pFormatContext->avoid_negative_ts = value;
+        }
+
+        public int AudioPreload
+        {
+            get => pFormatContext->audio_preload;
+            set => pFormatContext->audio_preload = value;
+        }
+
         public int UseWallclockAsTimestamps
         {
             get => pFormatContext->use_wallclock_as_timestamps;
             set => pFormatContext->use_wallclock_as_timestamps = value;
+        }
+
+        public int SkipEstimateDurationFromPts
+        {
+            get => pFormatContext->skip_estimate_duration_from_pts;
+            set => pFormatContext->skip_estimate_duration_from_pts = value;
         }
 
         public int AvioFlags
@@ -287,30 +316,6 @@ namespace FFmpegSharp.Internal
         {
             get => pFormatContext->output_ts_offset;
             set => pFormatContext->output_ts_offset = value;
-        }
-
-        public AVCodecID DataCodecId
-        {
-            get => pFormatContext->data_codec_id;
-            set => pFormatContext->data_codec_id = value;
-        }
-
-        public int MaxStreams
-        {
-            get => pFormatContext->max_streams;
-            set => pFormatContext->max_streams = value;
-        }
-
-        public int SkipEstimateDurationFromPts
-        {
-            get => pFormatContext->skip_estimate_duration_from_pts;
-            set => pFormatContext->skip_estimate_duration_from_pts = value;
-        }
-
-        public int MaxProbePackets
-        {
-            get => pFormatContext->max_probe_packets;
-            set => pFormatContext->max_probe_packets = value;
         }
 
     }

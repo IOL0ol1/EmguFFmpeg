@@ -1,29 +1,34 @@
-﻿using FFmpeg.AutoGen;
-namespace FFmpegSharp.Internal
+﻿using System;
+using FFmpeg.AutoGen;
+
+namespace FFmpegSharp
 {
-    public abstract unsafe partial class MediaFilterBase
+    public unsafe partial class MediaFilter
     {
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVFilter* pFilter = null;
+        protected AVFilter* pFilter = null;
 
         /// <summary>
         /// const AVFilter*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVFilter*(MediaFilterBase value)
+        public static implicit operator AVFilter*(MediaFilter value)
         {
-            if (value == null) return null;
-            return value.pFilter;
+            return value == null ? null : value.pFilter;
         }
 
-        public MediaFilterBase(AVFilter* value)
+        public MediaFilter(AVFilter* pAVFilter)
         {
-            pFilter = value;
+            pFilter = pAVFilter;
         }
 
-        public AVFilter Ref => *pFilter;
+        public MediaFilter(IntPtr pAVFilter)
+            : this((AVFilter*)pAVFilter)
+        { }
+
+        public AVFilter Const => *pFilter;
 
         public int Flags
         {

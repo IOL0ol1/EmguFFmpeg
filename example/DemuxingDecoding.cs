@@ -98,7 +98,7 @@ namespace FFmpegSharp.Example
         private unsafe void WriteAudioOut(MediaFrame f, Stream stream)
         {
             var unpadded_linesize = f.NbSamples * ffmpeg.av_get_bytes_per_sample((AVSampleFormat)f.Format);
-            stream.Write(new ReadOnlySpan<byte>(f.Ref.extended_data[0], unpadded_linesize));
+            stream.Write(new ReadOnlySpan<byte>(f.Const.extended_data[0], unpadded_linesize));
         }
 
     }

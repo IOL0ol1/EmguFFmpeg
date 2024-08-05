@@ -1,24 +1,15 @@
 ﻿using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
+
 using System;
 using System.Collections.Generic;
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaFilter : MediaFilterBase
+    public unsafe partial class MediaFilter 
     {
 
-        /// <summary>
-        /// <see cref="AVFilter"/> adapter.
-        /// </summary>
-        /// <param name="filter"></param>
-        public MediaFilter(AVFilter* filter) : base(filter)
-        { }
-
-        internal MediaFilter(IntPtr filter) : this((AVFilter*)filter)
-        { }
-
-        public MediaFilter(string name) : base(ffmpeg.avfilter_get_by_name(name))
+         
+        public MediaFilter(string name) : this(ffmpeg.avfilter_get_by_name(name))
         { }
 
         public string Name => ((IntPtr)pFilter->name).PtrToStringUTF8();
@@ -28,22 +19,19 @@ namespace FFmpegSharp
         /// <summary>
         /// get all supported filter.
         /// </summary>
-        public static IEnumerable<MediaFilter> Filters
+        public static IEnumerable<MediaFilter> GetGetFilters()
         {
-            get
+            IntPtr pFilter;
+            IntPtrPtr opaque = new IntPtrPtr();
+            while ((pFilter = av_filter_iterate_safe(opaque)) != IntPtr.Zero)
             {
-                IntPtr pFilter;
-                IntPtrPtr opaque = new IntPtrPtr();
-                while ((pFilter = av_filter_iterate_safe(opaque)) != IntPtr.Zero)
-                {
-                    yield return new MediaFilter(pFilter);
-                }
+                yield return new MediaFilter(pFilter);
             }
         }
 
         protected static IntPtr av_filter_iterate_safe(IntPtrPtr opaque)
         {
-            fixed (void** pp = &opaque.Ptr)
+            fixed (void** pp = &opaque.ptr)
             {
                 return (IntPtr)ffmpeg.av_filter_iterate(pp);
             }

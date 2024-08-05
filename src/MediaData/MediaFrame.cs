@@ -3,22 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
+
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaFrame : MediaFrameBase, IDisposable, ICloneable
+    public unsafe partial class MediaFrame : IDisposable, ICloneable
     {
-        public MediaFrame(AVFrame* frame, bool isDisposeByOwner = true)
-            : base(frame)
+        public MediaFrame(AVFrame* frame, bool leaveOpen)
+           : this(frame)
         {
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
+
 
         /// <summary>
         /// <see cref="ffmpeg.av_frame_alloc()"/>
         /// </summary>
-        public MediaFrame() : this(ffmpeg.av_frame_alloc(), true)
+        public MediaFrame() : this(ffmpeg.av_frame_alloc(), false)
         { }
 
         public static MediaFrame CreateVideoFrame(int width, int height, AVPixelFormat pixelFormat, int align = 0)
@@ -51,9 +52,8 @@ namespace FFmpegSharp
         {
             ffmpeg.av_frame_get_buffer(pFrame, align).ThrowIfError();
         }
-
+ 
         public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0;
-
         public bool IsVideoFrame => pFrame->width > 0 && pFrame->height > 0;
 
         #region Get Managed Copy Of Data
@@ -89,7 +89,7 @@ namespace FFmpegSharp
                 return GetAudioData(padding).SelectMany(_ => _).ToArray();
             throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
         }
-         
+
         private List<byte[]> GetVideoData(bool padding)
         {
             List<byte[]> result = new List<byte[]>();
@@ -145,7 +145,7 @@ namespace FFmpegSharp
         {
             var dstByteLineSize = padding ? srcByteLinesize : byteWidth;
             var result = new byte[height * dstByteLineSize];
-            fixed(void* ptr = result)
+            fixed (void* ptr = result)
             {
                 FFmpegUtil.CopyPlane(srcData, srcByteLinesize, (IntPtr)ptr, dstByteLineSize, byteWidth, height);
             }
@@ -199,7 +199,7 @@ namespace FFmpegSharp
 
         #region IDisposable Support
 
-        private bool disposedValue = false; // To detect redundant calls
+        private bool disposedValue = true;
 
         protected virtual void Dispose(bool disposing)
         {

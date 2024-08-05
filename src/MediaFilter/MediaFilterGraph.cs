@@ -1,26 +1,23 @@
-﻿using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
+using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaFilterGraph : MediaFilterGraphBase, IDisposable, IReadOnlyList<MediaFilterContext>
+    public unsafe partial class MediaFilterGraph : IDisposable, IReadOnlyList<MediaFilterContext>
     {
 
 
-        public MediaFilterGraph() : base(ffmpeg.avfilter_graph_alloc())
+        public MediaFilterGraph() : this(ffmpeg.avfilter_graph_alloc())
         { }
 
 
         public MediaFilterContext CreateFilter(MediaFilter filter, string name, string args)
         {
-            var filterContext = new MediaFilterContext(null);
-            fixed (AVFilterContext** pp = &filterContext.pFilterContext)
-                ffmpeg.avfilter_graph_create_filter(pp, filter, name, args, null, pFilterGraph).ThrowIfError();
-            return filterContext;
+            AVFilterContext* p = null;
+            ffmpeg.avfilter_graph_create_filter(&p, filter, name, args, null, pFilterGraph).ThrowIfError();
+            return p == null ? null : new MediaFilterContext(p);
         }
 
         /// <summary>
@@ -52,7 +49,7 @@ namespace FFmpegSharp
              }, contextName);
             if (filterContext.NbInputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
@@ -62,7 +59,7 @@ namespace FFmpegSharp
             MediaFilterContext filterContext = AddFilter(filter, options, contextName);
             if (filterContext.NbInputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
@@ -81,7 +78,7 @@ namespace FFmpegSharp
             }, contextName);
             if (filterContext.NbOutputs > 0)
                 throw new FFmpegException("FFmpegException.NotSinksFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
@@ -102,7 +99,7 @@ namespace FFmpegSharp
             }, contextName);
             if (filterContext.NbInputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
@@ -130,7 +127,7 @@ namespace FFmpegSharp
             }, contextName);
             if (filterContext.NbOutputs > 0)
                 throw new FFmpegException("FFmpegException.NotSinksFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
@@ -145,8 +142,7 @@ namespace FFmpegSharp
         public MediaFilterContext AddFilter(MediaFilter filter, Action<MediaFilterContext> options, string contextName = null)
         {
             var context = new MediaFilterContext(ffmpeg.avfilter_graph_alloc_filter(pFilterGraph, filter, contextName));
-            if (options != null)
-                options.Invoke(context);
+            options?.Invoke(context);
             ffmpeg.avfilter_init_str(context, null).ThrowIfError();
             return context;
         }

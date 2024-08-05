@@ -1,19 +1,20 @@
 ﻿using System;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
- 
+
+
 namespace FFmpegSharp
 {
-    public unsafe class MediaPacket : MediaPacketBase, IDisposable, ICloneable
+    public unsafe partial class MediaPacket : IDisposable, ICloneable
     {
-        public MediaPacket(AVPacket* pAVPacket, bool isDisposeByOwner = true)
-            : base(pAVPacket)
+        public MediaPacket(AVPacket* pAVPacket, bool leaveOpen)
+            : this(pAVPacket)
         {
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
 
+
         public MediaPacket()
-            : this(ffmpeg.av_packet_alloc(), true)
+            : this(ffmpeg.av_packet_alloc(), false)
         { }
 
         /// <summary>
@@ -43,7 +44,7 @@ namespace FFmpegSharp
 
         #region IDisposable Support
 
-        private bool disposedValue = false;
+        private bool disposedValue = true;
 
         protected virtual void Dispose(bool disposing)
         {

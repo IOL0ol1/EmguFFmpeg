@@ -1,29 +1,34 @@
-﻿using FFmpeg.AutoGen;
-namespace FFmpegSharp.Internal
+﻿using System;
+using FFmpeg.AutoGen;
+
+namespace FFmpegSharp
 {
-    public abstract unsafe partial class MediaFrameBase
+    public unsafe partial class MediaFrame
     {
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVFrame* pFrame = null;
+        protected AVFrame* pFrame = null;
 
         /// <summary>
         /// const AVFrame*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVFrame*(MediaFrameBase value)
+        public static implicit operator AVFrame*(MediaFrame value)
         {
-            if (value == null) return null;
-            return value.pFrame;
+            return value == null ? null : value.pFrame;
         }
 
-        public MediaFrameBase(AVFrame* value)
+        public MediaFrame(AVFrame* pAVFrame)
         {
-            pFrame = value;
+            pFrame = pAVFrame;
         }
 
-        public AVFrame Ref => *pFrame;
+        public MediaFrame(IntPtr pAVFrame)
+            : this((AVFrame*)pAVFrame)
+        { }
+
+        public AVFrame Const => *pFrame;
 
         public byte_ptrArray8 Data
         {
@@ -89,18 +94,6 @@ namespace FFmpegSharp.Internal
         {
             get => pFrame->time_base;
             set => pFrame->time_base = value;
-        }
-
-        public int CodedPictureNumber
-        {
-            get => pFrame->coded_picture_number;
-            set => pFrame->coded_picture_number = value;
-        }
-
-        public int DisplayPictureNumber
-        {
-            get => pFrame->display_picture_number;
-            set => pFrame->display_picture_number = value;
         }
 
         public int Quality

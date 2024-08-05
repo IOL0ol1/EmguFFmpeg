@@ -1,29 +1,34 @@
-﻿using FFmpeg.AutoGen;
-namespace FFmpegSharp.Internal
+﻿using System;
+using FFmpeg.AutoGen;
+
+namespace FFmpegSharp
 {
-    public abstract unsafe partial class MediaCodecBase
+    public unsafe partial class MediaCodec
     {
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVCodec* pCodec = null;
+        protected AVCodec* pCodec = null;
 
         /// <summary>
         /// const AVCodec*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVCodec*(MediaCodecBase value)
+        public static implicit operator AVCodec*(MediaCodec value)
         {
-            if (value == null) return null;
-            return value.pCodec;
+            return value == null ? null : value.pCodec;
         }
 
-        public MediaCodecBase(AVCodec* value)
+        public MediaCodec(AVCodec* pAVCodec)
         {
-            pCodec = value;
+            pCodec = pAVCodec;
         }
 
-        public AVCodec Ref => *pCodec;
+        public MediaCodec(IntPtr pAVCodec)
+            : this((AVCodec*)pAVCodec)
+        { }
+
+        public AVCodec Const => *pCodec;
 
         public AVMediaType Type
         {

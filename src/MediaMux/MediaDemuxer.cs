@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
+
 
 namespace FFmpegSharp
 {
@@ -14,7 +14,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
         /// </summary>
-        public InFormat Format => new InFormat(pFormatContext->iformat);
+        public InputFormat Format => new InputFormat(pFormatContext->iformat);
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
@@ -24,12 +24,12 @@ namespace FFmpegSharp
         /// <param name="stream"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public static MediaDemuxer Open(Stream stream, InFormat iformat = null, MediaDictionary options = null)
+        public static MediaDemuxer Open(Stream stream, InputFormat iformat = null, MediaDictionary options = null)
         {
             var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768);
-            var output = Open(null, iformat, options, _ =>
+            var output = Open(null, iformat, options, fc =>
             {
-                AVFormatContext* f = _;
+                AVFormatContext* f = fc;
                 f->pb = ioContext;
             });
             output._ioContext = ioContext;
@@ -43,7 +43,7 @@ namespace FFmpegSharp
         /// <param name="iformat"></param>
         /// <param name="options"></param>
         /// <param name="beforeOpen"></param>
-        public static MediaDemuxer Open(string url, InFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContextBase> beforeOpen = null)
+        public static MediaDemuxer Open(string url, InputFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContext> beforeOpen = null)
         {
             var output = new MediaDemuxer();
             beforeOpen?.Invoke(output);
@@ -90,8 +90,8 @@ namespace FFmpegSharp
         {
             AVCodec* pCodec = codec;
             var ret = ffmpeg.av_find_best_stream(pFormatContext, type, wantedStreamNb, relatedStream, &pCodec, flags).ThrowIfError();
-            if (codec == null)
-                codec = new MediaCodec(pCodec);
+            if (codec != null)  return ret;
+            codec = new MediaCodec(pCodec);
             return ret;
         }
 

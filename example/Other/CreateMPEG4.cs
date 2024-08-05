@@ -23,7 +23,7 @@ namespace FFmpegSharp.Example
             var width = 800;
             var heith = 600;
             var s = Stopwatch.StartNew();
-            using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), OutFormat.GuessFormat(null, outputFile, null)))
+            using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), OutputFormat.GuessFormat(null, outputFile, null)))
             using (var convert = new PixelConverter())
             {
                 using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.ThreadCount = 10))
@@ -65,7 +65,7 @@ namespace FFmpegSharp.Example
                 var srcLineSize = (int)mat.Step();
                 var dstLineSize = frame.Linesize[0];
                 FFmpegUtil.CopyPlane(mat.Data, srcLineSize,
-                   (IntPtr)frame.Ref.data[0], dstLineSize, Math.Min(srcLineSize, dstLineSize), frame.Height);
+                   (IntPtr)frame.Const.data[0], dstLineSize, Math.Min(srcLineSize, dstLineSize), frame.Height);
             }
         }
 

@@ -1,15 +1,16 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
+
 
 namespace FFmpegSharp
 {
-    public unsafe partial class MediaCodecContext : MediaCodecContextBase, IDisposable
+    public unsafe partial class MediaCodecContext : IDisposable
     {
-        private bool disposedValue;
+        private bool disposedValue = true;
 
-        public static MediaCodecContext Open(MediaCodec codec, Action<MediaCodecContextBase> beforeOpenSetting, MediaDictionary opts = null)
+        public static MediaCodecContext Open(MediaCodec codec, Action<MediaCodecContext> beforeOpenSetting, MediaDictionary opts = null)
         {
             var output = new MediaCodecContext(codec);
             beforeOpenSetting?.Invoke(output);
@@ -19,16 +20,15 @@ namespace FFmpegSharp
             return output;
         }
 
-        public MediaCodecContext(AVCodecContext* pAVCodecContext, bool isDisposeByOwner = true)
-            : base(pAVCodecContext)
+        public MediaCodecContext(AVCodecContext* pAVCodecContext, bool leaveOpen)
+            : this(pAVCodecContext)
         {
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
 
         public MediaCodecContext(MediaCodec codec = null)
-                    : this(ffmpeg.avcodec_alloc_context3(codec), true)
+            : this(ffmpeg.avcodec_alloc_context3(codec), false)
         { }
-
 
         #region IDisposable
         protected virtual void Dispose(bool disposing)
@@ -58,11 +58,8 @@ namespace FFmpegSharp
         }
         #endregion
     }
-}
 
-namespace FFmpegSharp.Internal
-{
-    public unsafe partial class MediaCodecContextBase
+    public unsafe partial class MediaCodecContext
     {
         public MediaCodec GetCodec() => pCodecContext->codec == null ? null : new MediaCodec(pCodecContext->codec);
 
@@ -115,8 +112,8 @@ namespace FFmpegSharp.Internal
             {
                 var codec = new MediaCodec(pCodecContext->codec);
 
-                if (codec.GetHWConfigs().Select(_ => (AVCodecHWConfig?)_)
-                    .FirstOrDefault(_ => (type == null || _.Value.device_type == type) && (_.Value.methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) != 0) is AVCodecHWConfig hWConfig)
+                if (codec.GetHWConfigs().Select(hw => (AVCodecHWConfig?)hw)
+                    .FirstOrDefault(hw => (type == null || hw.Value.device_type == type) && (hw.Value.methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) != 0) is AVCodecHWConfig hWConfig)
                 {
                     ffmpeg.av_hwdevice_ctx_create(&pCodecContext->hw_device_ctx, hWConfig.device_type, device, opts, flags).ThrowIfError();
                     GetFormatFunc = (avctx, pix_fmts) => GetFormat(avctx, pix_fmts, hWConfig.pix_fmt);

@@ -1,17 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
+
 
 namespace FFmpegSharp
 {
-    public unsafe class MediaFilterContext : MediaFilterContextBase
+    public unsafe partial class MediaFilterContext  
     {
-
-        internal MediaFilterContext(AVFilterContext* filterContext) : base(filterContext)
-        { }
-
-
+ 
         public MediaFilter Filter => new MediaFilter(pFilterContext->filter);
 
         public void Init(string options)

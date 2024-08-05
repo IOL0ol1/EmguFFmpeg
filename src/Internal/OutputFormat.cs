@@ -1,29 +1,34 @@
-﻿using FFmpeg.AutoGen;
-namespace FFmpegSharp.Internal
+﻿using System;
+using FFmpeg.AutoGen;
+
+namespace FFmpegSharp
 {
-    public abstract unsafe partial class OutFormatBase
+    public unsafe partial class OutputFormat
     {
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVOutputFormat* pOutputFormat = null;
+        protected AVOutputFormat* pOutputFormat = null;
 
         /// <summary>
         /// const AVOutputFormat*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVOutputFormat*(OutFormatBase value)
+        public static implicit operator AVOutputFormat*(OutputFormat value)
         {
-            if (value == null) return null;
-            return value.pOutputFormat;
+            return value == null ? null : value.pOutputFormat;
         }
 
-        public OutFormatBase(AVOutputFormat* value)
+        public OutputFormat(AVOutputFormat* pAVOutputFormat)
         {
-            pOutputFormat = value;
+            pOutputFormat = pAVOutputFormat;
         }
 
-        public AVOutputFormat Ref => *pOutputFormat;
+        public OutputFormat(IntPtr pAVOutputFormat)
+            : this((AVOutputFormat*)pAVOutputFormat)
+        { }
+
+        public AVOutputFormat Const => *pOutputFormat;
 
         public AVCodecID AudioCodec
         {

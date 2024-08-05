@@ -1,29 +1,34 @@
-﻿using FFmpeg.AutoGen;
-namespace FFmpegSharp.Internal
+﻿using System;
+using FFmpeg.AutoGen;
+
+namespace FFmpegSharp
 {
-    public abstract unsafe partial class MediaStreamBase
+    public unsafe partial class MediaStream
     {
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVStream* pStream = null;
+        protected AVStream* pStream = null;
 
         /// <summary>
         /// const AVStream*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVStream*(MediaStreamBase value)
+        public static implicit operator AVStream*(MediaStream value)
         {
-            if (value == null) return null;
-            return value.pStream;
+            return value == null ? null : value.pStream;
         }
 
-        public MediaStreamBase(AVStream* value)
+        public MediaStream(AVStream* pAVStream)
         {
-            pStream = value;
+            pStream = pAVStream;
         }
 
-        public AVStream Ref => *pStream;
+        public MediaStream(IntPtr pAVStream)
+            : this((AVStream*)pAVStream)
+        { }
+
+        public AVStream Const => *pStream;
 
         public int Index
         {

@@ -1,29 +1,34 @@
-﻿using FFmpeg.AutoGen;
-namespace FFmpegSharp.Internal
+﻿using System;
+using FFmpeg.AutoGen;
+
+namespace FFmpegSharp
 {
-    public abstract unsafe partial class MediaFilterContextBase
+    public unsafe partial class MediaFilterContext
     {
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVFilterContext* pFilterContext = null;
+        protected AVFilterContext* pFilterContext = null;
 
         /// <summary>
         /// const AVFilterContext*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVFilterContext*(MediaFilterContextBase value)
+        public static implicit operator AVFilterContext*(MediaFilterContext value)
         {
-            if (value == null) return null;
-            return value.pFilterContext;
+            return value == null ? null : value.pFilterContext;
         }
 
-        public MediaFilterContextBase(AVFilterContext* value)
+        public MediaFilterContext(AVFilterContext* pAVFilterContext)
         {
-            pFilterContext = value;
+            pFilterContext = pAVFilterContext;
         }
 
-        public AVFilterContext Ref => *pFilterContext;
+        public MediaFilterContext(IntPtr pAVFilterContext)
+            : this((AVFilterContext*)pAVFilterContext)
+        { }
+
+        public AVFilterContext Const => *pFilterContext;
 
         public uint NbInputs
         {
@@ -43,16 +48,16 @@ namespace FFmpegSharp.Internal
             set => pFilterContext->thread_type = value;
         }
 
-        public int IsDisabled
-        {
-            get => pFilterContext->is_disabled;
-            set => pFilterContext->is_disabled = value;
-        }
-
         public int NbThreads
         {
             get => pFilterContext->nb_threads;
             set => pFilterContext->nb_threads = value;
+        }
+
+        public int IsDisabled
+        {
+            get => pFilterContext->is_disabled;
+            set => pFilterContext->is_disabled = value;
         }
 
         public uint Ready

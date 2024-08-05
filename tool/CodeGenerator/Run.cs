@@ -21,16 +21,18 @@ namespace CodeGenerator
                 new (){Type = typeof(AVStream) },
                 new (){Type = typeof(AVFrame)  },
                 new (){Type = typeof(AVPacket) },
-                new (){Type = typeof(AVInputFormat), Name = "InFormatBase" },
-                new (){Type = typeof(AVOutputFormat), Name = "OutFormatBase" },
+                new (){Type = typeof(AVInputFormat), Name = "InputFormat" },
+                new (){Type = typeof(AVOutputFormat), Name = "OutputFormat" },
                 new (){Type = typeof(AVFilter) },
                 new (){Type = typeof(AVFilterContext) },
                 new (){Type = typeof(AVFilterGraph) },
              };
+            var folder = Directory.CreateDirectory("Internal").FullName;
             foreach (var type in types)
             {
                 var g = CodeGenerator(type);
-                File.WriteAllText($"../../../{g.OutTypeName}.cs", g.SourceCode, System.Text.Encoding.UTF8);
+                var f = Path.Combine(folder, $"{g.OutTypeName}.cs");
+                File.WriteAllText(f, g.SourceCode, System.Text.Encoding.UTF8);
             }
 
         }
@@ -50,27 +52,27 @@ namespace CodeGenerator
             public string OutTypeName { get; set; }
         }
 
-        public static GeneratorOutput CodeGenerator(Info info, string @namespace = "FFmpegSharp.Internal")
+        public static GeneratorOutput CodeGenerator(Info info, string @namespace = "FFmpegSharp")
         {
             var type = info.Type;
             var dstTypeName = info.Name;
-            var isDisposable = info.IsDisposable;
+            //var isDisposable = info.IsDisposable;
             using var sw = new StringWriter();
             var srcTypeName = type.Name.Replace("FFmpeg.AutoGen.", "");
-            dstTypeName ??= $"{Regex.Replace(srcTypeName, @"^AV", "Media")}Base";
+            dstTypeName ??= $"{Regex.Replace(srcTypeName, @"^AV", "Media")}";
             var pTypeName = $"{Regex.Replace(srcTypeName, @"^AV", "p")}";
-            if (isDisposable)
-                sw.WriteLine($"using System;");
 
+            sw.WriteLine($"using System;");
             sw.WriteLine($"using FFmpeg.AutoGen;");
+            sw.WriteLine(@"");
             sw.WriteLine($"namespace {@namespace}");
             sw.WriteLine(@"{");
-            sw.WriteLine($"    public abstract unsafe partial class {dstTypeName}{(isDisposable ? " : IDisposable" : "")}");
+            sw.WriteLine($"    public unsafe partial class {dstTypeName}");
             sw.WriteLine(@"    {");
             sw.WriteLine(@"        /// <summary>");
             sw.WriteLine(@"        /// Be careful!!!");
             sw.WriteLine(@"        /// </summary>");
-            sw.WriteLine($"        protected internal {srcTypeName}* {pTypeName} = null;");
+            sw.WriteLine($"        protected {srcTypeName}* {pTypeName} = null;");
             sw.WriteLine(@"");
             sw.WriteLine(@"        /// <summary>");
             sw.WriteLine($"        /// const {srcTypeName}*");
@@ -78,22 +80,25 @@ namespace CodeGenerator
             sw.WriteLine(@"        /// <param name=""value""></param>");
             sw.WriteLine($"        public static implicit operator {srcTypeName}*({dstTypeName} value)");
             sw.WriteLine(@"        {");
-            sw.WriteLine($"            if (value == null) return null;");
-            sw.WriteLine($"            return value.{pTypeName};");
+            sw.WriteLine($"            return value == null ? null : value.{pTypeName};");
             sw.WriteLine(@"        }");
             sw.WriteLine(@"");
-            sw.WriteLine($"        public {dstTypeName}({srcTypeName}* value)");
+            sw.WriteLine($"        public {dstTypeName}({srcTypeName}* p{srcTypeName})");
             sw.WriteLine(@"        {");
-            sw.WriteLine($"            {pTypeName} = value;");
+            sw.WriteLine($"            {pTypeName} = p{srcTypeName};");
             sw.WriteLine(@"        }");
             sw.WriteLine(@"");
-            sw.WriteLine($"        public {srcTypeName} Ref => *{pTypeName};");
+            sw.WriteLine($"        public {dstTypeName}(IntPtr p{srcTypeName})");
+            sw.WriteLine($"            : this(({srcTypeName}*)p{srcTypeName})");
+            sw.WriteLine(@"        { }");
             sw.WriteLine(@"");
-            if (isDisposable)
-            {
-                sw.WriteLine($"        public abstract void Dispose();");
-                sw.WriteLine(@"");
-            }
+            sw.WriteLine($"        public {srcTypeName} Const => *{pTypeName};");
+            sw.WriteLine(@"");
+            //if (isDisposable)
+            //{
+            //    sw.WriteLine($"        public abstract void Dispose();");
+            //    sw.WriteLine(@"");
+            //}
             foreach (var element in type.GetMembers(BindingFlags.Public | BindingFlags.Instance))
             {
                 var srcTypeWithName = $"{element}";

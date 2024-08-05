@@ -1,29 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
 
 namespace FFmpegSharp
 {
     /// <summary>
     /// <see cref="AVOutputFormat"/> wapper
     /// </summary>
-    public unsafe class OutFormat : OutFormatBase
+    public unsafe partial class OutputFormat
     {
-
-        public OutFormat(AVOutputFormat* oformat)
-            : base(oformat)
-        {        }
-
-        internal OutFormat(IntPtr pAVOutputFormat)
-            : this((AVOutputFormat*)pAVOutputFormat)
-        { }
 
         /// <summary>
         /// get muxer format by name,e.g. "mp4" ".mp4"
         /// </summary>
         /// <param name="name"></param>
-        public static OutFormat Get(string name)
+        public static OutputFormat Get(string name)
         {
             name = name.Trim().TrimStart('.');
             if (!string.IsNullOrEmpty(name))
@@ -58,35 +49,31 @@ namespace FFmpegSharp
         /// if non-NULL checks if mime_type matches with the MIME type of the registered formats
         /// </param>
         /// <returns></returns>
-        public static OutFormat GuessFormat(string shortName, string fileName, string mimeType)
+        public static OutputFormat GuessFormat(string shortName, string fileName, string mimeType)
         {
-            return new OutFormat(ffmpeg.av_guess_format(shortName, fileName, mimeType));
+            return new OutputFormat(ffmpeg.av_guess_format(shortName, fileName, mimeType));
         }
 
         /// <summary>
         /// get all supported output formats
         /// </summary>
-        public static IEnumerable<OutFormat> GetFormats()
+        public static IEnumerable<OutputFormat> GetFormats()
         {
             IntPtr oformat;
             IntPtrPtr opaque = new IntPtrPtr();
             while ((oformat = av_muxer_iterate_safe(opaque)) != IntPtr.Zero)
             {
-                yield return new OutFormat(oformat);
+                yield return new OutputFormat(oformat);
             }
         }
 
-        #region Safe wapper for IEnumerable
-
-        private static IntPtr av_muxer_iterate_safe(IntPtrPtr ptr)
+        protected static IntPtr av_muxer_iterate_safe(IntPtrPtr ptr)
         {
-            fixed (void** pp = &ptr.Ptr)
+            fixed (void** pp = &ptr.ptr)
             {
                 return (IntPtr)ffmpeg.av_muxer_iterate(pp);
             }
         }
-
-        #endregion Safe wapper for IEnumerable
 
         public string Name => ((IntPtr)pOutputFormat->name).PtrToStringUTF8();
         public string LongName => ((IntPtr)pOutputFormat->long_name).PtrToStringUTF8();

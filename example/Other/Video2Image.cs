@@ -41,7 +41,7 @@ namespace FFmpegSharp.Example.Other
                                 {
                                     var srcLineSize = outFrame.Linesize[0];
                                     var dstLineSize = (int)mat.Step();
-                                    FFmpegUtil.CopyPlane((IntPtr)outFrame.Ref.data[0], srcLineSize,
+                                    FFmpegUtil.CopyPlane((IntPtr)outFrame.Const.data[0], srcLineSize,
                                         mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
                                     if (inFrame.PktDts >= 0)
                                         mat.SaveImage(Path.Combine(output, $"{mediaReader[inPacket.StreamIndex].ToTimeSpan(inFrame.PktDts).TotalMilliseconds}ms.jpg"));

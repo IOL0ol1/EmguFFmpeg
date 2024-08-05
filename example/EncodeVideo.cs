@@ -60,13 +60,13 @@ namespace FFmpegSharp.Example
                     /* encode the image */
                     foreach (var item in encoder.EncodeFrame(frame, pkt))
                     {
-                        os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
+                        os.Write(new ReadOnlySpan<byte>(item.Const.data, item.Const.size));
                     }
                 }
                 /* flush the encoder */
                 foreach (var item in encoder.EncodeFrame(null, pkt))
                 {
-                    os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
+                    os.Write(new ReadOnlySpan<byte>(item.Const.data, item.Const.size));
                 }
                 /* Add sequence end code to have a real MPEG file.
                   It makes only sense because this tiny examples writes packets
@@ -74,8 +74,8 @@ namespace FFmpegSharp.Example
                   codecs. To create a valid file, you usually need to write packets
                   into a proper file format or protocol; see muxing.c.
                 */
-                if (encoder.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO
-                    || encoder.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG2VIDEO)
+                if (encoder.Const.codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO
+                    || encoder.Const.codec_id == AVCodecID.AV_CODEC_ID_MPEG2VIDEO)
                 {
                     byte[] endcode = { 0, 0, 1, 0xb7 };
                     os.Write(endcode, 0, endcode.Length);

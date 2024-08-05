@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
+
 namespace FFmpegSharp
 {
     public unsafe class MediaCodecParserContext : IDisposable
@@ -11,23 +11,23 @@ namespace FFmpegSharp
         protected AVCodecParserContext* pCodecParserContext;
 
 
-        public MediaCodecParserContext(AVCodecParserContext* pAVCodecParserContext, bool isDisposeByOwner = true)
+        public MediaCodecParserContext(AVCodecParserContext* pAVCodecParserContext, bool leaveOpen)
         {
             pCodecParserContext = pAVCodecParserContext;
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
 
         public MediaCodecParserContext(int codecId)
-            : this(ffmpeg.av_parser_init(codecId))
+            : this(ffmpeg.av_parser_init(codecId), false)
         { }
 
         public MediaCodecParserContext(AVCodecID codecId)
             : this((int)codecId)
         { }
 
-        private static AVCodecParser? av_parser_iterate_safe(IntPtrPtr opaque)
+        protected static AVCodecParser? av_parser_iterate_safe(IntPtrPtr opaque)
         {
-            fixed (void** pp = &opaque.Ptr)
+            fixed (void** pp = &opaque.ptr)
             {
                 var ret = ffmpeg.av_parser_iterate(pp);
                 return ret == null ? (AVCodecParser?)null : *ret;
@@ -51,7 +51,7 @@ namespace FFmpegSharp
         /// <param name="stream"></param>
         /// <param name="packet"></param>
         /// <returns></returns>
-        public IEnumerable<MediaPacket> ParserPackets(MediaCodecContextBase codecContext, Stream stream, MediaPacket packet = null)
+        public IEnumerable<MediaPacket> ParserPackets(MediaCodecContext codecContext, Stream stream, MediaPacket packet = null)
         {
             var bufSize = 20480 + 64; // buffer size + AV_INPUT_BUFFER_PADDING_SIZE
             var buf = new byte[bufSize];
@@ -89,25 +89,13 @@ namespace FFmpegSharp
         /// <param name="dts"></param>
         /// <param name="pos"></param>
         /// <returns></returns>
-        public int Parser2(MediaCodecContextBase codecContext, IntPtrPtr<byte> poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
+        public int Parser2(MediaCodecContext codecContext, IntPtr poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
         {
-            fixed (byte** pp = &poutbuf.Ptr)
-            {
-                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, pp, (int*)poutbufSize, (byte*)buf, bufSize, pts, dts, pos);
-            }
+            return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, (byte**)poutbuf, (int*)poutbufSize, (byte*)buf, bufSize, pts, dts, pos);
         }
 
 
-        public int Parser2(MediaCodecContextBase codecContext, IntPtrPtr<byte> poutbuf, IntPtr poutbufSize, byte[] buf, long pts, long dts, long pos)
-        {
-            fixed (byte** pp = &poutbuf.Ptr)
-            fixed (byte* pbuf = buf)
-            {
-                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, pp, (int*)poutbufSize, pbuf, buf.Length, pts, dts, pos);
-            }
-        }
-
-        public int Parser2(MediaCodecContextBase codecContext, MediaPacket packet, byte[] buf, int bufOffset = 0)
+        public int Parser2(MediaCodecContext codecContext, MediaPacket packet, byte[] buf, int bufOffset = 0)
         {
             fixed (byte* pbuf = buf)
             {
@@ -116,7 +104,7 @@ namespace FFmpegSharp
             }
         }
 
-        private bool disposedValue;
+        private bool disposedValue = true;
 
         protected virtual void Dispose(bool disposing)
         {
@@ -141,5 +129,5 @@ namespace FFmpegSharp
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-    }
+    } 
 }

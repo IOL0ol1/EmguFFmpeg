@@ -1,22 +1,22 @@
 ﻿using System;
 using FFmpeg.AutoGen;
-using FFmpegSharp.Internal;
+
 namespace FFmpegSharp
 {
-    public unsafe class MediaFormatContext : MediaFormatContextBase, IDisposable
+    public unsafe partial class MediaFormatContext : IDisposable
     {
-        public MediaFormatContext(AVFormatContext* pAVCodecContext, bool isDisposeByOwner = true)
-            : base(pAVCodecContext)
+        public MediaFormatContext(AVFormatContext* pAVCodecContext, bool leaveOpen)
+            : this(pAVCodecContext)
         {
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
 
         public MediaFormatContext()
-                    : this(ffmpeg.avformat_alloc_context())
+            : this(ffmpeg.avformat_alloc_context(),false)
         { }
 
         #region IDisposable
-        private bool disposedValue;
+        private bool disposedValue = true;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

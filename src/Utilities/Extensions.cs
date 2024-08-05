@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Text;
 using FFmpeg.AutoGen;
 
 namespace FFmpegSharp
@@ -88,46 +85,24 @@ namespace FFmpegSharp
         public static unsafe string PtrToStringUTF8(this IntPtr ptr)
         {
 #if NETSTANDARD2_1_OR_GREATER
-            return Marshal.PtrToStringUTF8(ptr);
+            return System.Runtime.InteropServices.Marshal.PtrToStringUTF8(ptr);
 #else
-            if (IntPtr.Zero == ptr)
-                return null;
+            if (IntPtr.Zero == ptr) return null;
             var length = 0;
             var psbyte = (sbyte*)ptr;
             while (psbyte[length] != 0)
-                length++;
-            return new string(psbyte, 0, length, Encoding.UTF8);
+                length++; 
+            return new string(psbyte, 0, length, System.Text.Encoding.UTF8);
 #endif
-        }
-    }
-
-    public unsafe class IntPtrPtr<T> where T : unmanaged
-    {
-        public T* Ptr;
-
-        public IntPtrPtr()
-        { }
-
-        public IntPtrPtr(IntPtr ptr)
-        {
-            Ptr = (T*)ptr;
         }
     }
 
     public unsafe class IntPtrPtr
     {
-        public void* Ptr = null;
-
-        public IntPtrPtr()
-        { }
-
-        public IntPtrPtr(IntPtr ptr)
-        {
-            Ptr = (void*)ptr;
-        }
+        public void* ptr = null; 
     }
 
-    internal static class TExtension
+    internal static class ExceptionExtension
     {
 
         internal static int ThrowIfError(this int error)

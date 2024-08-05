@@ -52,13 +52,13 @@ namespace FFmpegSharp.Example
                             }
                             foreach (var item in encoder.EncodeFrame(frame, pkt))
                             {
-                                os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
+                                os.Write(new ReadOnlySpan<byte>(item.Const.data, item.Const.size));
                             }
                         }
                     }
                     foreach (var item in encoder.EncodeFrame(null, pkt))
                     {
-                        os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
+                        os.Write(new ReadOnlySpan<byte>(item.Const.data, item.Const.size));
                     }
                 }
             }

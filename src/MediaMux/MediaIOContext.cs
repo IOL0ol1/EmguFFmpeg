@@ -20,11 +20,11 @@ namespace FFmpegSharp
             return value._pIOContext;
         }
 
-        public MediaIOContext(AVIOContext* pIOContext, bool isDisposeByOwner = true)
+        public MediaIOContext(AVIOContext* pIOContext, bool leaveOpen)
         {
             if (pIOContext == null) throw new NullReferenceException();
             _pIOContext = pIOContext;
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
 
         public MediaIOContext(
@@ -39,6 +39,7 @@ namespace FFmpegSharp
             _seek = new avio_alloc_context_seek(Seek);
             _pIOContext = ffmpeg.avio_alloc_context(_buffer, bufferSize, stream.CanWrite ? 1 : 0, null, stream.CanRead ? _read : null, stream.CanWrite ? _write : null, stream.CanSeek ? _seek : null);
             if (_pIOContext == null) throw new NullReferenceException();
+            disposedValue = false;
         }
 
         private int Write(void* opaque, byte* buf, int buf_size)
@@ -91,7 +92,7 @@ namespace FFmpegSharp
             {
                 AVIOContext* pIOContext = null;
                 ffmpeg.avio_open2(&pIOContext, url, flags, null, options == null ? null : pOptions).ThrowIfError();
-                return new MediaIOContext(pIOContext);
+                return new MediaIOContext(pIOContext,false);
             }
         }
 
@@ -102,7 +103,7 @@ namespace FFmpegSharp
             {
                 AVIOContext* pIOContext = null;
                 ffmpeg.avio_open2(&pIOContext, url, flags, &interrupt, options == null ? null : pOptions).ThrowIfError();
-                return new MediaIOContext(pIOContext);
+                return new MediaIOContext(pIOContext,false);
             }
         }
 
@@ -112,7 +113,7 @@ namespace FFmpegSharp
 
         public override bool CanWrite => _pIOContext->write_flag != 0;
 
-        public override long Length => ffmpeg.avio_size(_pIOContext);
+        public override long Length => ffmpeg.avio_size(_pIOContext).ThrowIfError();
 
         public override long Position { get => ffmpeg.avio_tell(_pIOContext).ThrowIfError(); set => Seek(value, SeekOrigin.Begin); }
 
@@ -165,7 +166,7 @@ namespace FFmpegSharp
             }
         }
 
-        private bool disposedValue;
+        private bool disposedValue = true;
 
         protected override void Dispose(bool disposing)
         {

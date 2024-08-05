@@ -1,29 +1,34 @@
-﻿using FFmpeg.AutoGen;
-namespace FFmpegSharp.Internal
+﻿using System;
+using FFmpeg.AutoGen;
+
+namespace FFmpegSharp
 {
-    public abstract unsafe partial class MediaCodecContextBase
+    public unsafe partial class MediaCodecContext
     {
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVCodecContext* pCodecContext = null;
+        protected AVCodecContext* pCodecContext = null;
 
         /// <summary>
         /// const AVCodecContext*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVCodecContext*(MediaCodecContextBase value)
+        public static implicit operator AVCodecContext*(MediaCodecContext value)
         {
-            if (value == null) return null;
-            return value.pCodecContext;
+            return value == null ? null : value.pCodecContext;
         }
 
-        public MediaCodecContextBase(AVCodecContext* value)
+        public MediaCodecContext(AVCodecContext* pAVCodecContext)
         {
-            pCodecContext = value;
+            pCodecContext = pAVCodecContext;
         }
 
-        public AVCodecContext Ref => *pCodecContext;
+        public MediaCodecContext(IntPtr pAVCodecContext)
+            : this((AVCodecContext*)pAVCodecContext)
+        { }
+
+        public AVCodecContext Const => *pCodecContext;
 
         public int LogLevelOffset
         {
@@ -55,24 +60,6 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->bit_rate = value;
         }
 
-        public int BitRateTolerance
-        {
-            get => pCodecContext->bit_rate_tolerance;
-            set => pCodecContext->bit_rate_tolerance = value;
-        }
-
-        public int GlobalQuality
-        {
-            get => pCodecContext->global_quality;
-            set => pCodecContext->global_quality = value;
-        }
-
-        public int CompressionLevel
-        {
-            get => pCodecContext->compression_level;
-            set => pCodecContext->compression_level = value;
-        }
-
         public int Flags
         {
             get => pCodecContext->flags;
@@ -95,6 +82,18 @@ namespace FFmpegSharp.Internal
         {
             get => pCodecContext->time_base;
             set => pCodecContext->time_base = value;
+        }
+
+        public AVRational PktTimebase
+        {
+            get => pCodecContext->pkt_timebase;
+            set => pCodecContext->pkt_timebase = value;
+        }
+
+        public AVRational Framerate
+        {
+            get => pCodecContext->framerate;
+            set => pCodecContext->framerate = value;
         }
 
         public int Delay
@@ -127,16 +126,76 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->coded_height = value;
         }
 
-        public int GopSize
+        public AVRational SampleAspectRatio
         {
-            get => pCodecContext->gop_size;
-            set => pCodecContext->gop_size = value;
+            get => pCodecContext->sample_aspect_ratio;
+            set => pCodecContext->sample_aspect_ratio = value;
         }
 
         public AVPixelFormat PixFmt
         {
             get => pCodecContext->pix_fmt;
             set => pCodecContext->pix_fmt = value;
+        }
+
+        public AVPixelFormat SwPixFmt
+        {
+            get => pCodecContext->sw_pix_fmt;
+            set => pCodecContext->sw_pix_fmt = value;
+        }
+
+        public AVColorPrimaries ColorPrimaries
+        {
+            get => pCodecContext->color_primaries;
+            set => pCodecContext->color_primaries = value;
+        }
+
+        public AVColorTransferCharacteristic ColorTrc
+        {
+            get => pCodecContext->color_trc;
+            set => pCodecContext->color_trc = value;
+        }
+
+        public AVColorSpace Colorspace
+        {
+            get => pCodecContext->colorspace;
+            set => pCodecContext->colorspace = value;
+        }
+
+        public AVColorRange ColorRange
+        {
+            get => pCodecContext->color_range;
+            set => pCodecContext->color_range = value;
+        }
+
+        public AVChromaLocation ChromaSampleLocation
+        {
+            get => pCodecContext->chroma_sample_location;
+            set => pCodecContext->chroma_sample_location = value;
+        }
+
+        public AVFieldOrder FieldOrder
+        {
+            get => pCodecContext->field_order;
+            set => pCodecContext->field_order = value;
+        }
+
+        public int Refs
+        {
+            get => pCodecContext->refs;
+            set => pCodecContext->refs = value;
+        }
+
+        public int HasBFrames
+        {
+            get => pCodecContext->has_b_frames;
+            set => pCodecContext->has_b_frames = value;
+        }
+
+        public int SliceFlags
+        {
+            get => pCodecContext->slice_flags;
+            set => pCodecContext->slice_flags = value;
         }
 
         public int MaxBFrames
@@ -155,12 +214,6 @@ namespace FFmpegSharp.Internal
         {
             get => pCodecContext->b_quant_offset;
             set => pCodecContext->b_quant_offset = value;
-        }
-
-        public int HasBFrames
-        {
-            get => pCodecContext->has_b_frames;
-            set => pCodecContext->has_b_frames = value;
         }
 
         public float IQuantFactor
@@ -205,16 +258,10 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->dark_masking = value;
         }
 
-        public int SliceCount
+        public int NsseWeight
         {
-            get => pCodecContext->slice_count;
-            set => pCodecContext->slice_count = value;
-        }
-
-        public AVRational SampleAspectRatio
-        {
-            get => pCodecContext->sample_aspect_ratio;
-            set => pCodecContext->sample_aspect_ratio = value;
+            get => pCodecContext->nsse_weight;
+            set => pCodecContext->nsse_weight = value;
         }
 
         public int MeCmp
@@ -277,12 +324,6 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->me_range = value;
         }
 
-        public int SliceFlags
-        {
-            get => pCodecContext->slice_flags;
-            set => pCodecContext->slice_flags = value;
-        }
-
         public int MbDecision
         {
             get => pCodecContext->mb_decision;
@@ -293,18 +334,6 @@ namespace FFmpegSharp.Internal
         {
             get => pCodecContext->intra_dc_precision;
             set => pCodecContext->intra_dc_precision = value;
-        }
-
-        public int SkipTop
-        {
-            get => pCodecContext->skip_top;
-            set => pCodecContext->skip_top = value;
-        }
-
-        public int SkipBottom
-        {
-            get => pCodecContext->skip_bottom;
-            set => pCodecContext->skip_bottom = value;
         }
 
         public int MbLmin
@@ -331,10 +360,10 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->keyint_min = value;
         }
 
-        public int Refs
+        public int GopSize
         {
-            get => pCodecContext->refs;
-            set => pCodecContext->refs = value;
+            get => pCodecContext->gop_size;
+            set => pCodecContext->gop_size = value;
         }
 
         public int Mv0Threshold
@@ -343,46 +372,10 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->mv0_threshold = value;
         }
 
-        public AVColorPrimaries ColorPrimaries
-        {
-            get => pCodecContext->color_primaries;
-            set => pCodecContext->color_primaries = value;
-        }
-
-        public AVColorTransferCharacteristic ColorTrc
-        {
-            get => pCodecContext->color_trc;
-            set => pCodecContext->color_trc = value;
-        }
-
-        public AVColorSpace Colorspace
-        {
-            get => pCodecContext->colorspace;
-            set => pCodecContext->colorspace = value;
-        }
-
-        public AVColorRange ColorRange
-        {
-            get => pCodecContext->color_range;
-            set => pCodecContext->color_range = value;
-        }
-
-        public AVChromaLocation ChromaSampleLocation
-        {
-            get => pCodecContext->chroma_sample_location;
-            set => pCodecContext->chroma_sample_location = value;
-        }
-
         public int Slices
         {
             get => pCodecContext->slices;
             set => pCodecContext->slices = value;
-        }
-
-        public AVFieldOrder FieldOrder
-        {
-            get => pCodecContext->field_order;
-            set => pCodecContext->field_order = value;
         }
 
         public int SampleRate
@@ -395,6 +388,12 @@ namespace FFmpegSharp.Internal
         {
             get => pCodecContext->sample_fmt;
             set => pCodecContext->sample_fmt = value;
+        }
+
+        public AVChannelLayout ChLayout
+        {
+            get => pCodecContext->ch_layout;
+            set => pCodecContext->ch_layout = value;
         }
 
         public int FrameSize
@@ -425,6 +424,42 @@ namespace FFmpegSharp.Internal
         {
             get => pCodecContext->request_sample_fmt;
             set => pCodecContext->request_sample_fmt = value;
+        }
+
+        public int InitialPadding
+        {
+            get => pCodecContext->initial_padding;
+            set => pCodecContext->initial_padding = value;
+        }
+
+        public int TrailingPadding
+        {
+            get => pCodecContext->trailing_padding;
+            set => pCodecContext->trailing_padding = value;
+        }
+
+        public int SeekPreroll
+        {
+            get => pCodecContext->seek_preroll;
+            set => pCodecContext->seek_preroll = value;
+        }
+
+        public int BitRateTolerance
+        {
+            get => pCodecContext->bit_rate_tolerance;
+            set => pCodecContext->bit_rate_tolerance = value;
+        }
+
+        public int GlobalQuality
+        {
+            get => pCodecContext->global_quality;
+            set => pCodecContext->global_quality = value;
+        }
+
+        public int CompressionLevel
+        {
+            get => pCodecContext->compression_level;
+            set => pCodecContext->compression_level = value;
         }
 
         public float Qcompress
@@ -535,6 +570,18 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->err_recognition = value;
         }
 
+        public int HwaccelFlags
+        {
+            get => pCodecContext->hwaccel_flags;
+            set => pCodecContext->hwaccel_flags = value;
+        }
+
+        public int ExtraHwFrames
+        {
+            get => pCodecContext->extra_hw_frames;
+            set => pCodecContext->extra_hw_frames = value;
+        }
+
         public ulong_array8 Error
         {
             get => pCodecContext->error;
@@ -565,12 +612,6 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->bits_per_raw_sample = value;
         }
 
-        public int Lowres
-        {
-            get => pCodecContext->lowres;
-            set => pCodecContext->lowres = value;
-        }
-
         public int ThreadCount
         {
             get => pCodecContext->thread_count;
@@ -589,12 +630,6 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->active_thread_type = value;
         }
 
-        public int NsseWeight
-        {
-            get => pCodecContext->nsse_weight;
-            set => pCodecContext->nsse_weight = value;
-        }
-
         public int Profile
         {
             get => pCodecContext->profile;
@@ -605,6 +640,12 @@ namespace FFmpegSharp.Internal
         {
             get => pCodecContext->level;
             set => pCodecContext->level = value;
+        }
+
+        public uint Properties
+        {
+            get => pCodecContext->properties;
+            set => pCodecContext->properties = value;
         }
 
         public AVDiscard SkipLoopFilter
@@ -625,58 +666,28 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->skip_frame = value;
         }
 
-        public int SubtitleHeaderSize
+        public int SkipAlpha
         {
-            get => pCodecContext->subtitle_header_size;
-            set => pCodecContext->subtitle_header_size = value;
+            get => pCodecContext->skip_alpha;
+            set => pCodecContext->skip_alpha = value;
         }
 
-        public int InitialPadding
+        public int SkipTop
         {
-            get => pCodecContext->initial_padding;
-            set => pCodecContext->initial_padding = value;
+            get => pCodecContext->skip_top;
+            set => pCodecContext->skip_top = value;
         }
 
-        public AVRational Framerate
+        public int SkipBottom
         {
-            get => pCodecContext->framerate;
-            set => pCodecContext->framerate = value;
+            get => pCodecContext->skip_bottom;
+            set => pCodecContext->skip_bottom = value;
         }
 
-        public AVPixelFormat SwPixFmt
+        public int Lowres
         {
-            get => pCodecContext->sw_pix_fmt;
-            set => pCodecContext->sw_pix_fmt = value;
-        }
-
-        public AVRational PktTimebase
-        {
-            get => pCodecContext->pkt_timebase;
-            set => pCodecContext->pkt_timebase = value;
-        }
-
-        public long PtsCorrectionNumFaultyPts
-        {
-            get => pCodecContext->pts_correction_num_faulty_pts;
-            set => pCodecContext->pts_correction_num_faulty_pts = value;
-        }
-
-        public long PtsCorrectionNumFaultyDts
-        {
-            get => pCodecContext->pts_correction_num_faulty_dts;
-            set => pCodecContext->pts_correction_num_faulty_dts = value;
-        }
-
-        public long PtsCorrectionLastPts
-        {
-            get => pCodecContext->pts_correction_last_pts;
-            set => pCodecContext->pts_correction_last_pts = value;
-        }
-
-        public long PtsCorrectionLastDts
-        {
-            get => pCodecContext->pts_correction_last_dts;
-            set => pCodecContext->pts_correction_last_dts = value;
+            get => pCodecContext->lowres;
+            set => pCodecContext->lowres = value;
         }
 
         public int SubCharencMode
@@ -685,22 +696,10 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->sub_charenc_mode = value;
         }
 
-        public int SkipAlpha
+        public int SubtitleHeaderSize
         {
-            get => pCodecContext->skip_alpha;
-            set => pCodecContext->skip_alpha = value;
-        }
-
-        public int SeekPreroll
-        {
-            get => pCodecContext->seek_preroll;
-            set => pCodecContext->seek_preroll = value;
-        }
-
-        public uint Properties
-        {
-            get => pCodecContext->properties;
-            set => pCodecContext->properties = value;
+            get => pCodecContext->subtitle_header_size;
+            set => pCodecContext->subtitle_header_size = value;
         }
 
         public int NbCodedSideData
@@ -709,10 +708,10 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->nb_coded_side_data = value;
         }
 
-        public int TrailingPadding
+        public int ExportSideData
         {
-            get => pCodecContext->trailing_padding;
-            set => pCodecContext->trailing_padding = value;
+            get => pCodecContext->export_side_data;
+            set => pCodecContext->export_side_data = value;
         }
 
         public long MaxPixels
@@ -721,22 +720,10 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->max_pixels = value;
         }
 
-        public int HwaccelFlags
-        {
-            get => pCodecContext->hwaccel_flags;
-            set => pCodecContext->hwaccel_flags = value;
-        }
-
         public int ApplyCropping
         {
             get => pCodecContext->apply_cropping;
             set => pCodecContext->apply_cropping = value;
-        }
-
-        public int ExtraHwFrames
-        {
-            get => pCodecContext->extra_hw_frames;
-            set => pCodecContext->extra_hw_frames = value;
         }
 
         public int DiscardDamagedPercentage
@@ -751,22 +738,22 @@ namespace FFmpegSharp.Internal
             set => pCodecContext->max_samples = value;
         }
 
-        public int ExportSideData
-        {
-            get => pCodecContext->export_side_data;
-            set => pCodecContext->export_side_data = value;
-        }
-
-        public AVChannelLayout ChLayout
-        {
-            get => pCodecContext->ch_layout;
-            set => pCodecContext->ch_layout = value;
-        }
-
         public long FrameNum
         {
             get => pCodecContext->frame_num;
             set => pCodecContext->frame_num = value;
+        }
+
+        public uint NbSideDataPreferPacket
+        {
+            get => pCodecContext->nb_side_data_prefer_packet;
+            set => pCodecContext->nb_side_data_prefer_packet = value;
+        }
+
+        public int NbDecodedSideData
+        {
+            get => pCodecContext->nb_decoded_side_data;
+            set => pCodecContext->nb_decoded_side_data = value;
         }
 
     }
