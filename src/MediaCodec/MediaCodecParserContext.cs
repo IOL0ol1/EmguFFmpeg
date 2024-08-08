@@ -25,9 +25,9 @@ namespace FFmpegSharp
             : this((int)codecId)
         { }
 
-        protected static AVCodecParser? av_parser_iterate_safe(IntPtrPtr opaque)
+        protected static AVCodecParser? av_parser_iterate_safe(IntPtrRef opaque)
         {
-            fixed (void** pp = &opaque.ptr)
+            fixed (void** pp = &opaque.IntPtr)
             {
                 var ret = ffmpeg.av_parser_iterate(pp);
                 return ret == null ? (AVCodecParser?)null : *ret;
@@ -37,7 +37,7 @@ namespace FFmpegSharp
         public static IEnumerable<AVCodecParser> GetParsers()
         {
             AVCodecParser? output;
-            IntPtrPtr opaque = new IntPtrPtr();
+            IntPtrRef opaque = new IntPtrRef();
             while ((output = av_parser_iterate_safe(opaque)) != null)
             {
                 yield return output.Value;

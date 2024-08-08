@@ -72,7 +72,7 @@ namespace CodeGenerator
             sw.WriteLine(@"        /// <summary>");
             sw.WriteLine(@"        /// Be careful!!!");
             sw.WriteLine(@"        /// </summary>");
-            sw.WriteLine($"        protected {srcTypeName}* {pTypeName} = null;");
+            sw.WriteLine($"        protected internal {srcTypeName}* {pTypeName} = null;");
             sw.WriteLine(@"");
             sw.WriteLine(@"        /// <summary>");
             sw.WriteLine($"        /// const {srcTypeName}*");

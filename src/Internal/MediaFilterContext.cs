@@ -8,7 +8,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected AVFilterContext* pFilterContext = null;
+        protected internal AVFilterContext* pFilterContext = null;
 
         /// <summary>
         /// const AVFilterContext*

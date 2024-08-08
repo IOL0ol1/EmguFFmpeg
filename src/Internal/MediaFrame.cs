@@ -8,7 +8,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected AVFrame* pFrame = null;
+        protected internal AVFrame* pFrame = null;
 
         /// <summary>
         /// const AVFrame*

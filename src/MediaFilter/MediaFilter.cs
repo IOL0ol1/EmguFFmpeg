@@ -22,16 +22,16 @@ namespace FFmpegSharp
         public static IEnumerable<MediaFilter> GetGetFilters()
         {
             IntPtr pFilter;
-            IntPtrPtr opaque = new IntPtrPtr();
+            IntPtrRef opaque = new IntPtrRef();
             while ((pFilter = av_filter_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new MediaFilter(pFilter);
             }
         }
 
-        protected static IntPtr av_filter_iterate_safe(IntPtrPtr opaque)
+        protected static IntPtr av_filter_iterate_safe(IntPtrRef opaque)
         {
-            fixed (void** pp = &opaque.ptr)
+            fixed (void** pp = &opaque.IntPtr)
             {
                 return (IntPtr)ffmpeg.av_filter_iterate(pp);
             }

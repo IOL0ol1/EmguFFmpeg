@@ -8,7 +8,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected AVStream* pStream = null;
+        protected internal AVStream* pStream = null;
 
         /// <summary>
         /// const AVStream*

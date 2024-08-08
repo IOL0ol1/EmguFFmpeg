@@ -95,22 +95,37 @@ namespace FFmpegSharp
             return new string(psbyte, 0, length, System.Text.Encoding.UTF8);
 #endif
         }
+    } 
+
+    public unsafe class IntPtrRef
+    { 
+        public void* IntPtr; 
+
+        public static implicit operator void*(IntPtrRef @ref) => @ref.IntPtr;
+
+        public static implicit operator IntPtrRef(void* ptr) => new IntPtrRef { IntPtr = ptr };
     }
 
-    public unsafe class IntPtrPtr
+    public static class ExceptionExtension
     {
-        public void* ptr = null; 
-    }
-
-    internal static class ExceptionExtension
-    {
-
-        internal static int ThrowIfError(this int error)
+        /// <summary>
+        /// Throw if it's ffmpeg error code
+        /// </summary>
+        /// <param name="error"></param>
+        /// <returns></returns>
+        /// <exception cref="FFmpegException"></exception>
+        public static int ThrowIfError(this int error)
         {
             return error < 0 ? throw new FFmpegException(error) : error;
         }
 
-        internal static long ThrowIfError(this long error)
+        /// <summary>
+        /// Throw if it's ffmpeg error code
+        /// </summary>
+        /// <param name="error"></param>
+        /// <returns></returns>
+        /// <exception cref="FFmpegException"></exception>
+        public static long ThrowIfError(this long error)
         {
             return error < 0 ? throw new FFmpegException((int)error) : error;
         }

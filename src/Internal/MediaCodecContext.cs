@@ -8,7 +8,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected AVCodecContext* pCodecContext = null;
+        protected internal AVCodecContext* pCodecContext = null;
 
         /// <summary>
         /// const AVCodecContext*

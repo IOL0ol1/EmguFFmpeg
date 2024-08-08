@@ -247,7 +247,7 @@ namespace FFmpegSharp
 
     }
 
-    public unsafe static class AVDictionaryEntryEx
+    public static unsafe class AVDictionaryEntryEx
     {
         /// <summary>
         /// convert <see cref="AVDictionaryEntry"/> to <see cref="KeyValuePair{TKey, TValue}"/>

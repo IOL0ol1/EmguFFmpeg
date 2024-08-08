@@ -15,11 +15,11 @@ namespace FFmpegSharp.Example.Other.Net
         public override void Execute()
         {
 
-            BlockingCollection<MediaFrame> frames = new BlockingCollection<MediaFrame>();
+            BlockingCollection<MediaFrame> frames = [];
             EncodeLoop encodeLoop = new EncodeLoop(frames, 800, 600, 30d, "udp://localhost:8888");
             encodeLoop.Start();
 
-            var fs = new GdiGrabLoop().GetFrames();
+            var fs = GdiGrabLoop.GetFrames();
             foreach (var f in fs)
             {
                 frames.Add(f);
@@ -36,9 +36,9 @@ namespace FFmpegSharp.Example.Other.Net
         }
 
 
-        public IEnumerable<MediaFrame> GetFrames()
+        public static IEnumerable<MediaFrame> GetFrames()
         {
-            using (var demuxer = MediaDemuxer.Open("desktop",InputFormat.Get("gdigrab")))
+            using (var demuxer = MediaDemuxer.Open("desktop", InputFormat.FindFormat("gdigrab")))
             {
                 var v = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.ThreadCount = 10)).ToList();
                 foreach (var pkt in demuxer.ReadPackets())
@@ -84,7 +84,7 @@ namespace FFmpegSharp.Example.Other.Net
         {
             await Task.Run(() =>
             {
-                using (var muxer = MediaMuxer.Create(_dst, OutputFormat.Get("mpegts")))
+                using (var muxer = MediaMuxer.Create(_dst, OutputFormat.GuessFormat("mpegts",null,null)))
                 using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, _width, _height, _fps, otherSettings: _ => _.ThreadCount = 10))
                 {
                     muxer.AddStream(vEncoder);
@@ -99,7 +99,7 @@ namespace FFmpegSharp.Example.Other.Net
                         }
                         frame.Dispose();
                     }
-                    muxer.FlushCodecs(new[] { vEncoder });
+                    muxer.FlushCodecs([vEncoder]);
                     muxer.WriteTrailer();
                 }
             });

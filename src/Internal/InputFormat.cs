@@ -8,7 +8,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected AVInputFormat* pInputFormat = null;
+        protected internal AVInputFormat* pInputFormat = null;
 
         /// <summary>
         /// const AVInputFormat*

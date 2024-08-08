@@ -9,7 +9,7 @@ namespace FFmpegSharp.Example
 {
     internal class Program
     {
-        private static void Main(string[] args)
+        private static unsafe void Main(string[] args)
         {
             try
             {
@@ -31,12 +31,15 @@ namespace FFmpegSharp.Example
                 //ffmpeg.avformat_network_init();
                 //MediaIOContext.Open("http://localhost:10010", ffmpeg.AVIO_FLAG_WRITE, dict);
                 ffmpeg.RootPath = Path.Combine(AppContext.BaseDirectory, "runtimes\\win-x64\\native");
-                foreach (var codec in MediaCodec.GetCodecs()) 
+                foreach (var item in MediaCodec.GetCodecs())
                 {
-                    Console.WriteLine(codec.Name);
+                    Console.WriteLine(item);
                 }
 
 
+                var v = ffmpeg.avdevice_version();
+                ffmpeg.avdevice_register_all();
+                var a =  MediaDevice.ListInputSources(InputFormat.FindFormat("dshow"));
                 //typeof(Program).Assembly
                 //    .GetTypes()
                 //    .Where(_ => _.IsAssignableTo(typeof(ExampleBase)) && !_.IsAbstract)
@@ -90,7 +93,7 @@ namespace FFmpegSharp.Example
 
     public abstract class ExampleBase
     {
-        protected string[] args = new string[0];
+        protected string[] args = [];
 
         public ExampleBase(params string[] args)
         {

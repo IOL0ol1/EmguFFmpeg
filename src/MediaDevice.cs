@@ -7,12 +7,12 @@ using FFmpeg.AutoGen;
 namespace FFmpegSharp
 {
 
-    public unsafe static class MediaDevice
+    public static unsafe class MediaDevice
     {
 
         static MediaDevice()
         {
-            ffmpeg.avdevice_register_all();
+            //ffmpeg.avdevice_register_all();
         }
 
         private static InputFormat av_input_audio_device_next_safe(InputFormat format)

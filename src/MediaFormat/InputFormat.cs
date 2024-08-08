@@ -7,9 +7,13 @@ namespace FFmpegSharp
     /// <summary>
     /// <see cref="AVInputFormat"/> wapper
     /// </summary>
-    public unsafe partial class InputFormat 
+    public unsafe partial class InputFormat
     {
-
+        /// <summary>
+        /// Find AVInputFormat based on the short name of the input format.
+        /// </summary>
+        /// <param name="shortName"></param>
+        /// <returns></returns>
         public static InputFormat FindFormat(string shortName)
         {
             var f = ffmpeg.av_find_input_format(shortName);
@@ -17,52 +21,43 @@ namespace FFmpegSharp
         }
 
         /// <summary>
-        /// get demuxer format by name
-        /// </summary>
-        /// <param name="name">e.g. mov,mp4 ...</param>
-        public static InputFormat Get(string name)
-        {
-            name = name.Trim().TrimStart('.');
-            if (!string.IsNullOrEmpty(name))
-            {
-                foreach (var format in GetFormats())
-                {
-                    // e.g. format.Name == "mov,mp4,m4a,3gp,3g2,mj2"
-                    string[] names = format.Name.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var item in names)
-                    {
-                        if (string.Compare(item, name, true) == 0)
-                        {
-                            return format;
-                        }
-                    }
-                }
-            }
-            throw new FFmpegException(ffmpeg.AVERROR_DEMUXER_NOT_FOUND);
-        }
-
-        /// <summary>
-        /// get all supported input formats.
+        /// Iterate over all registered demuxers.
         /// </summary>
         public static IEnumerable<InputFormat> GetFormats()
         {
             IntPtr iformat;
-            IntPtrPtr opaque = new IntPtrPtr();
+            IntPtrRef opaque = new IntPtrRef();
             while ((iformat = av_demuxer_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new InputFormat(iformat);
             }
         }
 
-        protected static IntPtr av_demuxer_iterate_safe(IntPtrPtr opaque)
+        protected static IntPtr av_demuxer_iterate_safe(IntPtrRef opaque)
         {
-            fixed (void** pp = &opaque.ptr)
+            fixed (void** pp = &opaque.IntPtr)
                 return (IntPtr)ffmpeg.av_demuxer_iterate(pp);
         }
 
+        /// <summary>
+        /// A comma separated list of short names for the format. New names may be appended
+        ///     with a minor bump.
+        /// </summary>
         public string Name => ((IntPtr)pInputFormat->name).PtrToStringUTF8();
+        /// <summary>
+        /// Descriptive name for the format, meant to be more human-readable than name. You
+        ///     should use the NULL_IF_CONFIG_SMALL() macro to define it.
+        /// </summary>
         public string LongName => ((IntPtr)pInputFormat->long_name).PtrToStringUTF8();
+        /// <summary>
+        /// If extensions are defined, then no probe is done. You should usually not use
+        ///     extension format guessing because it is not reliable enough
+        /// </summary>
         public string Extensions => ((IntPtr)pInputFormat->extensions).PtrToStringUTF8();
+        /// <summary>
+        /// Comma-separated list of mime types. It is used check for matching mime types
+        ///     while probing.
+        /// </summary>
         public string MimeType => ((IntPtr)pInputFormat->mime_type).PtrToStringUTF8();
     }
 }
