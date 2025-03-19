@@ -1,5 +1,5 @@
 ﻿using System;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
 {
@@ -8,7 +8,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVCodecContext* pCodecContext = null;
+        protected AVCodecContext* pCodecContext = null;
 
         /// <summary>
         /// const AVCodecContext*
@@ -582,7 +582,7 @@ namespace FFmpegSharp
             set => pCodecContext->extra_hw_frames = value;
         }
 
-        public ulong_array8 Error
+        public ulong8 Error
         {
             get => pCodecContext->error;
             set => pCodecContext->error = value;

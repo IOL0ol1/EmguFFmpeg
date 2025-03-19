@@ -1,6 +1,6 @@
 FFmpeg4Sharp
 =====================
-**A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.**     
+**A [FFmpeg.AutoGen.Abstractions](https://github.com/Ruslan-B/FFmpeg.AutoGen.Abstractions) Warpper Library.**     
 
 [![NuGet version (FFmpeg4Sharp)](https://img.shields.io/nuget/v/FFmpeg4Sharp.svg)](https://www.nuget.org/packages/FFmpeg4Sharp/)
 [![NuGet downloads (FFmpeg4Sharp)](https://img.shields.io/nuget/dt/FFmpeg4Sharp.svg)](https://www.nuget.org/packages/FFmpeg4Sharp/)
@@ -17,7 +17,7 @@ Manually download the *.dll files that comply with the license from [ffmpeg.org]
 NuGet\Install-Package FFmpeg4Sharp
 ```
 ```csharp
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 using FFmpegSharp;
 ```
 ### Mux and encode
@@ -63,9 +63,9 @@ using (var convert = new PixelConverter())
     foreach (var packet in demuxer.ReadPackets())
     {
         var decoder = decoders[packet.StreamIndex];
-        if (decoder != null && decoder.CodecType == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO)
+        if (decoder != null && decoder.CodecType == FFmpeg.AutoGen.Abstractions.AVMediaType.AVMEDIA_TYPE_VIDEO)
         {
-            convert.SetOpts(decoder.Width, decoder.Height, FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24);
+            convert.SetOpts(decoder.Width, decoder.Height, FFmpeg.AutoGen.Abstractions.AVPixelFormat.AV_PIX_FMT_BGR24);
             foreach (var frame in decoder.DecodePacket(packet))
             {
                 // frame is YUV AVFrame

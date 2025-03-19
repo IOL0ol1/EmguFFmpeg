@@ -1,5 +1,5 @@
 ﻿using System;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
 {
@@ -8,7 +8,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVFrame* pFrame = null;
+        protected AVFrame* pFrame = null;
 
         /// <summary>
         /// const AVFrame*
@@ -30,13 +30,13 @@ namespace FFmpegSharp
 
         public AVFrame Const => *pFrame;
 
-        public byte_ptrArray8 Data
+        public byte_ptr8 Data
         {
             get => pFrame->data;
             set => pFrame->data = value;
         }
 
-        public int_array8 Linesize
+        public int8 Linesize
         {
             get => pFrame->linesize;
             set => pFrame->linesize = value;
@@ -120,7 +120,7 @@ namespace FFmpegSharp
             set => pFrame->sample_rate = value;
         }
 
-        public AVBufferRef_ptrArray8 Buf
+        public AVBufferRef_ptr8 Buf
         {
             get => pFrame->buf;
             set => pFrame->buf = value;

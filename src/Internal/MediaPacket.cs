@@ -1,5 +1,5 @@
 ﻿using System;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
 {
@@ -8,7 +8,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVPacket* pPacket = null;
+        protected AVPacket* pPacket = null;
 
         /// <summary>
         /// const AVPacket*

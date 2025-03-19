@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 
 namespace FFmpegSharp

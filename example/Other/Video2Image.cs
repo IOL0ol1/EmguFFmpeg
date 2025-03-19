@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using FFmpeg.AutoGen.Abstractions;
 using OpenCvSharp;
 
 namespace FFmpegSharp.Example.Other
@@ -30,9 +31,9 @@ namespace FFmpegSharp.Example.Other
                 foreach (var inPacket in mediaReader.ReadPackets())
                 {
                     var decoder = decoders[inPacket.StreamIndex];
-                    if (decoder != null && decoder.CodecType == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO)
+                    if (decoder != null && decoder.CodecType ==  AVMediaType.AVMEDIA_TYPE_VIDEO)
                     {
-                        convert.SetOpts(decoder.Width, decoder.Height, FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24);
+                        convert.SetOpts(decoder.Width, decoder.Height,  AVPixelFormat.AV_PIX_FMT_BGR24);
                         foreach (var inFrame in decoder.DecodePacket(inPacket))
                         {
                             foreach (var outFrame in convert.Convert(inFrame, f))

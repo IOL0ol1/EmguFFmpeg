@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 using NAudio.Wave;
 
 namespace FFmpegSharp.Example.Other

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 
 namespace FFmpegSharp.Example
 {
@@ -13,6 +11,8 @@ namespace FFmpegSharp.Example
         {
             try
             {
+                DynamicallyLoadedBindings.LibrariesPath = Path.Combine(AppContext.BaseDirectory, "runtimes\\win-x64\\native");
+                DynamicallyLoadedBindings.Initialize();
                 //Task.Run(() =>
                 //{
                 //    while (true)
@@ -30,7 +30,6 @@ namespace FFmpegSharp.Example
                 //var b = dict.Get("texst").ToList();
                 //ffmpeg.avformat_network_init();
                 //MediaIOContext.Open("http://localhost:10010", ffmpeg.AVIO_FLAG_WRITE, dict);
-                ffmpeg.RootPath = Path.Combine(AppContext.BaseDirectory, "runtimes\\win-x64\\native");
                 foreach (var item in MediaCodec.GetCodecs())
                 {
                     Console.WriteLine(item);

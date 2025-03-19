@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
 {
+
     /// <summary>
     /// <see cref="AVInputFormat"/> wapper
     /// </summary>

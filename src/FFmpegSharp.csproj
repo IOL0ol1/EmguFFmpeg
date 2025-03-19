@@ -4,8 +4,10 @@
         <TargetFrameworks>netstandard2.0;netstandard2.1;</TargetFrameworks> 
         <PackageId>FFmpeg4Sharp</PackageId>
         <Description>
-            A FFmpeg.AutoGen Warpper Library.
+            A FFmpeg.AutoGen.Abstractions Warpper Library.
         </Description>
+        <Nullable>disable</Nullable>
+        <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -17,14 +19,14 @@
         <PackageIcon>icon.png</PackageIcon>
         <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet ffmpeg4sharp ffmpegsharp</PackageTags>
         <RepositoryType>git</RepositoryType>
-        <Version>7.0.0</Version>
+        <Version>7.0.1</Version>
         <NoWarn>1701;1702;1591</NoWarn>
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
         <Platforms>AnyCPU;x64</Platforms>
     </PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="FFmpeg.AutoGen" Version="[7.0.0,)" />
+    <ItemGroup> 
+        <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="7.0.0" />  
     </ItemGroup>
 
     <ItemGroup>

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Runtime.Serialization;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
 {

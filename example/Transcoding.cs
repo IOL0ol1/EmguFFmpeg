@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp.Example
 {
@@ -20,7 +21,7 @@ namespace FFmpegSharp.Example
             using (var mw = MediaMuxer.Create(File.OpenWrite(output), OutputFormat.GuessFormat(null, output, null)))
             {
                 MediaCodec a = null;
-                mr.FindBestStream(FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_AUDIO, ref a);
+                mr.FindBestStream(AVMediaType.AVMEDIA_TYPE_AUDIO, ref a);
                 var decodecs = mr.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef)).ToList();
                 var encodecs = new List<MediaCodecContext>();
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 using OpenCvSharp;
 
 namespace FFmpegSharp.Example

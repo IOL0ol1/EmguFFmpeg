@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace CodeGenerator
 {
@@ -12,7 +12,7 @@ namespace CodeGenerator
     {
         private static void Main(string[] _)
         {
-
+ 
             var types = new List<Info>
              {
                 new (){Type = typeof(AVCodec)},
@@ -58,12 +58,13 @@ namespace CodeGenerator
             var dstTypeName = info.Name;
             //var isDisposable = info.IsDisposable;
             using var sw = new StringWriter();
-            var srcTypeName = type.Name.Replace("FFmpeg.AutoGen.", "");
+            var srcTypeName = type.Name.Replace("FFmpeg.AutoGen.Abstractions.", "").Replace("FFmpeg.AutoGen.", "");
             dstTypeName ??= $"{Regex.Replace(srcTypeName, @"^AV", "Media")}";
             var pTypeName = $"{Regex.Replace(srcTypeName, @"^AV", "p")}";
 
             sw.WriteLine($"using System;");
-            sw.WriteLine($"using FFmpeg.AutoGen;");
+            //sw.WriteLine($"using System.Runtime.CompilerServices;");
+            sw.WriteLine($"using FFmpeg.AutoGen.Abstractions;");
             sw.WriteLine(@"");
             sw.WriteLine($"namespace {@namespace}");
             sw.WriteLine(@"{");
@@ -72,7 +73,7 @@ namespace CodeGenerator
             sw.WriteLine(@"        /// <summary>");
             sw.WriteLine(@"        /// Be careful!!!");
             sw.WriteLine(@"        /// </summary>");
-            sw.WriteLine($"        protected internal {srcTypeName}* {pTypeName} = null;");
+            sw.WriteLine($"        protected {srcTypeName}* {pTypeName} = null;");
             sw.WriteLine(@"");
             sw.WriteLine(@"        /// <summary>");
             sw.WriteLine($"        /// const {srcTypeName}*");
@@ -94,11 +95,7 @@ namespace CodeGenerator
             sw.WriteLine(@"");
             sw.WriteLine($"        public {srcTypeName} Const => *{pTypeName};");
             sw.WriteLine(@"");
-            //if (isDisposable)
-            //{
-            //    sw.WriteLine($"        public abstract void Dispose();");
-            //    sw.WriteLine(@"");
-            //}
+
             foreach (var element in type.GetMembers(BindingFlags.Public | BindingFlags.Instance))
             {
                 var srcTypeWithName = $"{element}";
@@ -111,7 +108,7 @@ namespace CodeGenerator
                 var tmp = srcTypeWithName.Split(' ');
                 var srcName = element.Name;
                 var dstType = tmp[0]
-                    .Replace("FFmpeg.AutoGen.", "")
+                    .Replace("FFmpeg.AutoGen.Abstractions.", "").Replace("FFmpeg.AutoGen.", "")
                     .Replace("Void", "void")
                     .Replace("Byte", "byte")
                     .Replace("UInt16", "ushort")

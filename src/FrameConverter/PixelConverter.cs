@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
 {
@@ -77,7 +77,7 @@ namespace FFmpegSharp
             if (dstframe == null)
                 dstframe = new MediaFrame();
             if (!dstframe.IsWriteable())
-            {
+            { 
                 dstframe.Width = dstWidth;
                 dstframe.Height = dstHeight;
                 dstframe.Format = (int)dstFormat;

@@ -1,6 +1,6 @@
 ﻿using System;
 
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
 {

@@ -1,4 +1,4 @@
-﻿using FFmpeg.AutoGen;
+﻿using FFmpeg.AutoGen.Abstractions;
 
 using System;
 using System.Collections.Generic;

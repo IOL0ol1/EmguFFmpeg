@@ -1,5 +1,5 @@
 ﻿using System;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
 {
@@ -8,7 +8,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Be careful!!!
         /// </summary>
-        protected internal AVFilterContext* pFilterContext = null;
+        protected AVFilterContext* pFilterContext = null;
 
         /// <summary>
         /// const AVFilterContext*

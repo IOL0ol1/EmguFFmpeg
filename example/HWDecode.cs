@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
 using OpenCvSharp;
 
 namespace FFmpegSharp.Example
@@ -71,9 +71,9 @@ namespace FFmpegSharp.Example
         {
             var size = ffmpeg.av_image_get_buffer_size((AVPixelFormat)f.Format, f.Width, f.Height, 1);
             var buffer = (byte*)ffmpeg.av_malloc((ulong)size);
-            var srcData = new byte_ptrArray4();
+            var srcData = new byte_ptr4();
             srcData.UpdateFrom(f.Data);
-            var srcLinesize = new int_array4();
+            var srcLinesize = new int4();
             srcLinesize.UpdateFrom(f.Linesize);
             var ret = ffmpeg.av_image_copy_to_buffer(buffer, size, srcData, srcLinesize, (AVPixelFormat)f.Format, f.Width, f.Height, 1);
             stream.Write(new System.ReadOnlySpan<byte>(buffer, ret));
