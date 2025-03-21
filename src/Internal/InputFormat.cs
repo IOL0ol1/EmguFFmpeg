@@ -6,7 +6,8 @@ namespace FFmpegSharp
     public unsafe partial class InputFormat
     {
         /// <summary>
-        /// Be careful!!!
+        /// Pointer to the underlying FFmpeg structure.
+        /// WARNING: Be careful when accessing or modifying this field directly.
         /// </summary>
         protected AVInputFormat* pInputFormat = null;
 
@@ -28,13 +29,10 @@ namespace FFmpegSharp
             : this((AVInputFormat*)pAVInputFormat)
         { }
 
-        public AVInputFormat Const => *pInputFormat;
-
-        public int Flags
-        {
-            get => pInputFormat->flags;
-            set => pInputFormat->flags = value;
-        }
+        /// <summary>
+        /// WARNING: Be careful when modifying this field directly.
+        /// </summary>
+        public ref AVInputFormat Ref => ref *pInputFormat;
 
     }
 }

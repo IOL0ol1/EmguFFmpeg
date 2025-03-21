@@ -40,10 +40,10 @@ namespace FFmpegSharp.Example.Other.Net
         {
             using (var demuxer = MediaDemuxer.Open("desktop", InputFormat.FindFormat("gdigrab")))
             {
-                var v = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.ThreadCount = 10)).ToList();
+                var v = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.Ref.thread_count = 10)).ToList();
                 foreach (var pkt in demuxer.ReadPackets())
                 {
-                    if(pkt.StreamIndex == 0)
+                    if(pkt.Ref.stream_index == 0)
                     {
                         foreach (var frame in v[0].DecodePacket(pkt))
                         {
@@ -85,7 +85,7 @@ namespace FFmpegSharp.Example.Other.Net
             await Task.Run(() =>
             {
                 using (var muxer = MediaMuxer.Create(_dst, OutputFormat.GuessFormat("mpegts",null,null)))
-                using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, _width, _height, _fps, otherSettings: _ => _.ThreadCount = 10))
+                using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, _width, _height, _fps, otherSettings: _ => _.Ref.thread_count = 10))
                 {
                     muxer.AddStream(vEncoder);
                     muxer.WriteHeader();

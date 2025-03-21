@@ -78,9 +78,9 @@ namespace FFmpegSharp
                 dstframe = new MediaFrame();
             if (!dstframe.IsWriteable())
             { 
-                dstframe.Width = dstWidth;
-                dstframe.Height = dstHeight;
-                dstframe.Format = (int)dstFormat;
+                dstframe.Ref.width = dstWidth;
+                dstframe.Ref.height = dstHeight;
+                dstframe.Ref.format = (int)dstFormat;
                 dstframe.AllocateBuffer();
             }
             srcframe.CopyProps(dstframe);
@@ -91,7 +91,7 @@ namespace FFmpegSharp
             {
                 pContext = ffmpeg.sws_getCachedContext(pContext,
                     src->width, src->height, (AVPixelFormat)src->format,
-                    dstframe.Width, dstframe.Height, (AVPixelFormat)dstframe.Format, flags, &srcFilter, pDstFilter, pparam);
+                    dstframe.Ref.width, dstframe.Ref.height, (AVPixelFormat)dstframe.Ref.format, flags, &srcFilter, pDstFilter, pparam);
             }
             ffmpeg.sws_scale(pContext, src->data, src->linesize, 0, src->height, dst->data, dst->linesize).ThrowIfError();
             return dstframe;

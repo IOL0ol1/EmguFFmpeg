@@ -6,7 +6,8 @@ namespace FFmpegSharp
     public unsafe partial class MediaPacket
     {
         /// <summary>
-        /// Be careful!!!
+        /// Pointer to the underlying FFmpeg structure.
+        /// WARNING: Be careful when accessing or modifying this field directly.
         /// </summary>
         protected AVPacket* pPacket = null;
 
@@ -28,61 +29,10 @@ namespace FFmpegSharp
             : this((AVPacket*)pAVPacket)
         { }
 
-        public AVPacket Const => *pPacket;
-
-        public long Pts
-        {
-            get => pPacket->pts;
-            set => pPacket->pts = value;
-        }
-
-        public long Dts
-        {
-            get => pPacket->dts;
-            set => pPacket->dts = value;
-        }
-
-        public int Size
-        {
-            get => pPacket->size;
-            set => pPacket->size = value;
-        }
-
-        public int StreamIndex
-        {
-            get => pPacket->stream_index;
-            set => pPacket->stream_index = value;
-        }
-
-        public int Flags
-        {
-            get => pPacket->flags;
-            set => pPacket->flags = value;
-        }
-
-        public int SideDataElems
-        {
-            get => pPacket->side_data_elems;
-            set => pPacket->side_data_elems = value;
-        }
-
-        public long Duration
-        {
-            get => pPacket->duration;
-            set => pPacket->duration = value;
-        }
-
-        public long Pos
-        {
-            get => pPacket->pos;
-            set => pPacket->pos = value;
-        }
-
-        public AVRational TimeBase
-        {
-            get => pPacket->time_base;
-            set => pPacket->time_base = value;
-        }
+        /// <summary>
+        /// WARNING: Be careful when modifying this field directly.
+        /// </summary>
+        public ref AVPacket Ref => ref *pPacket;
 
     }
 }

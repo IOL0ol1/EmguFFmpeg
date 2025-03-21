@@ -6,7 +6,8 @@ namespace FFmpegSharp
     public unsafe partial class MediaFilterGraph
     {
         /// <summary>
-        /// Be careful!!!
+        /// Pointer to the underlying FFmpeg structure.
+        /// WARNING: Be careful when accessing or modifying this field directly.
         /// </summary>
         protected AVFilterGraph* pFilterGraph = null;
 
@@ -28,25 +29,10 @@ namespace FFmpegSharp
             : this((AVFilterGraph*)pAVFilterGraph)
         { }
 
-        public AVFilterGraph Const => *pFilterGraph;
-
-        public uint NbFilters
-        {
-            get => pFilterGraph->nb_filters;
-            set => pFilterGraph->nb_filters = value;
-        }
-
-        public int ThreadType
-        {
-            get => pFilterGraph->thread_type;
-            set => pFilterGraph->thread_type = value;
-        }
-
-        public int NbThreads
-        {
-            get => pFilterGraph->nb_threads;
-            set => pFilterGraph->nb_threads = value;
-        }
+        /// <summary>
+        /// WARNING: Be careful when modifying this field directly.
+        /// </summary>
+        public ref AVFilterGraph Ref => ref *pFilterGraph;
 
     }
 }

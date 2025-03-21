@@ -27,14 +27,14 @@ namespace FFmpegSharp
         public static IEnumerable<InputFormat> GetFormats()
         {
             IntPtr iformat;
-            IntPtrRef opaque = new IntPtrRef();
+            IntPtrPtr opaque = new IntPtrPtr();
             while ((iformat = av_demuxer_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new InputFormat(iformat);
             }
         }
 
-        protected static IntPtr av_demuxer_iterate_safe(IntPtrRef opaque)
+        protected static IntPtr av_demuxer_iterate_safe(IntPtrPtr opaque)
         {
             fixed (void** pp = &opaque.IntPtr)
                 return (IntPtr)ffmpeg.av_demuxer_iterate(pp);

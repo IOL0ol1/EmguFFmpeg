@@ -21,37 +21,37 @@ namespace FFmpegSharp.Example
 
             var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_MP2);
             using (var decoder = MediaDecoder.Create(codec))
-            using (var parser = new MediaCodecParserContext(codec.Id))
+            using (var parser = new MediaCodecParserContext(codec.Ref.id))
             using (var pkt = new MediaPacket())
             using (var decoded_frame = new MediaFrame())
             using (var inStream = File.OpenRead(input))
             using (var outStream = File.OpenWrite(output))
             {
-                pkt.Dts = ffmpeg.AV_NOPTS_VALUE;
-                pkt.Pts = ffmpeg.AV_NOPTS_VALUE;
-                pkt.Pos = 0;
+                pkt.Ref.dts = ffmpeg.AV_NOPTS_VALUE;
+                pkt.Ref.pts = ffmpeg.AV_NOPTS_VALUE;
+                pkt.Ref.pos = 0;
                 foreach (var packet in parser.ParserPackets(decoder, inStream, pkt))
                 {
                     foreach (var frame in decoder.DecodePacket(packet, decoded_frame))
                     {
-                        WriteToOutput(frame, decoder.ChLayout.nb_channels, outStream);
+                        WriteToOutput(frame, decoder.Ref.ch_layout.nb_channels, outStream);
                     }
                 }
                 // flush the decoder
                 foreach (var frame in decoder.DecodePacket(null, decoded_frame))
                 {
-                    WriteToOutput(frame, decoder.ChLayout.nb_channels, outStream);
+                    WriteToOutput(frame, decoder.Ref.ch_layout.nb_channels, outStream);
                 }
             }
         }
 
         private unsafe static void WriteToOutput(MediaFrame frame, int NbChannels, Stream stream)
         {
-            for (int i = 0; i < frame.NbSamples; i++)
+            for (int i = 0; i < frame.Ref.nb_samples; i++)
             {
                 for (int ch = 0; ch < NbChannels; ch++)
                 {
-                    var buffer = new Span<byte>(frame.Data[(uint)ch], frame.Linesize[0]);
+                    var buffer = new Span<byte>(frame.Ref.data[(uint)ch], frame.Ref.linesize[0]);
                     stream.Write(buffer);
                 }
             }

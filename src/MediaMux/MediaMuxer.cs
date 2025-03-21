@@ -107,7 +107,7 @@ namespace FFmpegSharp
             if (encoder != null)
             {
                 ffmpeg.avcodec_parameters_from_context(pStream->codecpar, encoder).ThrowIfError();
-                pStream->time_base = encoder.TimeBase;
+                pStream->time_base = encoder.Ref.time_base;
             }
             return stream;
         }
@@ -164,7 +164,7 @@ namespace FFmpegSharp
         public int WritePacket(MediaPacket packet, AVRational? codecTimeBase = null)
         {
             if (codecTimeBase != null)
-                ffmpeg.av_packet_rescale_ts(packet, codecTimeBase.Value, pFormatContext->streams[packet.StreamIndex]->time_base);
+                ffmpeg.av_packet_rescale_ts(packet, codecTimeBase.Value, pFormatContext->streams[packet.Ref.stream_index]->time_base);
             int ret = ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
             packet.Unref();
             return ret;
@@ -185,7 +185,7 @@ namespace FFmpegSharp
                 {
                     foreach (var packet in mediaCodec.EncodeFrame(null))
                     {
-                        WritePacket(packet, mediaCodec.TimeBase);
+                        WritePacket(packet, mediaCodec.Ref.time_base);
                     }
                 }
             }

@@ -1,5 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 using FFmpeg.AutoGen.Abstractions;
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 
@@ -19,8 +22,7 @@ namespace FFmpegSharp.Example
                 //    {
                 //        GC.Collect();
                 //    }
-                //});
-                //var dict = new MediaDictionary()
+                //}); 
                 //{
                 //    ["texst"] = "12",
                 //    ["listen"] = "2",
@@ -30,6 +32,9 @@ namespace FFmpegSharp.Example
                 //var b = dict.Get("texst").ToList();
                 //ffmpeg.avformat_network_init();
                 //MediaIOContext.Open("http://localhost:10010", ffmpeg.AVIO_FLAG_WRITE, dict);
+
+
+
                 foreach (var item in MediaCodec.GetCodecs())
                 {
                     Console.WriteLine(item);
@@ -38,7 +43,19 @@ namespace FFmpegSharp.Example
 
                 var v = ffmpeg.avdevice_version();
                 ffmpeg.avdevice_register_all();
-                var a =  MediaDevice.ListInputSources(InputFormat.FindFormat("dshow"));
+                MediaDevice.ListInputSources(InputFormat.GetFormats().First(), x =>
+                {
+                    Console.WriteLine("-----------------");
+                    for (int i = 0; i < x.nb_devices; i++)
+                    {
+                        Console.WriteLine(((IntPtr)x.devices[i]->device_description).PtrToStringUTF8());
+                        Console.WriteLine(((IntPtr)x.devices[i]->device_name).PtrToStringUTF8());
+                        for (int j = 0; j < x.devices[i]->nb_media_types; j++)
+                        {
+                            Console.WriteLine(JsonSerializer.Serialize(x.devices[i]->media_types[j]));
+                        }
+                    }
+                });
                 //typeof(Program).Assembly
                 //    .GetTypes()
                 //    .Where(_ => _.IsAssignableTo(typeof(ExampleBase)) && !_.IsAbstract)

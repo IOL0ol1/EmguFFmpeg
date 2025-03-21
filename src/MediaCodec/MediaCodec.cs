@@ -62,7 +62,7 @@ namespace FFmpegSharp
         public bool IsDecoder => ffmpeg.av_codec_is_decoder(pCodec) != 0;
         public bool IsEncoder => ffmpeg.av_codec_is_encoder(pCodec) != 0;
 
-        protected static IntPtr av_codec_iterate_safe(IntPtrRef opaque)
+        protected static IntPtr av_codec_iterate_safe(IntPtrPtr opaque)
         {
             fixed (void** pp = &opaque.IntPtr)
                 return (IntPtr)ffmpeg.av_codec_iterate(pp);
@@ -74,7 +74,7 @@ namespace FFmpegSharp
         public static IEnumerable<MediaCodec> GetCodecs()
         {
             IntPtr pCodec;
-            IntPtrRef opaque = new IntPtrRef();
+            IntPtrPtr opaque = new IntPtrPtr();
             while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new MediaCodec(pCodec);

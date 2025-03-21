@@ -30,7 +30,7 @@ namespace FFmpegSharp.Example
                 if (!codec.GetSampelFmts().Any(_1 => _1 == AVSampleFormat.AV_SAMPLE_FMT_S16))
                     Console.WriteLine($"Encoder does not support sample format {AVSampleFormat.AV_SAMPLE_FMT_S16.GetName()}");
                 using (var encoder = MediaEncoder.CreateAudioEncoder(codec, sampleRate, chLayout, sampleFmt, bitrate))
-                using (var frame = MediaFrame.CreateAudioFrame(encoder.ChLayout, encoder.FrameSize, encoder.SampleFmt))
+                using (var frame = MediaFrame.CreateAudioFrame(encoder.Ref.ch_layout, encoder.Ref.frame_size, encoder.Ref.sample_fmt))
                 {
                     double t, tincr;
                     for (int i = 0; i < 25; i++)
@@ -52,13 +52,13 @@ namespace FFmpegSharp.Example
                             }
                             foreach (var item in encoder.EncodeFrame(frame, pkt))
                             {
-                                os.Write(new ReadOnlySpan<byte>(item.Const.data, item.Const.size));
+                                os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
                             }
                         }
                     }
                     foreach (var item in encoder.EncodeFrame(null, pkt))
                     {
-                        os.Write(new ReadOnlySpan<byte>(item.Const.data, item.Const.size));
+                        os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
                     }
                 }
             }

@@ -71,7 +71,8 @@ namespace CodeGenerator
             sw.WriteLine($"    public unsafe partial class {dstTypeName}");
             sw.WriteLine(@"    {");
             sw.WriteLine(@"        /// <summary>");
-            sw.WriteLine(@"        /// Be careful!!!");
+            sw.WriteLine(@"        /// Pointer to the underlying FFmpeg structure.");
+            sw.WriteLine(@"        /// WARNING: Be careful when accessing or modifying this field directly.");
             sw.WriteLine(@"        /// </summary>");
             sw.WriteLine($"        protected {srcTypeName}* {pTypeName} = null;");
             sw.WriteLine(@"");
@@ -93,40 +94,43 @@ namespace CodeGenerator
             sw.WriteLine($"            : this(({srcTypeName}*)p{srcTypeName})");
             sw.WriteLine(@"        { }");
             sw.WriteLine(@"");
-            sw.WriteLine($"        public {srcTypeName} Const => *{pTypeName};");
+            sw.WriteLine(@"        /// <summary>");
+            sw.WriteLine(@"        /// WARNING: Be careful when modifying this field directly.");
+            sw.WriteLine(@"        /// </summary>");
+            sw.WriteLine($"        public ref {srcTypeName} Ref => ref *{pTypeName};");
             sw.WriteLine(@"");
 
-            foreach (var element in type.GetMembers(BindingFlags.Public | BindingFlags.Instance))
-            {
-                var srcTypeWithName = $"{element}";
-                if (element.CustomAttributes.Any(_ => _.AttributeType == typeof(ObsoleteAttribute))
-                || element.MemberType != MemberTypes.Field
-                || srcTypeWithName.Contains('*')
-                || srcTypeWithName.Contains("_func "))
-                    continue;
+            //foreach (var element in type.GetMembers(BindingFlags.Public | BindingFlags.Instance))
+            //{
+            //    var srcTypeWithName = $"{element}";
+            //    if (element.CustomAttributes.Any(_ => _.AttributeType == typeof(ObsoleteAttribute))
+            //    || element.MemberType != MemberTypes.Field
+            //    || srcTypeWithName.Contains('*')
+            //    || srcTypeWithName.Contains("_func "))
+            //        continue;
 
-                var tmp = srcTypeWithName.Split(' ');
-                var srcName = element.Name;
-                var dstType = tmp[0]
-                    .Replace("FFmpeg.AutoGen.Abstractions.", "").Replace("FFmpeg.AutoGen.", "")
-                    .Replace("Void", "void")
-                    .Replace("Byte", "byte")
-                    .Replace("UInt16", "ushort")
-                    .Replace("Int16", "short")
-                    .Replace("UInt32", "uint")
-                    .Replace("Int32", "int")
-                    .Replace("UInt64", "ulong")
-                    .Replace("Int64", "long")
-                    .Replace("Single", "float")
-                    .Replace("Double", "double");
-                var dstName = string.Join("", tmp[1].Split('_').Select(_ => $"{char.ToUpper(_[0])}{_[1..]}"));
-                sw.WriteLine($"        public {dstType} {dstName}");
-                sw.WriteLine(@"        {");
-                sw.WriteLine($"            get => {pTypeName}->{srcName};");
-                sw.WriteLine($"            set => {pTypeName}->{srcName} = value;");
-                sw.WriteLine(@"        }");
-                sw.WriteLine("");
-            }
+            //    var tmp = srcTypeWithName.Split(' ');
+            //    var srcName = element.Name;
+            //    var dstType = tmp[0]
+            //        .Replace("FFmpeg.AutoGen.Abstractions.", "").Replace("FFmpeg.AutoGen.", "")
+            //        .Replace("Void", "void")
+            //        .Replace("Byte", "byte")
+            //        .Replace("UInt16", "ushort")
+            //        .Replace("Int16", "short")
+            //        .Replace("UInt32", "uint")
+            //        .Replace("Int32", "int")
+            //        .Replace("UInt64", "ulong")
+            //        .Replace("Int64", "long")
+            //        .Replace("Single", "float")
+            //        .Replace("Double", "double");
+            //    var dstName = string.Join("", tmp[1].Split('_').Select(_ => $"{char.ToUpper(_[0])}{_[1..]}"));
+            //    sw.WriteLine($"        public {dstType} {dstName}");
+            //    sw.WriteLine(@"        {");
+            //    sw.WriteLine($"            get => {pTypeName}->{srcName};");
+            //    sw.WriteLine($"            set => {pTypeName}->{srcName} = value;");
+            //    sw.WriteLine(@"        }");
+            //    sw.WriteLine("");
+            //}
             sw.WriteLine(@"    }");
             sw.WriteLine(@"}");
             return new GeneratorOutput { SourceCode = sw.ToString(), OutTypeName = dstTypeName };

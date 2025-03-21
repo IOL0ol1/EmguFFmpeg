@@ -58,14 +58,14 @@ namespace FFmpegSharp
         public static IEnumerable<OutputFormat> GetFormats()
         {
             IntPtr oformat;
-            IntPtrRef opaque = new IntPtrRef();
+            IntPtrPtr opaque = new IntPtrPtr();
             while ((oformat = av_muxer_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new OutputFormat(oformat);
             }
         }
 
-        protected static IntPtr av_muxer_iterate_safe(IntPtrRef ptr)
+        protected static IntPtr av_muxer_iterate_safe(IntPtrPtr ptr)
         {
             fixed (void** pp = &ptr.IntPtr)
             {

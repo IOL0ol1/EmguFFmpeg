@@ -47,9 +47,9 @@ namespace FFmpegSharp
                  if (swsparam != null)
                      ffmpeg.av_opt_set(_, "sws_param", swsparam, ffmpeg.AV_OPT_SEARCH_CHILDREN);
              }, contextName);
-            if (filterContext.NbInputs > 0)
+            if (filterContext.Ref.nb_inputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
@@ -57,9 +57,9 @@ namespace FFmpegSharp
         public MediaFilterContext AddVideoSrcFilter(MediaFilter filter, string options = null, string contextName = null)
         {
             MediaFilterContext filterContext = AddFilter(filter, options, contextName);
-            if (filterContext.NbInputs > 0)
+            if (filterContext.Ref.nb_inputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
@@ -76,9 +76,9 @@ namespace FFmpegSharp
                     }
                 }
             }, contextName);
-            if (filterContext.NbOutputs > 0)
+            if (filterContext.Ref.nb_outputs > 0)
                 throw new FFmpegException("FFmpegException.NotSinksFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_VIDEO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
@@ -97,9 +97,9 @@ namespace FFmpegSharp
                     ffmpeg.av_opt_set_int(_, "sample_rate", samplerate, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                 }
             }, contextName);
-            if (filterContext.NbInputs > 0)
+            if (filterContext.Ref.nb_inputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
@@ -125,9 +125,9 @@ namespace FFmpegSharp
                     ffmpeg.av_opt_set_int(_, "all_channel_counts", allChannelCounts, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                 }
             }, contextName);
-            if (filterContext.NbOutputs > 0)
+            if (filterContext.Ref.nb_outputs > 0)
                 throw new FFmpegException("FFmpegException.NotSinksFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Const.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }

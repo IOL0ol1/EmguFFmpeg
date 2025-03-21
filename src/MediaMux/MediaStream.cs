@@ -25,7 +25,7 @@ namespace FFmpegSharp
         /// <returns></returns>
         public TimeSpan ToTimeSpan(long pts)
         { 
-            return TimeSpan.FromSeconds(pts * ffmpeg.av_q2d(TimeBase));
+            return TimeSpan.FromSeconds(pts * ffmpeg.av_q2d(pStream->time_base));
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace FFmpegSharp
             timeSpan = TimeSpan.Zero;
             if (pts < 0)
                 return false;
-            timeSpan = TimeSpan.FromSeconds(pts * ffmpeg.av_q2d(TimeBase));
+            timeSpan = TimeSpan.FromSeconds(pts * ffmpeg.av_q2d(pStream->time_base));
             return true;
         }
     }

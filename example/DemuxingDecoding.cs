@@ -27,20 +27,20 @@ namespace FFmpegSharp.Example
             using var videoDecCtx = MediaDecoder.CreateDecoder(videoStream.CodecparRef);
             using var audioDecCtx = MediaDecoder.CreateDecoder(audioStream.CodecparRef);
             // Use align = 1 AVFrame instead uint8_t *video_dst_data, less and safer code.
-            using var videoDstData = MediaFrame.CreateVideoFrame(videoDecCtx.Width, videoDecCtx.Height, videoDecCtx.PixFmt, 1);
+            using var videoDstData = MediaFrame.CreateVideoFrame(videoDecCtx.Ref.width, videoDecCtx.Ref.height, videoDecCtx.Ref.pix_fmt, 1);
             using var pkt = new MediaPacket();
             using var frame = new MediaFrame();
             fmtctx.DumpFormat();
             foreach (var packet in fmtctx.ReadPackets(pkt))
             {
-                if (packet.StreamIndex == videoStream.Index)
+                if (packet.Ref.stream_index == videoStream.Ref.index)
                 {
                     foreach (var f in videoDecCtx.DecodePacket(packet, frame))
                     {
                         WriteVideoOut(f, videoDstData, videoOutput);
                     }
                 }
-                if (packet.StreamIndex == audioStream.Index)
+                if (packet.Ref.stream_index == audioStream.Ref.index)
                 {
                     foreach (var f in audioDecCtx.DecodePacket(packet, frame))
                     {
@@ -61,12 +61,12 @@ namespace FFmpegSharp.Example
 
             // print video play command
             Console.WriteLine($"Play the output video file with the command:\n" +
-                   $"ffplay -f rawvideo -pix_fmt {videoDecCtx.PixFmt.GetName()} -video_size {videoDecCtx.Width}x{videoDecCtx.Height} {videoDstFilename}\n");
+                   $"ffplay -f rawvideo -pix_fmt {videoDecCtx.Ref.pix_fmt.GetName()} -video_size {videoDecCtx.Ref.width}x{videoDecCtx.Ref.height} {videoDstFilename}\n");
 
             // TODO: print audio play command
             var audioCtx = audioDecCtx;
-            var sfmt = audioCtx.SampleFmt;
-            var n_channels = audioCtx.ChLayout.nb_channels;
+            var sfmt = audioCtx.Ref.sample_fmt;
+            var n_channels = audioCtx.Ref.ch_layout.nb_channels;
             if (ffmpeg.av_sample_fmt_is_planar(sfmt) != 0)
             {
                 var packed = ffmpeg.av_get_sample_fmt_name(sfmt);
@@ -83,22 +83,22 @@ namespace FFmpegSharp.Example
         {
             of.MakeWritable();
             var dstData = new byte_ptr4();
-            dstData.UpdateFrom(of.Data);
+            dstData.UpdateFrom(of.Ref.data);
             var dstLinesize = new int4();
-            dstLinesize.UpdateFrom(of.Linesize);
+            dstLinesize.UpdateFrom(of.Ref.linesize);
             var srcData = new byte_ptr4();
-            srcData.UpdateFrom(f.Data);
+            srcData.UpdateFrom(f.Ref.data);
             var srcLinesize = new int4();
-            srcLinesize.UpdateFrom(f.Linesize);
-            ffmpeg.av_image_copy(ref dstData,  dstLinesize, srcData, srcLinesize, (AVPixelFormat)f.Format, f.Width, f.Height);
-            var videoDstBufferSize = ffmpeg.av_image_get_buffer_size((AVPixelFormat)of.Format, of.Width, of.Height, 1);
+            srcLinesize.UpdateFrom(f.Ref.linesize);
+            ffmpeg.av_image_copy(ref dstData,  dstLinesize, srcData, srcLinesize, (AVPixelFormat)f.Ref.format, f.Ref.width, f.Ref.height);
+            var videoDstBufferSize = ffmpeg.av_image_get_buffer_size((AVPixelFormat)of.Ref.format, of.Ref.width, of.Ref.height, 1);
             stream.Write(new ReadOnlySpan<byte>(dstData[0], videoDstBufferSize));
         }
 
         private unsafe void WriteAudioOut(MediaFrame f, Stream stream)
         {
-            var unpadded_linesize = f.NbSamples * ffmpeg.av_get_bytes_per_sample((AVSampleFormat)f.Format);
-            stream.Write(new ReadOnlySpan<byte>(f.Const.extended_data[0], unpadded_linesize));
+            var unpadded_linesize = f.Ref.nb_samples * ffmpeg.av_get_bytes_per_sample((AVSampleFormat)f.Ref.format);
+            stream.Write(new ReadOnlySpan<byte>(f.Ref.extended_data[0], unpadded_linesize));
         }
 
     }

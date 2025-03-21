@@ -20,7 +20,7 @@ namespace FFmpegSharp
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
             : this()
-        {
+        { 
             foreach (var item in dictionary)
             {
                 Add(item, AVDictWriteFlags.MultiKey);

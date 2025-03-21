@@ -36,29 +36,29 @@ namespace FFmpegSharp.Example
             {
                 MediaCodec codec = null;
                 var videoStreamIndex = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref codec); // find best video stream with codec.
-                using (var videoDecoder = MediaDecoder.CreateDecoder(demuxer[videoStreamIndex].CodecparRef, _ => { _.ThreadCount = 10; }/* multi thread */ ))
+                using (var videoDecoder = MediaDecoder.CreateDecoder(demuxer[videoStreamIndex].CodecparRef, _ => { _.Ref.thread_count = 10; }/* multi thread */ ))
                 {
-                    convert.SetOpts(videoDecoder.Width, videoDecoder.Height, AVPixelFormat.AV_PIX_FMT_BGR24);
+                    convert.SetOpts(videoDecoder.Ref.width, videoDecoder.Ref.height, AVPixelFormat.AV_PIX_FMT_BGR24);
                     foreach (var packet in demuxer.ReadPackets())
                     {
-                        if (packet.StreamIndex == videoStreamIndex)
+                        if (packet.Ref.stream_index == videoStreamIndex)
                         {
                             foreach (var decodeFrame in videoDecoder.DecodePacket(packet))
                             {
                                 foreach (var outFrame in convert.Convert(decodeFrame))
                                 {
                                     // use OpenCV mat write to file(or Bitmap)
-                                    using (var mat = new Mat(outFrame.Height, outFrame.Width, MatType.CV_8UC3))
+                                    using (var mat = new Mat(outFrame.Ref.height, outFrame.Ref.width, MatType.CV_8UC3))
                                     {
-                                        var srcPtr = (IntPtr)outFrame.Const.data[0];
-                                        var srcLineSize = outFrame.Linesize[0];
+                                        var srcPtr = (IntPtr)outFrame.Ref.data[0];
+                                        var srcLineSize = outFrame.Ref.linesize[0];
                                         var dstPtr = mat.Data; // Bitmap.Scan0
                                         var dstLineSize = (int)mat.Step(); // Bitmap.Stride
                                         var byteWidth = Math.Min(srcLineSize, dstLineSize);
-                                        var height = Math.Min(outFrame.Height, mat.Height);
+                                        var height = Math.Min(outFrame.Ref.height, mat.Height);
                                         FFmpegUtil.CopyPlane(srcPtr, srcLineSize, dstPtr, dstLineSize, byteWidth, height);
-                                        if (decodeFrame.PktDts >= 0)
-                                            mat.SaveImage(Path.Combine(output, $"{demuxer[packet.StreamIndex].ToTimeSpan(decodeFrame.PktDts).TotalMilliseconds}ms.jpg"));
+                                        if (decodeFrame.Ref.pkt_dts >= 0)
+                                            mat.SaveImage(Path.Combine(output, $"{demuxer[packet.Ref.stream_index].ToTimeSpan(decodeFrame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
                                     }
                                 }
                             }

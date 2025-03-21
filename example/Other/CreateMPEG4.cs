@@ -26,9 +26,9 @@ namespace FFmpegSharp.Example
             using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), OutputFormat.GuessFormat(null, outputFile, null)))
             using (var convert = new PixelConverter())
             {
-                using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.ThreadCount = 10))
+                using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.Ref.thread_count = 10))
                 {
-                    convert.SetOpts(width, heith, vEncoder.PixFmt);
+                    convert.SetOpts(width, heith, vEncoder.Ref.pix_fmt);
                     var vStream = muxer.AddStream(vEncoder);
                     muxer.WriteHeader();
 
@@ -40,11 +40,11 @@ namespace FFmpegSharp.Example
                             foreach (var frame in convert.Convert(vFrame))
                             {
                                 //FillYuv420P(vFrame, i);
-                                frame.Pts = i;
+                                frame.Ref.pts = i;
                                 foreach (var packet in vEncoder.EncodeFrame(frame))
                                 {
-                                    packet.StreamIndex = vStream.Index;
-                                    muxer.WritePacket(packet, vEncoder.TimeBase);
+                                    packet.Ref.stream_index = vStream.Ref.index;
+                                    muxer.WritePacket(packet, vEncoder.Ref.time_base);
                                 }
                             }
                         }
@@ -59,13 +59,13 @@ namespace FFmpegSharp.Example
 
         private static unsafe void FillBgr24(MediaFrame frame, int i)
         {
-            using (var mat = new Mat(frame.Height, frame.Width, MatType.CV_8UC3, Scalar.RandomColor()))
+            using (var mat = new Mat(frame.Ref.height, frame.Ref.width, MatType.CV_8UC3, Scalar.RandomColor()))
             {
                 mat.PutText($"{i}", new Point(50, 50), HersheyFonts.HersheyPlain, 5, Scalar.White, 1, LineTypes.AntiAlias);
                 var srcLineSize = (int)mat.Step();
-                var dstLineSize = frame.Linesize[0];
+                var dstLineSize = frame.Ref.linesize[0];
                 FFmpegUtil.CopyPlane(mat.Data, srcLineSize,
-                   (IntPtr)frame.Const.data[0], dstLineSize, Math.Min(srcLineSize, dstLineSize), frame.Height);
+                   (IntPtr)frame.Ref.data[0], dstLineSize, Math.Min(srcLineSize, dstLineSize), frame.Ref.height);
             }
         }
 
@@ -76,26 +76,26 @@ namespace FFmpegSharp.Example
         /// <param name="i"></param>
         private static unsafe void FillYuv420P(MediaFrame frame, int i)
         {
-            var data = frame.Data;
-            var linesize = frame.Linesize;
+            var data = frame.Ref.data;
+            var linesize = frame.Ref.linesize;
             /* Prepare a dummy image.
               In real code, this is where you would have your own logic for
               filling the frame. FFmpeg does not care what you put in the
               frame.
             */
             /* Y */
-            for (var y = 0; y < frame.Height; y++)
+            for (var y = 0; y < frame.Ref.height; y++)
             {
-                for (var x = 0; x < frame.Width; x++)
+                for (var x = 0; x < frame.Ref.width; x++)
                 {
                     data[0][y * linesize[0] + x] = (byte)(x + y + i * 3);
                 }
             }
 
             /* Cb and Cr */
-            for (var y = 0; y < frame.Height / 2; y++)
+            for (var y = 0; y < frame.Ref.height / 2; y++)
             {
-                for (var x = 0; x < frame.Width / 2; x++)
+                for (var x = 0; x < frame.Ref.width / 2; x++)
                 {
                     data[1][y * linesize[1] + x] = (byte)(128 + y + i * 2);
                     data[2][y * linesize[2] + x] = (byte)(64 + x + i * 5);

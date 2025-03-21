@@ -27,25 +27,25 @@ namespace FFmpegSharp.Example.Other
             using (var convert = new PixelConverter())
             using (var f = new MediaFrame())
             {
-                var decoders = mediaReader.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.ThreadCount = 10)).ToList();
+                var decoders = mediaReader.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.Ref.thread_count = 10)).ToList();
                 foreach (var inPacket in mediaReader.ReadPackets())
                 {
-                    var decoder = decoders[inPacket.StreamIndex];
-                    if (decoder != null && decoder.CodecType ==  AVMediaType.AVMEDIA_TYPE_VIDEO)
+                    var decoder = decoders[inPacket.Ref.stream_index];
+                    if (decoder != null && decoder.Ref.codec_type ==  AVMediaType.AVMEDIA_TYPE_VIDEO)
                     {
-                        convert.SetOpts(decoder.Width, decoder.Height,  AVPixelFormat.AV_PIX_FMT_BGR24);
+                        convert.SetOpts(decoder.Ref.width, decoder.Ref.height,  AVPixelFormat.AV_PIX_FMT_BGR24);
                         foreach (var inFrame in decoder.DecodePacket(inPacket))
                         {
                             foreach (var outFrame in convert.Convert(inFrame, f))
                             {
-                                using (var mat = new Mat(outFrame.Height, outFrame.Width, MatType.CV_8UC3))
+                                using (var mat = new Mat(outFrame.Ref.height, outFrame.Ref.width, MatType.CV_8UC3))
                                 {
-                                    var srcLineSize = outFrame.Linesize[0];
+                                    var srcLineSize = outFrame.Ref.linesize[0];
                                     var dstLineSize = (int)mat.Step();
-                                    FFmpegUtil.CopyPlane((IntPtr)outFrame.Const.data[0], srcLineSize,
+                                    FFmpegUtil.CopyPlane((IntPtr)outFrame.Ref.data[0], srcLineSize,
                                         mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
-                                    if (inFrame.PktDts >= 0)
-                                        mat.SaveImage(Path.Combine(output, $"{mediaReader[inPacket.StreamIndex].ToTimeSpan(inFrame.PktDts).TotalMilliseconds}ms.jpg"));
+                                    if (inFrame.Ref.pkt_dts >= 0)
+                                        mat.SaveImage(Path.Combine(output, $"{mediaReader[inPacket.Ref.stream_index].ToTimeSpan(inFrame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
                                 }
                             }
                         }

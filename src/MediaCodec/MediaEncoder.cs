@@ -18,22 +18,22 @@ namespace FFmpegSharp
             Action<MediaCodecContext> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return Create(MediaCodec.FindEncoder(format.VideoCodec), c =>
+            return Create(MediaCodec.FindEncoder(format.Ref.video_codec), c =>
             {
-                c.Width = width;
-                c.Height = height;
-                c.TimeBase = frameRate.ToInvert();
-                c.Framerate = frameRate;
+                c.Ref.width = width;
+                c.Ref.height = height;
+                c.Ref.time_base = frameRate.ToInvert();
+                c.Ref.framerate  = frameRate;
                 if (pixelFormat == AVPixelFormat.AV_PIX_FMT_NONE)
                 {
-                    var pixelFmts = new MediaCodec(c.Const.codec).GetPixelFmts();
+                    var pixelFmts = new MediaCodec(c.Ref.codec).GetPixelFmts();
                     pixelFormat = pixelFmts.FirstOrDefault();
                 }
-                c.PixFmt = pixelFormat;
+                c.Ref.pix_fmt = pixelFormat;
 
-                c.BitRate = bitrate;
-                if ((format.Flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
-                    c.Flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+                c.Ref.bit_rate = bitrate;
+                if ((format.Ref.flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+                    c.Ref.flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
                 otherSettings?.Invoke(c);
             }, opts);
         }
@@ -51,18 +51,18 @@ namespace FFmpegSharp
         {
             return Create(codec, c =>
             {
-                c.Width = width;
-                c.Height = height;
-                c.TimeBase = frameRate.ToInvert();
-                c.Framerate = frameRate;
+                c.Ref.width = width;
+                c.Ref.height = height;
+                c.Ref.time_base = frameRate.ToInvert();
+                c.Ref.framerate = frameRate;
                 if (pixelFormat == AVPixelFormat.AV_PIX_FMT_NONE)
                 {
-                    var pixelFmts = new MediaCodec(c.Const.codec).GetPixelFmts();
+                    var pixelFmts = new MediaCodec(c.Ref.codec).GetPixelFmts();
                     pixelFormat = pixelFmts.FirstOrDefault();
                 }
-                c.PixFmt = pixelFormat;
-                c.BitRate = bitrate;
-                c.Flags |= flags;
+                c.Ref.pix_fmt = pixelFormat;
+                c.Ref.bit_rate = bitrate;
+                c.Ref.flags |= flags;
                 otherSettings?.Invoke(c);
             }, opts);
         }
@@ -162,20 +162,20 @@ namespace FFmpegSharp
             Action<MediaCodecContext> otherSettings = null,
             MediaDictionary opts = null)
         {
-            return Create(MediaCodec.FindEncoder(format.AudioCodec), c =>
+            return Create(MediaCodec.FindEncoder(format.Ref.audio_codec), c =>
             {
-                c.SampleRate = sampleRate;
-                c.ChLayout = chLayout;
+                c.Ref.sample_rate = sampleRate;
+                c.Ref.ch_layout = chLayout;
                 if (sampleFormat == AVSampleFormat.AV_SAMPLE_FMT_NONE)
                 {
-                    var sampleFmts = new MediaCodec(c.Const.codec).GetSampelFmts();
+                    var sampleFmts = new MediaCodec(c.Ref.codec).GetSampelFmts();
                     sampleFormat = sampleFmts.FirstOrDefault();
                 }
-                c.SampleFmt = sampleFormat;
-                c.TimeBase = new AVRational { num = 1, den = sampleRate };
-                c.BitRate = bitrate;
-                if ((format.Flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
-                    c.Flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+                c.Ref.sample_fmt = sampleFormat;
+                c.Ref.time_base = new AVRational { num = 1, den = sampleRate };
+                c.Ref.bit_rate = bitrate;
+                if ((format.Ref.flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+                    c.Ref.flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
                 otherSettings?.Invoke(c);
             }, opts);
         }
@@ -204,17 +204,17 @@ namespace FFmpegSharp
         {
             return Create(codec, c =>
             {
-                c.SampleRate = sampleRate;
-                c.ChLayout = chLayout;
+                c.Ref.sample_rate = sampleRate;
+                c.Ref.ch_layout = chLayout;
                 if (sampleFormat == AVSampleFormat.AV_SAMPLE_FMT_NONE)
                 {
-                    var sampleFmts = new MediaCodec(c.Const.codec).GetSampelFmts();
+                    var sampleFmts = new MediaCodec(c.Ref.codec).GetSampelFmts();
                     sampleFormat = sampleFmts.FirstOrDefault();
                 }
-                c.SampleFmt = sampleFormat;
-                c.TimeBase = new AVRational { num = 1, den = sampleRate };
-                c.BitRate = bitrate;
-                c.Flags |= flags;
+                c.Ref.sample_fmt = sampleFormat;
+                c.Ref.time_base = new AVRational { num = 1, den = sampleRate };
+                c.Ref.bit_rate = bitrate;
+                c.Ref.flags |= flags;
                 otherSettings?.Invoke(c);
             }, opts);
         }

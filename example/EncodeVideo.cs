@@ -36,9 +36,9 @@ namespace FFmpegSharp.Example
                  * then gop_size is ignored and the output of encoder
                  * will always be I frame irrespective to gop_size
                  */
-                _.GopSize = 10;
-                _.MaxBFrames = 1;
-                if (_.CodecId == AVCodecID.AV_CODEC_ID_H264)
+                _.Ref.gop_size = 10;
+                _.Ref.max_b_frames = 1;
+                if (_.Ref.codec_id == AVCodecID.AV_CODEC_ID_H264)
                     ffmpeg.av_opt_set(((AVCodecContext*)_)->priv_data, "preset", "slow", 0);
             }))
             {
@@ -56,17 +56,17 @@ namespace FFmpegSharp.Example
                       NOTE:FFmpegSharp do it in encoder.EncodeFrame finished
                     */
                     FillYuv420P(frame, i);
-                    frame.Pts = i;
+                    frame.Ref.pts = i;
                     /* encode the image */
                     foreach (var item in encoder.EncodeFrame(frame, pkt))
                     {
-                        os.Write(new ReadOnlySpan<byte>(item.Const.data, item.Const.size));
+                        os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
                     }
                 }
                 /* flush the encoder */
                 foreach (var item in encoder.EncodeFrame(null, pkt))
                 {
-                    os.Write(new ReadOnlySpan<byte>(item.Const.data, item.Const.size));
+                    os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
                 }
                 /* Add sequence end code to have a real MPEG file.
                   It makes only sense because this tiny examples writes packets
@@ -74,8 +74,8 @@ namespace FFmpegSharp.Example
                   codecs. To create a valid file, you usually need to write packets
                   into a proper file format or protocol; see muxing.c.
                 */
-                if (encoder.Const.codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO
-                    || encoder.Const.codec_id == AVCodecID.AV_CODEC_ID_MPEG2VIDEO)
+                if (encoder.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO
+                    || encoder.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG2VIDEO)
                 {
                     byte[] endcode = { 0, 0, 1, 0xb7 };
                     os.Write(endcode, 0, endcode.Length);
@@ -90,26 +90,26 @@ namespace FFmpegSharp.Example
         /// <param name="i"></param>
         private static unsafe void FillYuv420P(MediaFrame frame, int i)
         {
-            var data = frame.Data;
-            var linesize = frame.Linesize;
+            var data = frame.Ref.data;
+            var linesize = frame.Ref.linesize;
             /* Prepare a dummy image.
               In real code, this is where you would have your own logic for
               filling the frame. FFmpeg does not care what you put in the
               frame.
             */
             /* Y */
-            for (int y = 0; y < frame.Height; y++)
+            for (int y = 0; y < frame.Ref.height; y++)
             {
-                for (int x = 0; x < frame.Width; x++)
+                for (int x = 0; x < frame.Ref.width; x++)
                 {
                     data[0][y * linesize[0] + x] = (byte)(x + y + i * 3);
                 }
             }
 
             /* Cb and Cr */
-            for (int y = 0; y < frame.Height / 2; y++)
+            for (int y = 0; y < frame.Ref.height / 2; y++)
             {
-                for (int x = 0; x < frame.Width / 2; x++)
+                for (int x = 0; x < frame.Ref.width / 2; x++)
                 {
                     data[1][y * linesize[1] + x] = (byte)(128 + y + i * 2);
                     data[2][y * linesize[2] + x] = (byte)(64 + x + i * 5);

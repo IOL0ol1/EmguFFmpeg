@@ -22,15 +22,15 @@ namespace FFmpegSharp.Example
             var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_H264);
             using (var f = File.OpenRead(filename))
             using (var of = File.Create(outfilename))
-            using (var pkt = new MediaPacket() { Dts = ffmpeg.AV_NOPTS_VALUE, Pts = ffmpeg.AV_NOPTS_VALUE, Pos = 0 })
-            using (var parser = new MediaCodecParserContext(codec.Id))
+            using (var pkt = new MediaPacket())
+            using (var parser = new MediaCodecParserContext(codec.Ref.id))
             using (var c = MediaDecoder.Create(codec, _ =>
              {
                  /* For some codecs, such as msmpeg4 and mpeg4, width and height
                     MUST be initialized there because this information is not
                     available in the bitstream. */
-                 _.Height = 288;
-                 _.Width = 352;
+                 _.Ref.height = 288;
+                 _.Ref.width = 352;
              }))
             using (var frame = new MediaFrame())
             {
@@ -40,9 +40,9 @@ namespace FFmpegSharp.Example
                     {
                         PgmSave(oFrame, of);
                     }
-                    pkt.Dts = ffmpeg.AV_NOPTS_VALUE;
-                    pkt.Pts = ffmpeg.AV_NOPTS_VALUE;
-                    pkt.Pos = 0;
+                    pkt.Ref.dts = ffmpeg.AV_NOPTS_VALUE;
+                    pkt.Ref.pts = ffmpeg.AV_NOPTS_VALUE;
+                    pkt.Ref.pos = 0;
                 }
 
                 /* flush the decoder */
@@ -55,12 +55,12 @@ namespace FFmpegSharp.Example
 
         private unsafe static void PgmSave(MediaFrame frame, Stream stream)
         {
-            var wrap = frame.Linesize[0];
-            var xsize = frame.Width;
-            var ysize = frame.Height;
+            var wrap = frame.Ref.linesize[0];
+            var xsize = frame.Ref.width;
+            var ysize = frame.Ref.height;
             for (int i = 0; i < ysize; i++)
             {
-                stream.Write(new ReadOnlySpan<byte>(frame.Data[0] + i * wrap, xsize));
+                stream.Write(new ReadOnlySpan<byte>(frame.Ref.data[0] + i * wrap, xsize));
             }
         }
     }

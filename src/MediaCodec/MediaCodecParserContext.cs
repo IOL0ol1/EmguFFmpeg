@@ -25,7 +25,7 @@ namespace FFmpegSharp
             : this((int)codecId)
         { }
 
-        protected static AVCodecParser? av_parser_iterate_safe(IntPtrRef opaque)
+        protected static AVCodecParser? av_parser_iterate_safe(IntPtrPtr opaque)
         {
             fixed (void** pp = &opaque.IntPtr)
             {
@@ -37,7 +37,7 @@ namespace FFmpegSharp
         public static IEnumerable<AVCodecParser> GetParsers()
         {
             AVCodecParser? output;
-            IntPtrRef opaque = new IntPtrRef();
+            IntPtrPtr opaque = new IntPtrPtr();
             while ((output = av_parser_iterate_safe(opaque)) != null)
             {
                 yield return output.Value;
@@ -56,7 +56,7 @@ namespace FFmpegSharp
             var bufSize = 20480 + 64; // buffer size + AV_INPUT_BUFFER_PADDING_SIZE
             var buf = new byte[bufSize];
             int outSize;
-            var pkt = packet ?? new MediaPacket() { Dts = ffmpeg.AV_NOPTS_VALUE, Pts = ffmpeg.AV_NOPTS_VALUE, Pos = 0 };
+            var pkt = packet ?? new MediaPacket();
             try
             {
                 while ((outSize = stream.Read(buf, 0, bufSize)) != 0)
@@ -65,7 +65,7 @@ namespace FFmpegSharp
                     {
                         var ret = Parser2(codecContext, pkt, buf, offset).ThrowIfError();
                         offset += ret;
-                        if (packet.Size > 0)
+                        if (packet.Ref.size > 0)
                             yield return pkt;
                     }
                 }
@@ -100,7 +100,7 @@ namespace FFmpegSharp
             fixed (byte* pbuf = buf)
             {
                 byte* pbufStart = pbuf + bufOffset;
-                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, &((AVPacket*)packet)->data, &((AVPacket*)packet)->size, pbufStart, buf.Length - bufOffset, packet.Pts, packet.Dts, packet.Pos);
+                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, &((AVPacket*)packet)->data, &((AVPacket*)packet)->size, pbufStart, buf.Length - bufOffset, packet.Ref.pts, packet.Ref.dts, packet.Ref.pos);
             }
         }
 

@@ -6,7 +6,8 @@ namespace FFmpegSharp
     public unsafe partial class MediaCodec
     {
         /// <summary>
-        /// Be careful!!!
+        /// Pointer to the underlying FFmpeg structure.
+        /// WARNING: Be careful when accessing or modifying this field directly.
         /// </summary>
         protected AVCodec* pCodec = null;
 
@@ -28,31 +29,10 @@ namespace FFmpegSharp
             : this((AVCodec*)pAVCodec)
         { }
 
-        public AVCodec Const => *pCodec;
-
-        public AVMediaType Type
-        {
-            get => pCodec->type;
-            set => pCodec->type = value;
-        }
-
-        public AVCodecID Id
-        {
-            get => pCodec->id;
-            set => pCodec->id = value;
-        }
-
-        public int Capabilities
-        {
-            get => pCodec->capabilities;
-            set => pCodec->capabilities = value;
-        }
-
-        public byte MaxLowres
-        {
-            get => pCodec->max_lowres;
-            set => pCodec->max_lowres = value;
-        }
+        /// <summary>
+        /// WARNING: Be careful when modifying this field directly.
+        /// </summary>
+        public ref AVCodec Ref => ref *pCodec;
 
     }
 }
