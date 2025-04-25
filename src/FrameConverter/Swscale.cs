@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
@@ -8,7 +7,7 @@ namespace FFmpegSharp
     /// <summary>
     /// <see cref="SwsContext"/> wapper
     /// </summary>
-    public unsafe class PixelConverter : IFrameConverter, IDisposable
+    public unsafe class Swscale : IConverter, IDisposable
     {
         protected SwsContext* pContext;
         protected int dstWidth;
@@ -17,25 +16,24 @@ namespace FFmpegSharp
         protected SwsFilter dstFilter;
         protected SwsFilter srcFilter;
 
-        public PixelConverter(SwsContext* pSwsContext, bool isDisposeByOwner = true)
+        public Swscale(SwsContext* pSwsContext, bool isDisposeByOwner = true)
         {
             pContext = pSwsContext;
             disposedValue = !isDisposeByOwner;
         }
 
-        public PixelConverter() : this(ffmpeg.sws_alloc_context())
+        public Swscale() : this(ffmpeg.sws_alloc_context())
         { }
 
-
-        public static PixelConverter Create(int dstWidth, int dstHeight, AVPixelFormat dstFormat, SwsFilter dstFilter = default)
+        public static Swscale Create(int dstWidth, int dstHeight, AVPixelFormat dstFormat, SwsFilter dstFilter = default)
         {
-            var pixelConverter = new PixelConverter();
+            var pixelConverter = new Swscale();
             pixelConverter.SetOpts(dstWidth, dstHeight, dstFormat, dstFilter);
             return pixelConverter;
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <param name="dstWidth"></param>
         /// <param name="dstHeight"></param>
@@ -49,13 +47,13 @@ namespace FFmpegSharp
             this.dstFilter = dstFilter;
         }
 
-        IEnumerable<MediaFrame> IFrameConverter.Convert(MediaFrame srcframe, MediaFrame dstframe) => Convert(srcframe, dstframe);
+        IEnumerable<MediaFrame> IConverter.Convert(MediaFrame srcframe, MediaFrame dstframe) => Convert(srcframe, dstframe);
 
         /// <summary>
         /// Convert <paramref name="srcframe"/>
         /// <para>
         /// Video conversion can be made without the use of IEnumerable,
-        /// here In order to be consistent with the <see cref="SampleConverter"/> interface.
+        /// here In order to be consistent with the <see cref="Swresample"/> interface.
         /// </para>
         /// </summary>
         /// <param name="srcframe"></param>
@@ -77,7 +75,7 @@ namespace FFmpegSharp
             if (dstframe == null)
                 dstframe = new MediaFrame();
             if (!dstframe.IsWriteable())
-            { 
+            {
                 dstframe.Ref.width = dstWidth;
                 dstframe.Ref.height = dstHeight;
                 dstframe.Ref.format = (int)dstFormat;
@@ -98,7 +96,7 @@ namespace FFmpegSharp
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="srcframe"></param>
         /// <param name="flags"></param>
@@ -110,13 +108,14 @@ namespace FFmpegSharp
             return ConvertFrame(srcframe, null, flags, srcFilter, param);
         }
 
-        public static implicit operator SwsContext*(PixelConverter value)
+        public static implicit operator SwsContext*(Swscale value)
         {
             if (value is null) return null;
             return value.pContext;
         }
 
-        #region 
+        #region
+
         private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
@@ -128,24 +127,25 @@ namespace FFmpegSharp
             }
         }
 
-        ~PixelConverter()
+        ~Swscale()
         {
             Dispose(disposing: false);
         }
+
         public void Dispose()
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-        #endregion
 
+        #endregion
     }
 
     public static partial class MediaFrameExtension
     {
         public static MediaFrame Convert(this MediaFrame frame, int dstWidth, int dstHeight, AVPixelFormat dstFormat, int flags = ffmpeg.SWS_BICUBIC, SwsFilter srcFilter = default, SwsFilter dstFilter = default, double[] param = null)
         {
-            using (var p = new PixelConverter())
+            using (var p = new Swscale())
             {
                 p.SetOpts(dstWidth, dstHeight, dstFormat, dstFilter);
                 return p.ConvertFrame(frame, flags, srcFilter, param);

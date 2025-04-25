@@ -23,8 +23,8 @@ namespace FFmpegSharp.Example
             var width = 800;
             var heith = 600;
             var s = Stopwatch.StartNew();
-            using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), OutputFormat.GuessFormat(null, outputFile, null)))
-            using (var convert = new PixelConverter())
+            using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), MediaOutputFormat.GuessFormat(null, outputFile, null)))
+            using (var convert = new Swscale())
             {
                 using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.Ref.thread_count = 10))
                 {

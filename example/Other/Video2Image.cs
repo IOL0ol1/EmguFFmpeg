@@ -24,7 +24,7 @@ namespace FFmpegSharp.Example.Other
             var output = Directory.CreateDirectory(args[1]).FullName;
             var s = Stopwatch.StartNew();
             using (var mediaReader = MediaDemuxer.Open(File.OpenRead(input)))
-            using (var convert = new PixelConverter())
+            using (var convert = new Swscale())
             using (var f = new MediaFrame())
             {
                 var decoders = mediaReader.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.Ref.thread_count = 10)).ToList();

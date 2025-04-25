@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Runtime.CompilerServices;
 using FFmpeg.AutoGen.Abstractions;
-
 
 namespace FFmpegSharp
 {
     public unsafe partial class MediaCodec
     {
-
         /// <summary>
         /// Get <see cref="MediaCodec"/> by <see cref="ffmpeg.avcodec_find_encoder_by_name(string)"/>
         /// </summary>
@@ -54,7 +52,6 @@ namespace FFmpegSharp
             AVCodec* pCodec = ffmpeg.avcodec_find_decoder(codecId);
             return pCodec == null ? null : new MediaCodec(pCodec);
         }
-
 
         public string Name => ((IntPtr)pCodec->name).PtrToStringUTF8();
         public string LongName => ((IntPtr)pCodec->long_name).PtrToStringUTF8();

@@ -15,14 +15,14 @@ namespace FFmpegSharp
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
-        public OutputFormat Format => new OutputFormat(pFormatContext->oformat);
+        public MediaOutputFormat Format => new MediaOutputFormat(pFormatContext->oformat);
 
         /// <summary>
         /// write to stream
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="oformat"></param>
-        public static MediaMuxer Create(Stream stream, OutputFormat oformat)
+        public static MediaMuxer Create(Stream stream, MediaOutputFormat oformat)
         {
             var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768);
             AVFormatContext* pFormatContext = ffmpeg.avformat_alloc_context();
@@ -42,7 +42,7 @@ namespace FFmpegSharp
         /// <param name="oformat"></param>
         /// <param name="formatName"></param>
         /// <param name="options"></param>
-        public static MediaMuxer Create(string fileName, OutputFormat oformat = null, string formatName = null, MediaDictionary options = null)
+        public static MediaMuxer Create(string fileName, MediaOutputFormat oformat = null, string formatName = null, MediaDictionary options = null)
         {
             AVFormatContext* pFormatContext = null;
             ffmpeg.avformat_alloc_output_context2(&pFormatContext, oformat, formatName, fileName).ThrowIfError();

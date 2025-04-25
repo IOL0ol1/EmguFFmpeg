@@ -3,7 +3,7 @@ using FFmpeg.AutoGen.Abstractions;
 
 namespace FFmpegSharp
 {
-    public unsafe partial class OutputFormat
+    public unsafe partial class MediaOutputFormat
     {
         /// <summary>
         /// Pointer to the underlying FFmpeg structure.
@@ -15,17 +15,17 @@ namespace FFmpegSharp
         /// const AVOutputFormat*
         /// </summary>
         /// <param name="value"></param>
-        public static implicit operator AVOutputFormat*(OutputFormat value)
+        public static implicit operator AVOutputFormat*(MediaOutputFormat value)
         {
             return value == null ? null : value.pOutputFormat;
         }
 
-        public OutputFormat(AVOutputFormat* pAVOutputFormat)
+        public MediaOutputFormat(AVOutputFormat* pAVOutputFormat)
         {
             pOutputFormat = pAVOutputFormat;
         }
 
-        public OutputFormat(IntPtr pAVOutputFormat)
+        public MediaOutputFormat(IntPtr pAVOutputFormat)
             : this((AVOutputFormat*)pAVOutputFormat)
         { }
 

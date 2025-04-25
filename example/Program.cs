@@ -43,7 +43,7 @@ namespace FFmpegSharp.Example
 
                 var v = ffmpeg.avdevice_version();
                 ffmpeg.avdevice_register_all();
-                MediaDevice.ListInputSources(InputFormat.GetFormats().First(), x =>
+                MediaDevice.ListInputSources(MediaInputFormat.GetFormats().First(), x =>
                 {
                     Console.WriteLine("-----------------");
                     for (int i = 0; i < x.nb_devices; i++)

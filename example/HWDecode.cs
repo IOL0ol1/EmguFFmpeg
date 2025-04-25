@@ -24,7 +24,7 @@ namespace FFmpegSharp.Example
             using (var packet = new MediaPacket())
             using (var frame = new MediaFrame())
             using (var sw_frame = new MediaFrame())
-            using (var convert = new PixelConverter())
+            using (var convert = new Swscale())
             {
                 MediaCodec decoder = null;
                 var video_stream = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref decoder);

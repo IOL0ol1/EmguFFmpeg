@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1;</TargetFrameworks> 
+        <Nullable>disable</Nullable>
         <PackageId>FFmpeg4Sharp</PackageId>
         <Description>
             A FFmpeg.AutoGen.Abstractions Warpper Library.
@@ -26,7 +27,7 @@
     </PropertyGroup>
 
     <ItemGroup> 
-        <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="7.0.0" />  
+        <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="7.1.1" />  
     </ItemGroup>
 
     <ItemGroup>

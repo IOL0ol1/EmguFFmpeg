@@ -7,39 +7,38 @@ namespace FFmpegSharp
     /// <summary>
     /// <see cref="SwrContext"/> wapper, include a <see cref="AVAudioFifo"/>.
     /// </summary>
-    public unsafe class SampleConverter : IFrameConverter, IDisposable
+    public unsafe class Swresample : IConverter, IDisposable
     {
         protected SwrContext* pSwrContext;
         protected AVChannelLayout dstChLayout;
         protected int dstSampleRate;
         protected AVSampleFormat dstFormat;
         protected int dstSamples;
-        protected AudioFifo AudioFifo; 
+        protected AudioFifo AudioFifo;
 
-        public SampleConverter(SwrContext* pSwrContext, bool isDisposeByOwner = true)
+        public Swresample(SwrContext* pSwrContext, bool isDisposeByOwner = true)
         {
             this.pSwrContext = pSwrContext;
             disposedValue = !isDisposeByOwner;
         }
 
-        public SampleConverter() : this(ffmpeg.swr_alloc())
+        public Swresample() : this(ffmpeg.swr_alloc())
         { }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="dstChLayout"></param>
         /// <param name="dstSampleRate"></param>
         /// <param name="dstFormat"></param>
         /// <param name="dstSamplesMax">set 0 will use src frame's NbSamples</param>
         /// <returns></returns>
-        public static SampleConverter Create(AVChannelLayout dstChLayout, int dstSampleRate, AVSampleFormat dstFormat, int dstSamplesMax)
+        public static Swresample Create(AVChannelLayout dstChLayout, int dstSampleRate, AVSampleFormat dstFormat, int dstSamplesMax)
         {
-            var sampleConverter = new SampleConverter();
+            var sampleConverter = new Swresample();
             sampleConverter.SetOpts(dstChLayout, dstSampleRate, dstFormat, dstSamplesMax);
             return sampleConverter;
         }
-
 
         public void SetOpts(AVChannelLayout dstChLayout, int dstSampleRate, AVSampleFormat dstFormat, int dstSamplesMax)
         {
@@ -49,7 +48,6 @@ namespace FFmpegSharp
             this.dstSamples = dstSamplesMax;
             AudioFifo = new AudioFifo(dstFormat, dstChLayout.nb_channels, dstSampleRate);
         }
-
 
         #region safe wapper for IEnumerable
 
@@ -181,13 +179,14 @@ namespace FFmpegSharp
             return dstFrame;
         }
 
-        public static implicit operator SwrContext*(SampleConverter value)
+        public static implicit operator SwrContext*(Swresample value)
         {
             if (value is null) return null;
             return value.pSwrContext;
         }
 
-        #region 
+        #region
+
         private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
@@ -203,7 +202,7 @@ namespace FFmpegSharp
             }
         }
 
-        ~SampleConverter()
+        ~Swresample()
         {
             Dispose(disposing: false);
         }
@@ -213,6 +212,7 @@ namespace FFmpegSharp
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
         #endregion
     }
 

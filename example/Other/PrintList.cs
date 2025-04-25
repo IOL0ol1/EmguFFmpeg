@@ -15,13 +15,13 @@ namespace FFmpegSharp.Example.Other
         {
             var index = 1;
             Console.WriteLine("==============================in formats==============================");
-            foreach (var item in InputFormat.GetFormats())
+            foreach (var item in MediaInputFormat.GetFormats())
             {
                 Console.WriteLine($"{index++:D3}[{item.Name}]({item.LongName}){item.MimeType}");
             }
             index = 1;
             Console.WriteLine("==============================out formats==============================");
-            foreach (var item in OutputFormat.GetFormats())
+            foreach (var item in MediaOutputFormat.GetFormats())
             {
                 Console.WriteLine($"{index++:D3}[{item.Name}]({item.LongName}){item.MimeType}");
             }

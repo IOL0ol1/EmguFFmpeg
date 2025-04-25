@@ -22,8 +22,8 @@ namespace FFmpegSharp.Example
 
             bool encode_video = false, encode_audio = false;
             using (var oc = MediaMuxer.Create(filename))
-            using (var sws = new PixelConverter())
-            using (var swr = new SampleConverter())  /* create resampler context */
+            using (var sws = new Swscale())
+            using (var swr = new Swresample())  /* create resampler context */
             using (var vframe = new MediaFrame())
             using (var vtmpframe = new MediaFrame())
             using (var aframe = new MediaFrame())
@@ -131,7 +131,7 @@ namespace FFmpegSharp.Example
             return null;
         }
 
-        private static MediaFrame GetVideoFrame(MediaEncoder encoder, MediaFrame src, MediaFrame dst, PixelConverter sws, Parames vp)
+        private static MediaFrame GetVideoFrame(MediaEncoder encoder, MediaFrame src, MediaFrame dst, Swscale sws, Parames vp)
         {
             if (ffmpeg.av_compare_ts(vp.nextPts, encoder.Ref.time_base, STREAM_DURATION, 1d.ToRational()) > 0)
                 return null;
@@ -164,7 +164,7 @@ namespace FFmpegSharp.Example
             return frame;
         }
 
-        private static bool WriteAudioFrame(MediaMuxer oc, SampleConverter swr, MediaEncoder encoder, MediaFrame src, MediaFrame dst, Parames ap)
+        private static bool WriteAudioFrame(MediaMuxer oc, Swresample swr, MediaEncoder encoder, MediaFrame src, MediaFrame dst, Parames ap)
         {
             var f = GetAudioFrame(encoder, src, ap);
             var ret = false;
@@ -176,7 +176,7 @@ namespace FFmpegSharp.Example
             return ret;
         }
 
-        private static bool WriteVideoFrame(MediaMuxer oc, PixelConverter sws, MediaEncoder encoder, MediaFrame src, MediaFrame dst, Parames vp)
+        private static bool WriteVideoFrame(MediaMuxer oc, Swscale sws, MediaEncoder encoder, MediaFrame src, MediaFrame dst, Parames vp)
         {
             return WriteFrame(oc, encoder, GetVideoFrame(encoder, src, dst, sws, vp), 1);
         }

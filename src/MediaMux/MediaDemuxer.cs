@@ -14,7 +14,7 @@ namespace FFmpegSharp
         /// <summary>
         /// Get <see cref="AVInputFormat"/>
         /// </summary>
-        public InputFormat Format => new InputFormat(pFormatContext->iformat);
+        public MediaInputFormat Format => new MediaInputFormat(pFormatContext->iformat);
 
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
@@ -24,7 +24,7 @@ namespace FFmpegSharp
         /// <param name="stream"></param>
         /// <param name="iformat"></param>
         /// <param name="options"></param>
-        public static MediaDemuxer Open(Stream stream, InputFormat iformat = null, MediaDictionary options = null)
+        public static MediaDemuxer Open(Stream stream, MediaInputFormat iformat = null, MediaDictionary options = null)
         {
             var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768);
             var output = Open(null, iformat, options, fc =>
@@ -43,7 +43,7 @@ namespace FFmpegSharp
         /// <param name="iformat"></param>
         /// <param name="options"></param>
         /// <param name="beforeOpen"></param>
-        public static MediaDemuxer Open(string url, InputFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContext> beforeOpen = null)
+        public static MediaDemuxer Open(string url, MediaInputFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContext> beforeOpen = null)
         {
             var output = new MediaDemuxer();
             beforeOpen?.Invoke(output);

@@ -12,7 +12,7 @@ namespace CodeGenerator
     {
         private static void Main(string[] _)
         {
- 
+
             var types = new List<Info>
              {
                 new (){Type = typeof(AVCodec)},
@@ -21,8 +21,8 @@ namespace CodeGenerator
                 new (){Type = typeof(AVStream) },
                 new (){Type = typeof(AVFrame)  },
                 new (){Type = typeof(AVPacket) },
-                new (){Type = typeof(AVInputFormat), Name = "InputFormat" },
-                new (){Type = typeof(AVOutputFormat), Name = "OutputFormat" },
+                new (){Type = typeof(AVInputFormat) },
+                new (){Type = typeof(AVOutputFormat) },
                 new (){Type = typeof(AVFilter) },
                 new (){Type = typeof(AVFilterContext) },
                 new (){Type = typeof(AVFilterGraph) },

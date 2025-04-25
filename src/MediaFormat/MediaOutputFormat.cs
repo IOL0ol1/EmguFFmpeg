@@ -7,7 +7,7 @@ namespace FFmpegSharp
     /// <summary>
     /// <see cref="AVOutputFormat"/> wapper
     /// </summary>
-    public unsafe partial class OutputFormat
+    public unsafe partial class MediaOutputFormat
     {
 
         /// <summary>
@@ -24,9 +24,9 @@ namespace FFmpegSharp
         /// if non-NULL checks if mime_type matches with the MIME type of the registered formats
         /// </param>
         /// <returns></returns>
-        public static OutputFormat GuessFormat(string shortName, string fileName, string mimeType)
+        public static MediaOutputFormat GuessFormat(string shortName, string fileName, string mimeType)
         {
-            return new OutputFormat(ffmpeg.av_guess_format(shortName, fileName, mimeType));
+            return new MediaOutputFormat(ffmpeg.av_guess_format(shortName, fileName, mimeType));
         }
 
         /// <summary>
@@ -38,16 +38,16 @@ namespace FFmpegSharp
         /// or name matches with the MIME type of the registered formats
         /// </param>
         /// <returns></returns>
-        public static OutputFormat GuessFormat(string name)
+        public static MediaOutputFormat GuessFormat(string name)
         {
             if (name != null)
             {
                 var pFormat = ffmpeg.av_guess_format(name, null, null);
-                if (pFormat != null) return new OutputFormat(pFormat);
+                if (pFormat != null) return new MediaOutputFormat(pFormat);
                 pFormat = ffmpeg.av_guess_format(null, name, null);
-                if (pFormat != null) return new OutputFormat(pFormat);
+                if (pFormat != null) return new MediaOutputFormat(pFormat);
                 pFormat = ffmpeg.av_guess_format(null, null, name);
-                if (pFormat != null) return new OutputFormat(pFormat);
+                if (pFormat != null) return new MediaOutputFormat(pFormat);
             }
             return null;
         }
@@ -55,13 +55,13 @@ namespace FFmpegSharp
         /// <summary>
         /// Iterate over all registered muxers.
         /// </summary>
-        public static IEnumerable<OutputFormat> GetFormats()
+        public static IEnumerable<MediaOutputFormat> GetFormats()
         {
             IntPtr oformat;
             IntPtrPtr opaque = new IntPtrPtr();
             while ((oformat = av_muxer_iterate_safe(opaque)) != IntPtr.Zero)
             {
-                yield return new OutputFormat(oformat);
+                yield return new MediaOutputFormat(oformat);
             }
         }
 

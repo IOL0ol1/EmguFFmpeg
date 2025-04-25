@@ -4,7 +4,6 @@ using System.Linq;
 
 using FFmpeg.AutoGen.Abstractions;
 
-
 namespace FFmpegSharp
 {
     public unsafe partial class MediaFrame : IDisposable, ICloneable
@@ -14,7 +13,6 @@ namespace FFmpegSharp
         {
             disposedValue = leaveOpen;
         }
-
 
         /// <summary>
         /// <see cref="ffmpeg.av_frame_alloc()"/>
@@ -45,14 +43,20 @@ namespace FFmpegSharp
 
         public static MediaFrame CreateAudioFrame(AVChannelLayout channelLayout, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
         {
-            return CreateAudioFrame(channelLayout.nb_channels, nbSamples, format, sampleRate, align);
+            var f = new MediaFrame();
+            f.pFrame->format = (int)format;
+            f.pFrame->ch_layout = channelLayout;
+            f.pFrame->nb_samples = nbSamples;
+            f.pFrame->sample_rate = sampleRate;
+            f.AllocateBuffer(align);
+            return f;
         }
 
         public void AllocateBuffer(int align = 0)
         {
             ffmpeg.av_frame_get_buffer(pFrame, align).ThrowIfError();
         }
- 
+
         public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0;
         public bool IsVideoFrame => pFrame->width > 0 && pFrame->height > 0;
 
@@ -165,6 +169,7 @@ namespace FFmpegSharp
                 return result.ToArray();
             }
         }
+
         object ICloneable.Clone()
         {
             return Clone();
@@ -195,7 +200,6 @@ namespace FFmpegSharp
         public bool IsWriteable() => ffmpeg.av_frame_is_writable(pFrame).ThrowIfError() != 0;
 
         public int MakeWritable() => ffmpeg.av_frame_make_writable(pFrame).ThrowIfError();
-
 
         #region IDisposable Support
 

@@ -32,7 +32,7 @@ namespace FFmpegSharp.Example
                 ["stimeout"] = "3000000",
             })
             using (var demuxer = MediaDemuxer.Open(rtspUrl, options: options))
-            using (var convert = new PixelConverter()) // pixel converter for YUV => RGB
+            using (var convert = new Swscale()) // pixel converter for YUV => RGB
             {
                 MediaCodec codec = null;
                 var videoStreamIndex = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref codec); // find best video stream with codec.

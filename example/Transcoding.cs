@@ -18,7 +18,7 @@ namespace FFmpegSharp.Example
             var input = args[0];
             var output = args[1];
             using (var mr = MediaDemuxer.Open(File.OpenRead(input)))
-            using (var mw = MediaMuxer.Create(File.OpenWrite(output), OutputFormat.GuessFormat(null, output, null)))
+            using (var mw = MediaMuxer.Create(File.OpenWrite(output), MediaOutputFormat.GuessFormat(null, output, null)))
             {
                 MediaCodec a = null;
                 mr.FindBestStream(AVMediaType.AVMEDIA_TYPE_AUDIO, ref a);

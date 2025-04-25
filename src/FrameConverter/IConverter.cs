@@ -2,7 +2,7 @@
 
 namespace FFmpegSharp
 {
-    public interface IFrameConverter
+    public interface IConverter
     {
 
         IEnumerable<MediaFrame> Convert(MediaFrame srcframe, MediaFrame dstframe = null);

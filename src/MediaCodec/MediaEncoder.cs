@@ -9,7 +9,7 @@ namespace FFmpegSharp
     {
         #region Video
         public static MediaEncoder CreateVideoEncoder(
-            OutputFormat format,
+            MediaOutputFormat format,
             int width,
             int height,
             AVRational frameRate,
@@ -82,7 +82,7 @@ namespace FFmpegSharp
         }
 
         public static MediaEncoder CreateVideoEncoder(
-            OutputFormat format,
+            MediaOutputFormat format,
             int width,
             int height,
             double fps,
@@ -154,7 +154,7 @@ namespace FFmpegSharp
         #region Audio
 
         public static MediaEncoder CreateAudioEncoder(
-            OutputFormat format,
+            MediaOutputFormat format,
             int sampleRate,
             AVChannelLayout chLayout,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
@@ -181,7 +181,7 @@ namespace FFmpegSharp
         }
 
         public static MediaEncoder CreateAudioEncoder(
-            OutputFormat format,
+            MediaOutputFormat format,
             int sampleRate,
             int nbChannels,
             AVSampleFormat sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_NONE,
