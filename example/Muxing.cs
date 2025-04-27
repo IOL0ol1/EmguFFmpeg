@@ -16,7 +16,7 @@ namespace FFmpegSharp.Example
 
         private const long STREAM_DURATION = 10;
 
-        public unsafe override void Execute()
+        public override unsafe void Execute()
         {
             var filename = args[0];
 
@@ -44,6 +44,7 @@ namespace FFmpegSharp.Example
                     encode_audio = true;
 
                     var nbsamples = (encoder.Ref.codec->capabilities & ffmpeg.AV_CODEC_CAP_VARIABLE_FRAME_SIZE) != 0 ? 10000 : encoder.Ref.frame_size;
+
                     swr.SetOpts(encoder.Ref.ch_layout, encoder.Ref.sample_rate, encoder.Ref.sample_fmt, nbsamples);
 
                     // src
@@ -88,7 +89,6 @@ namespace FFmpegSharp.Example
                 oc.WriteTrailer();
                 encoders.ForEach(_ => _?.Dispose());
             }
-
         }
 
         private static MediaEncoder AddStream(MediaMuxer oc, MediaCodec codec, AVMediaType mediaType, Parames p)
@@ -108,6 +108,7 @@ namespace FFmpegSharp.Example
                     /* increment frequency by 110 Hz per second */
                     p.tincr2 = 2 * Math.PI * 110.0 / aencoder.Ref.sample_rate / aencoder.Ref.sample_rate;
                     return aencoder;
+
                 case AVMediaType.AVMEDIA_TYPE_VIDEO:
                     var vbitrate = 400000;
                     var width = 352;
@@ -125,6 +126,7 @@ namespace FFmpegSharp.Example
                     });
                     oc.AddStream(vencoder).Ref.id = (int)oc.Ref.nb_streams - 1;
                     return vencoder;
+
                 default:
                     break;
             }
@@ -136,7 +138,7 @@ namespace FFmpegSharp.Example
             if (ffmpeg.av_compare_ts(vp.nextPts, encoder.Ref.time_base, STREAM_DURATION, 1d.ToRational()) > 0)
                 return null;
             FillYuvImage(src, (int)vp.nextPts, encoder.Ref.width, encoder.Ref.height);
-            var o = (int)encoder.Ref.pix_fmt == src.Ref.format ? src: sws.Convert(src, dst).First();
+            var o = (int)encoder.Ref.pix_fmt == src.Ref.format ? src : sws.Convert(src, dst).First();
             o.Ref.pts = vp.nextPts;
             vp.nextPts += 1;
             return o;
@@ -193,20 +195,18 @@ namespace FFmpegSharp.Example
             return frame == null ? false : true;
         }
 
-
         /// <summary>
-        /// Prepare a dummy image. 
+        /// Prepare a dummy image.
         /// </summary>
         /// <param name="pict"></param>
         /// <param name="frame_index"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        private unsafe static void FillYuvImage(MediaFrame pict, int frame_index, int width, int height)
+        private static unsafe void FillYuvImage(MediaFrame pict, int frame_index, int width, int height)
         {
             int x, y, i;
 
             i = frame_index;
-
 
             unchecked
             {
@@ -234,6 +234,5 @@ namespace FFmpegSharp.Example
             public double tincr2 { get; set; }
             public long nextPts { get; set; }
         }
-
     }
 }

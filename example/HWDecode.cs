@@ -10,7 +10,6 @@ namespace FFmpegSharp.Example
     {
         public HWDecode() : base("d3d11va", "video-input.mp4", "HWDecode-output.bin")
         {
-             
         }
 
         public override void Execute()
@@ -33,32 +32,33 @@ namespace FFmpegSharp.Example
                     _.Ref.thread_count = 10;
                     _.InitHWDeviceContext(deviceType);
                 });
-                convert.SetOpts(vDecoder.Ref.width, vDecoder.Ref.height, AVPixelFormat.AV_PIX_FMT_BGR24);
-                foreach (var p in demuxer.ReadPackets(packet))
-                {
-                    if (p.Ref.stream_index == video_stream)
-                    { 
-                        foreach (var inFrame in vDecoder.DecodePacket(p, frame, sw_frame))
+                using (var f = MediaFrame.CreateVideoFrame(vDecoder.Ref.width, vDecoder.Ref.height, AVPixelFormat.AV_PIX_FMT_BGR24))
+                    //convert.SetOpts(vDecoder.Ref.width, vDecoder.Ref.height, AVPixelFormat.AV_PIX_FMT_BGR24);
+                    foreach (var p in demuxer.ReadPackets(packet))
+                    {
+                        if (p.Ref.stream_index == video_stream)
                         {
-                            Write(output_file, inFrame);
-                            foreach (var outFrame in convert.Convert(inFrame))
+                            foreach (var inFrame in vDecoder.DecodePacket(p, frame, sw_frame))
                             {
-                                using (var mat = new Mat(outFrame.Ref.height, outFrame.Ref.width, MatType.CV_8UC3))
+                                Write(output_file, inFrame);
+                                foreach (var outFrame in convert.Convert(inFrame, f))
                                 {
-                                    var srcLineSize = outFrame.Ref.linesize[0];
-                                    var dstLineSize = (int)mat.Step();
-                                    FFmpegUtil.CopyPlane((IntPtr)outFrame.Ref.data[0], srcLineSize,
-                                        mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
-                                    if (inFrame.Ref.pkt_dts >= 0)
+                                    using (var mat = new Mat(outFrame.Ref.height, outFrame.Ref.width, MatType.CV_8UC3))
                                     {
-                                        var outputFolder = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(inputFile), "HWDecode")).FullName;
-                                        mat.SaveImage(Path.Combine(outputFolder, $"{demuxer[video_stream].ToTimeSpan(inFrame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
+                                        var srcLineSize = outFrame.Ref.linesize[0];
+                                        var dstLineSize = (int)mat.Step();
+                                        FFmpegUtil.CopyPlane((IntPtr)outFrame.Ref.data[0], srcLineSize,
+                                            mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
+                                        if (inFrame.Ref.pkt_dts >= 0)
+                                        {
+                                            var outputFolder = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(inputFile), "HWDecode")).FullName;
+                                            mat.SaveImage(Path.Combine(outputFolder, $"{demuxer[video_stream].ToTimeSpan(inFrame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
                 /* flush the decoder */
                 foreach (var f in vDecoder.DecodePacket(null, frame, sw_frame))
                 {

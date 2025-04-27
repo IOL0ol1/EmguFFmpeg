@@ -17,7 +17,7 @@ namespace FFmpegSharp.Example
             Index = -9999;
         }
 
-        public unsafe override void Execute()
+        public override unsafe void Execute()
         {
             var rtspUrl = args[0];
 
@@ -37,15 +37,15 @@ namespace FFmpegSharp.Example
                 MediaCodec codec = null;
                 var videoStreamIndex = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref codec); // find best video stream with codec.
                 using (var videoDecoder = MediaDecoder.CreateDecoder(demuxer[videoStreamIndex].CodecparRef, _ => { _.Ref.thread_count = 10; }/* multi thread */ ))
+                using (var f = MediaFrame.CreateVideoFrame(videoDecoder.Ref.width, videoDecoder.Ref.height, AVPixelFormat.AV_PIX_FMT_BGR24))
                 {
-                    convert.SetOpts(videoDecoder.Ref.width, videoDecoder.Ref.height, AVPixelFormat.AV_PIX_FMT_BGR24);
                     foreach (var packet in demuxer.ReadPackets())
                     {
                         if (packet.Ref.stream_index == videoStreamIndex)
                         {
                             foreach (var decodeFrame in videoDecoder.DecodePacket(packet))
                             {
-                                foreach (var outFrame in convert.Convert(decodeFrame))
+                                foreach (var outFrame in convert.Convert(decodeFrame, f))
                                 {
                                     // use OpenCV mat write to file(or Bitmap)
                                     using (var mat = new Mat(outFrame.Ref.height, outFrame.Ref.width, MatType.CV_8UC3))
@@ -64,14 +64,8 @@ namespace FFmpegSharp.Example
                             }
                         }
                     }
-
-
                 }
             }
-
-
-
-
         }
     }
 }
