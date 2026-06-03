@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup> 
-    <PackageReference Include="OpenCvSharp4" Version="[4.10.0.20241108,)" />
+    <PackageReference Include="FFmpeg.AutoGen" Version="8.1.0" /> 
+    <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260602" />
   </ItemGroup>
 
   <ItemGroup>

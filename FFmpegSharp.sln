@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.3.32804.467
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11822.322 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{135E7F95-93BF-49D7-A978-21E998E962E5}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FFmpegSharp", "src\FFmpegSharp.csproj", "{DFBF4767-FCFF-4FBB-94A4-69F60AFD3377}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FFmpegSharp.Example", "example\FFmpegSharp.Example.csproj", "{F34C67A5-B60A-476C-9097-6FF89A3E567F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFmpeg.AutoGen.OpenCvSharp4", "FFmpeg.AutoGen.OpenCvSharp4\FFmpeg.AutoGen.OpenCvSharp4.csproj", "{CE930259-9FB6-3942-5683-0450FBCFF468}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,14 @@ Global
 		{F34C67A5-B60A-476C-9097-6FF89A3E567F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F34C67A5-B60A-476C-9097-6FF89A3E567F}.Release|x64.ActiveCfg = Release|x64
 		{F34C67A5-B60A-476C-9097-6FF89A3E567F}.Release|x64.Build.0 = Release|x64
+		{CE930259-9FB6-3942-5683-0450FBCFF468}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE930259-9FB6-3942-5683-0450FBCFF468}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE930259-9FB6-3942-5683-0450FBCFF468}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CE930259-9FB6-3942-5683-0450FBCFF468}.Debug|x64.Build.0 = Debug|Any CPU
+		{CE930259-9FB6-3942-5683-0450FBCFF468}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE930259-9FB6-3942-5683-0450FBCFF468}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE930259-9FB6-3942-5683-0450FBCFF468}.Release|x64.ActiveCfg = Release|Any CPU
+		{CE930259-9FB6-3942-5683-0450FBCFF468}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
