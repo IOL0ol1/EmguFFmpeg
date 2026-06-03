@@ -1,5 +1,5 @@
-﻿using System;
-using System.IO;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using FFmpeg.AutoGen;
 
@@ -8,15 +8,23 @@ namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaCodecContext : IDisposable
     {
-        private bool disposedValue = true;
+        // Default `false` (owned). The (ptr, leaveOpen) ctor flips to `true` for borrowed pointers.
+        // Historical bug (fixed): this was `true`, which made every raw-pointer ctor silently leak the codec context.
+        private bool disposedValue;
 
         public static MediaCodecContext Open(MediaCodec codec, Action<MediaCodecContext> beforeOpenSetting, MediaDictionary opts = null)
         {
             var output = new MediaCodecContext(codec);
             beforeOpenSetting?.Invoke(output);
-            var tmp = opts ?? new MediaDictionary();
-            fixed (AVDictionary** pOpts = &tmp.pDictionary)
-                ffmpeg.avcodec_open2(output, codec, opts == null ? null : pOpts).ThrowIfError();
+            if (opts == null)
+            {
+                ffmpeg.avcodec_open2(output, codec, null).ThrowIfError();
+            }
+            else
+            {
+                fixed (AVDictionary** pOpts = &opts.pDictionary)
+                    ffmpeg.avcodec_open2(output, codec, pOpts).ThrowIfError();
+            }
             return output;
         }
 
@@ -41,8 +49,8 @@ namespace FFmpeg.Sharp
                     {
                         ffmpeg.avcodec_free_context(ppCodecContext);
                     }
-                    disposedValue = true;
                 }
+                disposedValue = true;
             }
         }
 
@@ -63,97 +71,203 @@ namespace FFmpeg.Sharp
     {
         public MediaCodec GetCodec() => pCodecContext->codec == null ? null : new MediaCodec(pCodecContext->codec);
 
-        /// 
-        /// The codec supports this format via the hw_device_ctx interface.
-        /// 
-        /// When selecting this format, AVCodecContext.hw_device_ctx should
-        /// have been set to a device of the specified type before calling
-        /// avcodec_open2().
-        /// 
-        private const int AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX = 0x01;
-        /// The codec supports this format via the hw_frames_ctx interface.
-        /// 
-        /// When selecting this format for a decoder,
-        /// AVCodecContext.hw_frames_ctx should be set to a suitable frames
-        /// context inside the get_format() callback.  The frames context
-        /// must have been created on a device of the specified type.
-        /// 
-        /// When selecting this format for an encoder,
-        /// AVCodecContext.hw_frames_ctx should be set to the context which
-        /// will be used for the input frames before calling avcodec_open2().
-        private const int AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX = 0x02;
-        /// 
-        /// The codec supports this format by some internal method.
-        /// 
-        /// This format can be selected without any additional configuration -
-        /// no device or frames context is required.
-        /// 
-        private const int AV_CODEC_HW_CONFIG_METHOD_INTERNAL = 0x04;
-        /// 
-        /// The codec supports this format by some ad-hoc method.
-        /// 
-        /// Additional settings and/or function calls are required.  See the
-        /// codec-specific documentation for details.  (Methods requiring
-        /// this sort of configuration are deprecated and others should be
-        /// used in preference.)
-        /// 
-        private const int AV_CODEC_HW_CONFIG_METHOD_AD_HOC = 0x08;
+        /// <summary>True if avcodec_open2 has been called on this context.</summary>
+        public bool IsOpen => ffmpeg.avcodec_is_open(pCodecContext) != 0;
 
         /// <summary>
-        /// 
+        /// Number of worker threads for parallel codec processing. 0 = auto.
+        /// Set BEFORE <c>avcodec_open2</c> (i.e. inside the <c>beforeOpenSetting</c> callback).
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="device"></param>
-        /// <param name="opts"></param>
-        /// <param name="flags"></param>
-        public int InitHWDeviceContext(AVHWDeviceType? type = null, string device = null, MediaDictionary opts = null, int flags = 0)
+        public int ThreadCount
         {
-            if (type != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE && pCodecContext->codec != null && pCodecContext->hw_device_ctx == null)
+            get => pCodecContext->thread_count;
+            set => pCodecContext->thread_count = value;
+        }
+
+        /// <summary>
+        /// Threading model: bitwise OR of <c>FF_THREAD_FRAME</c> (parallel frames, ~50ms latency) and
+        /// <c>FF_THREAD_SLICE</c> (parallel slices, low latency). Default 0 leaves FFmpeg to pick.
+        /// </summary>
+        public int ThreadType
+        {
+            get => pCodecContext->thread_type;
+            set => pCodecContext->thread_type = value;
+        }
+
+        /// <summary>Threading model actually negotiated after open.</summary>
+        public int ActiveThreadType => pCodecContext->active_thread_type;
+
+        // AVCodecHWConfig.methods bit flags (copied here so users can reference them by name).
+        public const int AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX = 0x01;
+        public const int AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX = 0x02;
+        public const int AV_CODEC_HW_CONFIG_METHOD_INTERNAL = 0x04;
+        public const int AV_CODEC_HW_CONFIG_METHOD_AD_HOC = 0x08;
+
+        // We keep the chosen HW pixel format as an instance field rather than capturing it in a closure —
+        // the field is then read by the static get_format trampoline without per-call allocation.
+        private AVPixelFormat _hwPixFmt = AVPixelFormat.AV_PIX_FMT_NONE;
+        // Static delegate instance, assigned once. Kept as instance field to be safe-from-collection,
+        // and the AVCodecContext.get_format function pointer is derived from this exact delegate.
+        private AVCodecContext_get_format _getFormatDelegate;
+        // Whether to fall back to a software pixel format if the negotiated HW format isn't offered by the codec.
+        private bool _hwFallbackToSw;
+
+        /// <summary>
+        /// Initialize hardware acceleration on this codec context.
+        /// <para>
+        /// Walks the codec's HW configs and picks the first one matching <paramref name="type"/> that supports
+        /// any of <c>HW_DEVICE_CTX</c>, <c>HW_FRAMES_CTX</c>, or <c>INTERNAL</c> methods, then creates the
+        /// corresponding <see cref="ffmpeg.av_hwdevice_ctx_create"/> and wires the <c>get_format</c> callback.
+        /// </para>
+        /// </summary>
+        /// <param name="type">Device type. Pass <see langword="null"/> to auto-pick the first available.</param>
+        /// <param name="device">Optional device specifier (e.g. "/dev/dri/renderD128" for VAAPI, "0" for CUDA index).</param>
+        /// <param name="opts">Device-creation options.</param>
+        /// <param name="flags">Reserved (currently ignored by FFmpeg).</param>
+        /// <param name="fallbackToSw">When <see langword="true"/>, the get_format callback will fall back to the first SW format if no HW format is offered.</param>
+        /// <returns>The HW config method that matched (<c>HW_DEVICE_CTX</c>/<c>HW_FRAMES_CTX</c>/<c>INTERNAL</c>), or 0 if nothing matched.</returns>
+        public int InitHWDeviceContext(AVHWDeviceType? type = null, string device = null, MediaDictionary opts = null, int flags = 0, bool fallbackToSw = false)
+        {
+            if (pCodecContext == null) throw new InvalidOperationException("Codec context is not allocated.");
+            if (pCodecContext->codec == null) throw new InvalidOperationException("Set the codec before calling InitHWDeviceContext.");
+            if (type == AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
+                throw new ArgumentException("Pass null for auto-detect, not AV_HWDEVICE_TYPE_NONE.", nameof(type));
+            if (pCodecContext->hw_device_ctx != null)
+                return 0; // already initialised
+
+            var codec = new MediaCodec(pCodecContext->codec);
+            const int wantedMask = AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX
+                                 | AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX
+                                 | AV_CODEC_HW_CONFIG_METHOD_INTERNAL;
+            AVCodecHWConfig? chosen = codec.GetHWConfigs()
+                .Select(c => (AVCodecHWConfig?)c)
+                .FirstOrDefault(c => (type == null || c.Value.device_type == type.Value) && (c.Value.methods & wantedMask) != 0);
+            if (chosen == null) return 0;
+
+            var cfg = chosen.Value;
+            _hwPixFmt = cfg.pix_fmt;
+            _hwFallbackToSw = fallbackToSw;
+
+            // HW_DEVICE_CTX path: create a device and let the get_format callback select the HW pix_fmt.
+            if ((cfg.methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) != 0)
             {
-                var codec = new MediaCodec(pCodecContext->codec);
-
-                if (codec.GetHWConfigs().Select(hw => (AVCodecHWConfig?)hw)
-                    .FirstOrDefault(hw => (type == null || hw.Value.device_type == type) && (hw.Value.methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) != 0) is AVCodecHWConfig hWConfig)
+                AVBufferRef* deviceRef = null;
+                if (opts == null)
                 {
-                    ffmpeg.av_hwdevice_ctx_create(&pCodecContext->hw_device_ctx, hWConfig.device_type, device, opts, flags).ThrowIfError();
-                    GetFormatFunc = (avctx, pix_fmts) => GetFormat(avctx, pix_fmts, hWConfig.pix_fmt);
-                    pCodecContext->get_format = GetFormatFunc;
+                    ffmpeg.av_hwdevice_ctx_create(&deviceRef, cfg.device_type, device, null, flags).ThrowIfError();
                 }
+                else
+                {
+                    fixed (AVDictionary** pOpts = &opts.pDictionary)
+                        ffmpeg.av_hwdevice_ctx_create(&deviceRef, cfg.device_type, device, *pOpts, flags).ThrowIfError();
+                }
+                pCodecContext->hw_device_ctx = deviceRef;
+                _getFormatDelegate = GetFormatInstance;
+                pCodecContext->get_format = _getFormatDelegate;
+                return AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX;
             }
-            return IsHWDeviceCtxInit() ? AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX : 0;
+            // FRAMES_CTX-only path: caller is expected to supply hw_frames_ctx (e.g. via filter graph). We still wire get_format.
+            if ((cfg.methods & AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX) != 0)
+            {
+                _getFormatDelegate = GetFormatInstance;
+                pCodecContext->get_format = _getFormatDelegate;
+                return AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX;
+            }
+            // INTERNAL path: codec handles it without device/frames context. No further setup needed.
+            return AV_CODEC_HW_CONFIG_METHOD_INTERNAL;
         }
 
-        public int InitHWDeviceContext(string typeName, string device = null, MediaDictionary opts = null, int flags = 0)
+        /// <summary>String-name overload that resolves the device type via <see cref="ffmpeg.av_hwdevice_find_type_by_name"/>.</summary>
+        public int InitHWDeviceContext(string typeName, string device = null, MediaDictionary opts = null, int flags = 0, bool fallbackToSw = false)
         {
-            var type = typeName == null ? (AVHWDeviceType?)null : ffmpeg.av_hwdevice_find_type_by_name(typeName);
-            return InitHWDeviceContext(type, device, opts, flags);
+            if (typeName == null) return InitHWDeviceContext((AVHWDeviceType?)null, device, opts, flags, fallbackToSw);
+            var resolved = ffmpeg.av_hwdevice_find_type_by_name(typeName);
+            if (resolved == AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
+                throw new ArgumentException($"Unknown HW device type '{typeName}'. Use ffmpeg.av_hwdevice_get_type_name() to enumerate.", nameof(typeName));
+            return InitHWDeviceContext(resolved, device, opts, flags, fallbackToSw);
         }
 
-        protected bool IsHWDeviceCtxInit() => pCodecContext->hw_device_ctx != null;
+        /// <summary>
+        /// Attach an externally-created <see cref="AVBufferRef"/> as this codec's HW device context.
+        /// The buffer is internally av_buffer_ref'd, so the caller retains ownership of its own reference.
+        /// Use this to share a single device across decoder/encoder/filter graph.
+        /// </summary>
+        public void AttachHWDevice(AVBufferRef* deviceRef)
+        {
+            if (pCodecContext == null) throw new InvalidOperationException("Codec context is not allocated.");
+            if (deviceRef == null) throw new ArgumentNullException(nameof(deviceRef));
+            if (pCodecContext->hw_device_ctx != null)
+                ffmpeg.av_buffer_unref(&pCodecContext->hw_device_ctx);
+            pCodecContext->hw_device_ctx = ffmpeg.av_buffer_ref(deviceRef);
+            _getFormatDelegate = GetFormatInstance;
+            pCodecContext->get_format = _getFormatDelegate;
+        }
 
-        protected void HWFrameTransferData(MediaFrame dst, MediaFrame src, int flags = 0)
+        /// <summary>
+        /// Attach an externally-created hw_frames_ctx (required for HW encoding, optional for HW decoding).
+        /// </summary>
+        public void AttachHWFramesContext(AVBufferRef* framesRef)
+        {
+            if (pCodecContext == null) throw new InvalidOperationException("Codec context is not allocated.");
+            if (framesRef == null) throw new ArgumentNullException(nameof(framesRef));
+            if (pCodecContext->hw_frames_ctx != null)
+                ffmpeg.av_buffer_unref(&pCodecContext->hw_frames_ctx);
+            pCodecContext->hw_frames_ctx = ffmpeg.av_buffer_ref(framesRef);
+        }
+
+        /// <summary>Get a borrowed pointer to the codec's hw_device_ctx, or null if not set.</summary>
+        public AVBufferRef* GetHWDeviceRef() => pCodecContext == null ? null : pCodecContext->hw_device_ctx;
+        /// <summary>Get a borrowed pointer to the codec's hw_frames_ctx, or null if not set.</summary>
+        public AVBufferRef* GetHWFramesRef() => pCodecContext == null ? null : pCodecContext->hw_frames_ctx;
+
+        public bool IsHWDeviceCtxInit() => pCodecContext != null && pCodecContext->hw_device_ctx != null;
+
+        /// <summary>
+        /// Transfer data from a HW frame to a SW frame (download), or from SW to HW (upload), depending on which side
+        /// has hw_frames_ctx set.
+        /// </summary>
+        public static void HWFrameTransferData(MediaFrame dst, MediaFrame src, int flags = 0)
         {
             ffmpeg.av_hwframe_transfer_data(dst, src, flags).ThrowIfError();
         }
 
-        private AVCodecContext_get_format GetFormatFunc;
-
-        private static AVPixelFormat GetFormat(AVCodecContext* avctx, AVPixelFormat* pix_fmts, AVPixelFormat hw_pix_fmts)
+        /// <summary>
+        /// Enumerate the pixel formats supported for hwframe transfer in the given direction for <paramref name="hwFrame"/>'s frames ctx.
+        /// </summary>
+        public static AVPixelFormat[] HWFrameTransferGetFormats(MediaFrame hwFrame, AVHWFrameTransferDirection direction)
         {
-            while (*pix_fmts != AVPixelFormat.AV_PIX_FMT_NONE)
+            if (hwFrame == null) throw new ArgumentNullException(nameof(hwFrame));
+            AVFrame* f = hwFrame;
+            if (f->hw_frames_ctx == null) return Array.Empty<AVPixelFormat>();
+            AVPixelFormat* p = null;
+            ffmpeg.av_hwframe_transfer_get_formats(f->hw_frames_ctx, direction, &p, 0).ThrowIfError();
+            try
             {
-                if (*pix_fmts == hw_pix_fmts)
-                {
-                    return *pix_fmts;
-                }
-                pix_fmts++;
+                int n = 0;
+                while (p[n] != AVPixelFormat.AV_PIX_FMT_NONE) n++;
+                var arr = new AVPixelFormat[n];
+                for (int i = 0; i < n; i++) arr[i] = p[i];
+                return arr;
             }
-            return AVPixelFormat.AV_PIX_FMT_NONE;
+            finally { ffmpeg.av_freep(&p); }
         }
 
+        // Instance get_format callback: scan the offered formats, pick our HW one; optionally fall back to first SW format.
+        private AVPixelFormat GetFormatInstance(AVCodecContext* avctx, AVPixelFormat* pix_fmts)
+        {
+            AVPixelFormat firstSw = AVPixelFormat.AV_PIX_FMT_NONE;
+            for (AVPixelFormat* p = pix_fmts; *p != AVPixelFormat.AV_PIX_FMT_NONE; p++)
+            {
+                if (*p == _hwPixFmt) return *p;
+                // Track first SW format as fallback candidate. SW formats are identified by absence of HWACCEL flag.
+                if (firstSw == AVPixelFormat.AV_PIX_FMT_NONE)
+                {
+                    var desc = ffmpeg.av_pix_fmt_desc_get(*p);
+                    if (desc != null && (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) == 0)
+                        firstSw = *p;
+                }
+            }
+            return _hwFallbackToSw && firstSw != AVPixelFormat.AV_PIX_FMT_NONE ? firstSw : AVPixelFormat.AV_PIX_FMT_NONE;
+        }
     }
-
-
-
 }
-

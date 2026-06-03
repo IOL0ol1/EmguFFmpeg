@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+using System;
 using System.IO;
 using FFmpeg.AutoGen;
 using OpenCvSharp;
@@ -10,7 +9,7 @@ namespace FFmpeg.Sharp.Example
     {
         public HWDecode() : base("d3d11va", "video-input.mp4", "HWDecode-output.bin")
         {
-             
+
         }
 
         public override void Execute()
@@ -29,30 +28,31 @@ namespace FFmpeg.Sharp.Example
             {
                 MediaCodec decoder = null;
                 var video_stream = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref decoder);
-                var vDecoder = MediaDecoder.CreateDecoder(demuxer[video_stream].CodecparRef, _ =>
+                using (var vDecoder = MediaDecoder.CreateDecoder(demuxer[video_stream].CodecparRef, _ =>
                 {
                     _.Ref.thread_count = 10;
                     _.InitHWDeviceContext(deviceType);
-                });
-                // pre-allocate dst frame; Swscale.Convert auto-Resets on first call from frame metadata.
-                convertDst.Ref.width = vDecoder.Ref.width;
-                convertDst.Ref.height = vDecoder.Ref.height;
-                convertDst.Ref.format = (int)AVPixelFormat.AV_PIX_FMT_BGR24;
-                convertDst.AllocateBuffer();
-                foreach (var p in demuxer.ReadPackets(packet))
+                }))
                 {
-                    if (p.Ref.stream_index == video_stream)
+                    // pre-allocate dst frame; Swscale.Convert auto-Resets on first call from frame metadata.
+                    convertDst.Ref.width = vDecoder.Ref.width;
+                    convertDst.Ref.height = vDecoder.Ref.height;
+                    convertDst.Ref.format = (int)AVPixelFormat.AV_PIX_FMT_BGR24;
+                    convertDst.AllocateBuffer();
+
+                    foreach (var p in demuxer.ReadPackets(packet))
                     {
-                        foreach (var inFrame in vDecoder.DecodePacket(p, frame, sw_frame))
+                        if (p.Ref.stream_index == video_stream)
                         {
-                            Write(output_file, inFrame);
-                            foreach (var outFrame in convert.Convert(inFrame, convertDst))
+                            foreach (var inFrame in vDecoder.DecodePacket(p, frame, sw_frame))
                             {
-                                using (var mat = new Mat(outFrame.Ref.height, outFrame.Ref.width, MatType.CV_8UC3))
+                                Write(output_file, inFrame);
+                                convert.Convert(inFrame, convertDst);
+                                using (var mat = new Mat(convertDst.Ref.height, convertDst.Ref.width, MatType.CV_8UC3))
                                 {
-                                    var srcLineSize = outFrame.Ref.linesize[0];
+                                    var srcLineSize = convertDst.Ref.linesize[0];
                                     var dstLineSize = (int)mat.Step();
-                                    FFmpegUtil.CopyPlane((IntPtr)outFrame.Ref.data[0], srcLineSize,
+                                    FFmpegUtil.CopyPlane((IntPtr)convertDst.Ref.data[0], srcLineSize,
                                         mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
                                     if (inFrame.Ref.pkt_dts >= 0)
                                     {
@@ -63,25 +63,40 @@ namespace FFmpeg.Sharp.Example
                             }
                         }
                     }
-                }
-                /* flush the decoder */
-                foreach (var f in vDecoder.DecodePacket(null, frame, sw_frame))
-                {
-                    Write(output_file, f);
+                    /* flush the decoder */
+                    foreach (var f in vDecoder.DecodePacket(null, frame, sw_frame))
+                    {
+                        Write(output_file, f);
+                    }
                 }
             }
         }
 
+        // Write a raw image plane using the zero-allocation Span overload on MediaFrame.
         private static unsafe void Write(Stream stream, MediaFrame f)
         {
-            var size = ffmpeg.av_image_get_buffer_size((AVPixelFormat)f.Ref.format, f.Ref.width, f.Ref.height, 1);
-            var buffer = (byte*)ffmpeg.av_malloc((ulong)size);
-            var srcData = new byte_ptrArray4();
-            srcData.UpdateFrom(f.Ref.data);
-            var srcLinesize = new int_array4();
-            srcLinesize.UpdateFrom(f.Ref.linesize);
-            var ret = ffmpeg.av_image_copy_to_buffer(buffer, size, srcData, srcLinesize, (AVPixelFormat)f.Ref.format, f.Ref.width, f.Ref.height, 1);
-            stream.Write(new System.ReadOnlySpan<byte>(buffer, ret));
+            int size = f.GetBytesSize(padding: false);
+            // For modest image sizes stackalloc is fine; for HD+ rent from ArrayPool.
+            const int stackBudget = 256 * 1024;
+            if (size <= stackBudget)
+            {
+                Span<byte> buf = stackalloc byte[size];
+                int written = f.GetBytes(buf, padding: false);
+                stream.Write(buf.Slice(0, written));
+            }
+            else
+            {
+                var rented = System.Buffers.ArrayPool<byte>.Shared.Rent(size);
+                try
+                {
+                    int written = f.GetBytes(rented.AsSpan(0, size), padding: false);
+                    stream.Write(rented, 0, written);
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(rented);
+                }
+            }
         }
     }
 }

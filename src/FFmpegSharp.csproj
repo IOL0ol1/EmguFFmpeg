@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;netstandard2.1;</TargetFrameworks> 
+        <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net8.0;</TargetFrameworks>
+        <LangVersion>latest</LangVersion>
         <PackageId>FFmpeg4Sharp</PackageId>
         <Description>
-            A FFmpeg.AutoGen Warpper Library.
+            A FFmpeg.AutoGen wrapper library.
         </Description>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -17,15 +18,25 @@
         <PackageIcon>icon.png</PackageIcon>
         <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet ffmpeg4sharp FFmpeg.Sharp</PackageTags>
         <RepositoryType>git</RepositoryType>
-        <Version>8.0.0</Version>
-        <NoWarn>1701;1702;1591</NoWarn>
+        <Version>8.1.0</Version>
+        <NoWarn>1701;1702;1591;CA1822;IDE0011;IDE0055</NoWarn>
+
+        <!-- Deterministic builds + symbol packages for stepping into wrapper source from a debugger. -->
+        <Deterministic>true</Deterministic>
+        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' OR '$(APPVEYOR)' == 'True'">true</ContinuousIntegrationBuild>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-        <Platforms>AnyCPU;x64</Platforms>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FFmpeg.AutoGen" Version="8.1.0" />
+        <PackageReference Include="FFmpeg.AutoGen" Version="[8.1.0,9.0.0)" />
         <PackageReference Include="System.Memory" Version="4.5.5" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
     </ItemGroup>
 
     <ItemGroup>

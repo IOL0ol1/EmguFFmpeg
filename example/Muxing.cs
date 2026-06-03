@@ -123,7 +123,7 @@ namespace FFmpeg.Sharp.Example
             switch (mediaType)
             {
                 case AVMediaType.AVMEDIA_TYPE_AUDIO:
-                    var samplefmt = codec.GetSampelFmts().Any() ? codec.GetSampelFmts().First() : AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+                    var samplefmt = codec.GetSampleFormats().Any() ? codec.GetSampleFormats().First() : AVSampleFormat.AV_SAMPLE_FMT_FLTP;
                     var bitrate = 64000;
                     var samplerate = codec.GetSupportedSamplerates().Any() ? codec.GetSupportedSamplerates().First() : 44100;
                     var chlayout = codec.GetChLayouts().Any() ? codec.GetChLayouts().First() : 2.ToDefaultChLayout();
@@ -162,7 +162,16 @@ namespace FFmpeg.Sharp.Example
             if (ffmpeg.av_compare_ts(vp.nextPts, encoder.Ref.time_base, STREAM_DURATION, 1d.ToRational()) > 0)
                 return null;
             FillYuvImage(src, (int)vp.nextPts, encoder.Ref.width, encoder.Ref.height);
-            var o = (int)encoder.Ref.pix_fmt == src.Ref.format ? src : sws.Convert(src, dst).First();
+            MediaFrame o;
+            if ((int)encoder.Ref.pix_fmt == src.Ref.format)
+            {
+                o = src;
+            }
+            else
+            {
+                sws.Convert(src, dst);
+                o = dst;
+            }
             o.Ref.pts = vp.nextPts;
             vp.nextPts += 1;
             return o;
@@ -194,7 +203,16 @@ namespace FFmpeg.Sharp.Example
         {
             var f = GetAudioFrame(encoder, src, ap);
             var ret = false;
-            var a = f != null && (int)encoder.Ref.sample_fmt == f.Ref.format ? new[] { f } : swr.Convert(f, dst);
+            MediaFrame[] a;
+            if (f != null && (int)encoder.Ref.sample_fmt == f.Ref.format)
+            {
+                a = new[] { f };
+            }
+            else
+            {
+                swr.Convert(f, dst);
+                a = new[] { dst };
+            }
             foreach (var item in a)
             {
                 ret = WriteFrame(oc, encoder, item, 0);

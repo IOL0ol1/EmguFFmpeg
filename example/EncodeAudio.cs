@@ -27,7 +27,7 @@ namespace FFmpeg.Sharp.Example
                 var sampleRate = select_sample_rate(codec);
                 var chLayout = select_channel_layout(codec);
                 var sampleFmt = AVSampleFormat.AV_SAMPLE_FMT_S16;
-                if (!codec.GetSampelFmts().Any(_1 => _1 == AVSampleFormat.AV_SAMPLE_FMT_S16))
+                if (!codec.GetSampleFormats().Any(_1 => _1 == AVSampleFormat.AV_SAMPLE_FMT_S16))
                     Console.WriteLine($"Encoder does not support sample format {AVSampleFormat.AV_SAMPLE_FMT_S16.GetName()}");
                 using (var encoder = MediaEncoder.CreateAudioEncoder(codec, sampleRate, chLayout, sampleFmt, bitrate))
                 using (var frame = MediaFrame.CreateAudioFrame(encoder.Ref.ch_layout, encoder.Ref.frame_size, encoder.Ref.sample_fmt))

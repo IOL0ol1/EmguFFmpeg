@@ -42,15 +42,12 @@ namespace FFmpeg.Sharp.Example
                         for (var i = 0; i < 3000; i++)
                         {
                             FillBgr24(vFrame, i);
-                            foreach (var frame in convert.Convert(vFrame, convertDst))
+                            convert.Convert(vFrame, convertDst);
+                            convertDst.Ref.pts = i;
+                            foreach (var packet in vEncoder.EncodeFrame(convertDst))
                             {
-                                //FillYuv420P(vFrame, i);
-                                frame.Ref.pts = i;
-                                foreach (var packet in vEncoder.EncodeFrame(frame))
-                                {
-                                    packet.Ref.stream_index = vStream.Ref.index;
-                                    muxer.WritePacket(packet, vEncoder.Ref.time_base);
-                                }
+                                packet.Ref.stream_index = vStream.Ref.index;
+                                muxer.WritePacket(packet, vEncoder.Ref.time_base);
                             }
                         }
                     }

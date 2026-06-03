@@ -153,8 +153,13 @@ namespace FFmpeg.Sharp
         /// <summary>
         /// List of supported sample formats. Replaces the deprecated <c>AVCodec.sample_fmts</c> field.
         /// </summary>
-        public IEnumerable<AVSampleFormat> GetSampelFmts()
+        public AVSampleFormat[] GetSampleFormats()
             => GetSupportedConfig<AVSampleFormat>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_FORMAT);
+
+        /// <summary>Legacy misspelling — use <see cref="GetSampleFormats"/>.</summary>
+        [Obsolete("Use GetSampleFormats() — this name was a typo.")]
+        public System.Collections.Generic.IEnumerable<AVSampleFormat> GetSampelFmts()
+            => GetSampleFormats();
 
         /// <summary>
         /// List of supported sample rates. Replaces the deprecated <c>AVCodec.supported_samplerates</c> field.

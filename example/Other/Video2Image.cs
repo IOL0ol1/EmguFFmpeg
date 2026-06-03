@@ -42,17 +42,15 @@ namespace FFmpeg.Sharp.Example.Other
                         }
                         foreach (var inFrame in decoder.DecodePacket(inPacket))
                         {
-                            foreach (var outFrame in convert.Convert(inFrame, f))
+                            convert.Convert(inFrame, f);
+                            using (var mat = new Mat(f.Ref.height, f.Ref.width, MatType.CV_8UC3))
                             {
-                                using (var mat = new Mat(outFrame.Ref.height, outFrame.Ref.width, MatType.CV_8UC3))
-                                {
-                                    var srcLineSize = outFrame.Ref.linesize[0];
-                                    var dstLineSize = (int)mat.Step();
-                                    FFmpegUtil.CopyPlane((IntPtr)outFrame.Ref.data[0], srcLineSize,
-                                        mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
-                                    if (inFrame.Ref.pkt_dts >= 0)
-                                        mat.SaveImage(Path.Combine(output, $"{mediaReader[inPacket.Ref.stream_index].ToTimeSpan(inFrame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
-                                }
+                                var srcLineSize = f.Ref.linesize[0];
+                                var dstLineSize = (int)mat.Step();
+                                FFmpegUtil.CopyPlane((IntPtr)f.Ref.data[0], srcLineSize,
+                                    mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
+                                if (inFrame.Ref.pkt_dts >= 0)
+                                    mat.SaveImage(Path.Combine(output, $"{mediaReader[inPacket.Ref.stream_index].ToTimeSpan(inFrame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
                             }
                         }
                     }

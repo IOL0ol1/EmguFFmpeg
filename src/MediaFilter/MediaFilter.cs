@@ -17,9 +17,9 @@ namespace FFmpeg.Sharp
         public string Description => ((IntPtr)pFilter->description).PtrToStringUTF8();
 
         /// <summary>
-        /// get all supported filter.
+        /// Iterate every registered FFmpeg filter.
         /// </summary>
-        public static IEnumerable<MediaFilter> GetGetFilters()
+        public static IEnumerable<MediaFilter> GetFilters()
         {
             IntPtr pFilter;
             IntPtrRef opaque = new IntPtrRef();

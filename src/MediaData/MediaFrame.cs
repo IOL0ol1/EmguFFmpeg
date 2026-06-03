@@ -9,6 +9,15 @@ namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaFrame : IDisposable, ICloneable
     {
+        /// <summary>
+        /// Wrap an existing <see cref="AVFrame"/> pointer.
+        /// </summary>
+        /// <param name="frame">Native frame pointer (must be non-null).</param>
+        /// <param name="leaveOpen">
+        /// When <see langword="true"/>, this wrapper does NOT call <see cref="ffmpeg.av_frame_free(AVFrame**)"/> on dispose;
+        /// the caller retains ownership of <paramref name="frame"/>.
+        /// When <see langword="false"/>, the wrapper takes ownership and will free the frame.
+        /// </param>
         public MediaFrame(AVFrame* frame, bool leaveOpen)
            : this(frame)
         {
@@ -17,7 +26,8 @@ namespace FFmpeg.Sharp
 
 
         /// <summary>
-        /// <see cref="ffmpeg.av_frame_alloc()"/>
+        /// Allocate a new empty frame via <see cref="ffmpeg.av_frame_alloc()"/>.
+        /// The wrapper owns the native frame and will free it on dispose.
         /// </summary>
         public MediaFrame() : this(ffmpeg.av_frame_alloc(), false)
         { }
@@ -34,6 +44,8 @@ namespace FFmpeg.Sharp
 
         public static MediaFrame CreateAudioFrame(int channels, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
         {
+            if (channels <= 0) throw new ArgumentOutOfRangeException(nameof(channels));
+            if (nbSamples <= 0) throw new ArgumentOutOfRangeException(nameof(nbSamples));
             var f = new MediaFrame();
             f.pFrame->format = (int)format;
             ffmpeg.av_channel_layout_default(&f.pFrame->ch_layout, channels);
@@ -48,13 +60,101 @@ namespace FFmpeg.Sharp
             return CreateAudioFrame(channelLayout.nb_channels, nbSamples, format, sampleRate, align);
         }
 
+        /// <summary>
+        /// Allocate frame buffers. Requires the relevant shape fields to be set first:
+        /// video frames need <c>width</c>, <c>height</c>, <c>format</c>; audio frames need
+        /// <c>nb_samples</c>, <c>ch_layout</c>, <c>format</c>.
+        /// </summary>
         public void AllocateBuffer(int align = 0)
         {
+            if (pFrame->width > 0 || pFrame->height > 0)
+            {
+                if (pFrame->width <= 0 || pFrame->height <= 0 || pFrame->format < 0)
+                    throw new InvalidOperationException("Video frame requires positive width, height, and format set before AllocateBuffer.");
+            }
+            else if (pFrame->nb_samples > 0 || pFrame->ch_layout.nb_channels > 0)
+            {
+                if (pFrame->nb_samples <= 0 || pFrame->ch_layout.nb_channels <= 0 || pFrame->format < 0)
+                    throw new InvalidOperationException("Audio frame requires positive nb_samples, ch_layout, and format set before AllocateBuffer.");
+            }
+            else
+            {
+                throw new InvalidOperationException("Frame has no shape set. For video: set width/height/format. For audio: set nb_samples/ch_layout/format.");
+            }
             ffmpeg.av_frame_get_buffer(pFrame, align).ThrowIfError();
         }
+
+        /// <summary>Opaque user pointer carried by the frame (untyped). Use with caution.</summary>
+        public IntPtr Opaque
+        {
+            get => (IntPtr)pFrame->opaque;
+            set => pFrame->opaque = (void*)value;
+        }
+
+        /// <summary>True if this frame contains any AVFrameSideData entries.</summary>
+        public bool HasSideData => pFrame->nb_side_data > 0;
+
+        /// <summary>Look up the first side-data entry of the given type, or null when absent.</summary>
+        public AVFrameSideData* GetSideData(AVFrameSideDataType type)
+            => ffmpeg.av_frame_get_side_data(pFrame, type);
  
         public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0;
         public bool IsVideoFrame => pFrame->width > 0 && pFrame->height > 0;
+
+        /// <summary>
+        /// True if the frame's pixel format is a hardware-acceleration surface (e.g. AV_PIX_FMT_D3D11/CUDA/VAAPI/...).
+        /// The pixel data of such a frame lives on the GPU and is not directly readable from the CPU — use
+        /// <see cref="TransferToSoftware"/> or build a software-side filter graph to bring it back to system memory.
+        /// </summary>
+        public bool IsHardwareFrame
+        {
+            get
+            {
+                if (pFrame->format < 0) return false;
+                var desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)pFrame->format);
+                return desc != null && (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0;
+            }
+        }
+
+        /// <summary>Borrowed pointer to the frame's hw_frames_ctx, or null.</summary>
+        public AVBufferRef* HwFramesCtxRef => pFrame->hw_frames_ctx;
+
+        /// <summary>
+        /// Download a hardware frame into system memory. Returns a new owned <see cref="MediaFrame"/>.
+        /// </summary>
+        /// <param name="targetFormat">
+        /// Desired CPU pixel format. Pass <see cref="AVPixelFormat.AV_PIX_FMT_NONE"/> to let FFmpeg pick the first supported one
+        /// (typically NV12 for D3D11/QSV/CUDA, NV12 or YUV420P for VAAPI).
+        /// </param>
+        /// <param name="flags">Flags forwarded to <see cref="ffmpeg.av_hwframe_transfer_data"/>.</param>
+        public MediaFrame TransferToSoftware(AVPixelFormat targetFormat = AVPixelFormat.AV_PIX_FMT_NONE, int flags = 0)
+        {
+            if (!IsHardwareFrame)
+                throw new InvalidOperationException("Frame is not a hardware frame; nothing to transfer.");
+            var dst = new MediaFrame();
+            if (targetFormat != AVPixelFormat.AV_PIX_FMT_NONE)
+                dst.Ref.format = (int)targetFormat;
+            try
+            {
+                ffmpeg.av_hwframe_transfer_data(dst, this, flags).ThrowIfError();
+                ffmpeg.av_frame_copy_props(dst, this).ThrowIfError();
+                return dst;
+            }
+            catch
+            {
+                dst.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Allocate this frame's storage on a hardware frames context (the canonical way to feed HW encoders).
+        /// </summary>
+        public void AllocateOnHWFrames(AVBufferRef* hwFramesCtx)
+        {
+            if (hwFramesCtx == null) throw new ArgumentNullException(nameof(hwFramesCtx));
+            ffmpeg.av_hwframe_get_buffer(hwFramesCtx, pFrame, 0).ThrowIfError();
+        }
 
         #region Get Managed Copy Of Data
 
@@ -318,12 +418,11 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
-        /// Deep copy a new frame.
+        /// Deep copy a new frame. The returned frame is owned by the caller and must be disposed.
         /// </summary>
-        /// <returns></returns>
         public MediaFrame Clone()
         {
-            return new MediaFrame(ffmpeg.av_frame_clone(this));
+            return new MediaFrame(ffmpeg.av_frame_clone(this), leaveOpen: false);
         }
 
         /// <summary>
@@ -346,7 +445,9 @@ namespace FFmpeg.Sharp
 
         #region IDisposable Support
 
-        private bool disposedValue = true;
+        // Default is `false` (owned). The (AVFrame*, bool leaveOpen) ctor flips it to `true` for borrowed pointers.
+        // Historical bug (fixed): this used to be `true`, which caused single-pointer ctors (Clone path) to leak.
+        private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {

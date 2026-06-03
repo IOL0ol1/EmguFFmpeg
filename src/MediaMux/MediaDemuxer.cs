@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -19,14 +19,17 @@ namespace FFmpeg.Sharp
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
         /// <summary>
-        /// Load stream
+        /// Open a demuxer from a managed <see cref="Stream"/>.
         /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="iformat"></param>
-        /// <param name="options"></param>
-        public static MediaDemuxer Open(Stream stream, MediaInputFormat iformat = null, MediaDictionary options = null)
+        /// <param name="stream">Source stream.</param>
+        /// <param name="iformat">Optional input format hint.</param>
+        /// <param name="options">Optional dictionary of muxer options.</param>
+        /// <param name="leaveOpen">
+        /// When <see langword="true"/> (default), the underlying <paramref name="stream"/> is NOT disposed when this demuxer is disposed.
+        /// </param>
+        public static MediaDemuxer Open(Stream stream, MediaInputFormat iformat = null, MediaDictionary options = null, bool leaveOpen = true)
         {
-            var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768);
+            var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768, leaveOpen);
             var output = Open(null, iformat, options, fc =>
             {
                 AVFormatContext* f = fc;
@@ -37,22 +40,25 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
-        /// Load path
+        /// Open a demuxer from a path or URL.
         /// </summary>
-        /// <param name="url"></param>
-        /// <param name="iformat"></param>
-        /// <param name="options"></param>
-        /// <param name="beforeOpen"></param>
         public static MediaDemuxer Open(string url, MediaInputFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContext> beforeOpen = null)
         {
             var output = new MediaDemuxer();
             beforeOpen?.Invoke(output);
-            var tmp = options ?? new MediaDictionary();
-            fixed (AVFormatContext** ps = &output.pFormatContext)
-            fixed (AVDictionary** pOptions = &tmp.pDictionary)
+            int ret;
+            if (options == null)
             {
-                ffmpeg.avformat_open_input(ps, url, iformat, options == null ? null : pOptions).ThrowIfError();
+                fixed (AVFormatContext** ps = &output.pFormatContext)
+                    ret = ffmpeg.avformat_open_input(ps, url, iformat, null);
             }
+            else
+            {
+                fixed (AVFormatContext** ps = &output.pFormatContext)
+                fixed (AVDictionary** pOptions = &options.pDictionary)
+                    ret = ffmpeg.avformat_open_input(ps, url, iformat, pOptions);
+            }
+            ret.ThrowIfError();
             output.FindStreamInfo(options);
             return output;
         }
@@ -67,37 +73,26 @@ namespace FFmpeg.Sharp
 
         public int FindStreamInfo(MediaDictionary options)
         {
-            var opts = options ?? new MediaDictionary();
-            fixed (AVDictionary** pOptions = &opts.pDictionary)
-            {
-                return ffmpeg.avformat_find_stream_info(pFormatContext, options == null ? null : pOptions).ThrowIfError();
-            }
+            if (options == null)
+                return ffmpeg.avformat_find_stream_info(pFormatContext, null).ThrowIfError();
+            fixed (AVDictionary** pOptions = &options.pDictionary)
+                return ffmpeg.avformat_find_stream_info(pFormatContext, pOptions).ThrowIfError();
         }
 
         /// <summary>
-        /// Find the "best" stream in the file. The best stream is determined according to
-        /// various heuristics as the most likely to be what the user expects. If the decoder
-        /// parameter is non-NULL, av_find_best_stream will find the default decoder for
-        /// the stream's codec; streams for which no decoder can be found are ignored.
+        /// Find the "best" stream in the file. The best stream is determined according to various heuristics.
+        /// Always rewrites <paramref name="codec"/> with the chosen default decoder (or null on failure).
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="codec"></param>
-        /// <param name="wantedStreamNb"></param>
-        /// <param name="relatedStream"></param>
-        /// <param name="flags"></param>
-        /// <returns></returns>
         public int FindBestStream(AVMediaType type, ref MediaCodec codec, int wantedStreamNb = -1, int relatedStream = -1, int flags = 0)
         {
             AVCodec* pCodec = codec;
             var ret = ffmpeg.av_find_best_stream(pFormatContext, type, wantedStreamNb, relatedStream, &pCodec, flags).ThrowIfError();
-            if (codec != null)  return ret;
-            codec = new MediaCodec(pCodec);
+            codec = pCodec == null ? null : new MediaCodec(pCodec);
             return ret;
         }
 
         /// <summary>
-        /// Print detailed information about the input format, such as duration,
-        ///     bitrate, streams, container, programs, metadata, side data, codec and time base.
+        /// Print detailed information about every input stream.
         /// </summary>
         public void DumpFormat()
         {
@@ -108,24 +103,18 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
-        /// Seek timestamp base <see cref="ffmpeg.AV_TIME_BASE"/>. it's precision than <see cref="Seek(TimeSpan, int)"/>
-        /// <para></para>
+        /// Seek timestamp base <see cref="ffmpeg.AV_TIME_BASE"/>. It's more precise than <see cref="Seek(TimeSpan, int)"/>.
         /// </summary>
-        /// <param name="timestamp">Seconds * <see cref="ffmpeg.AV_TIME_BASE"/> </param>
-        /// <param name="streamIndex"></param>
         public int Seek(long timestamp, int streamIndex = -1)
         {
             if (streamIndex >= 0)
                 timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), pFormatContext->streams[streamIndex]->time_base);
-            var ret = ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, timestamp, 0).ThrowIfError();
-            return ret;
+            return ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, timestamp, 0).ThrowIfError();
         }
 
         /// <summary>
         /// <see cref="Seek(long, int)"/>
         /// </summary>
-        /// <param name="time"></param>
-        /// <param name="streamIndex"></param>
         public int Seek(TimeSpan time, int streamIndex = -1)
         {
             return Seek((long)(time.TotalSeconds * ffmpeg.AV_TIME_BASE), streamIndex);
@@ -133,22 +122,10 @@ namespace FFmpeg.Sharp
 
         #region IReadOnlyList<MediaStream>
 
-        /// <summary>
-        /// stream count in mux.
-        /// </summary>
         public int Count => (int)pFormatContext->nb_streams;
 
-        /// <summary>
-        /// get stream
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
         public MediaStream this[int index] => new MediaStream(pFormatContext->streams[index]);
 
-        /// <summary>
-        /// enum stream
-        /// </summary>
-        /// <returns></returns>
         public IEnumerator<MediaStream> GetEnumerator()
         {
             for (int i = 0; i < Count; i++)
@@ -164,32 +141,96 @@ namespace FFmpeg.Sharp
 
         #endregion IReadOnlyList<MediaStream>
 
-        #region IEnumerable<MediaPacket>
+        #region ReadPackets
 
         /// <summary>
-        /// Read packets from media
+        /// Yields demuxed packets one at a time.
+        /// <para>
+        /// <b>Lifetime:</b> the yielded <see cref="MediaPacket"/> is the SAME instance every iteration. Its data is
+        /// automatically unrefed before the next MoveNext, so do NOT enqueue, capture, or LINQ-buffer it.
+        /// Call <see cref="MediaPacket.Clone"/> if you need to outlive the next iteration, or use
+        /// <see cref="ReadPacketsCloned"/> which clones for you.
+        /// </para>
+        /// <para>
+        /// Returns cleanly on EOF; only real errors (e.g. corrupt streams, broken IO) throw.
+        /// </para>
         /// </summary>
-        /// <returns></returns>
-        /// <exception cref="FFmpegException"></exception>
         public IEnumerable<MediaPacket> ReadPackets(MediaPacket inPacket = null)
         {
             MediaPacket packet = inPacket ?? new MediaPacket();
             try
             {
-                int ret;
-                do
+                while (true)
                 {
-                    ret = ReadPacketSafe(packet);
-                    try
-                    {
-                        if (ret < 0 && ret != ffmpeg.AVERROR_EOF)
-                            ret.ThrowIfError();
-                        yield return packet;
-                    }
+                    int ret = ReadPacketSafe(packet);
+                    if (ret == ffmpeg.AVERROR_EOF)
+                        yield break;
+                    if (ret < 0)
+                        ret.ThrowIfError();
+                    try { yield return packet; }
                     finally { packet.Unref(); }
-                } while (ret >= 0);
+                }
             }
             finally { if (inPacket == null) packet.Dispose(); }
+        }
+
+        /// <summary>
+        /// Like <see cref="ReadPackets"/> but every yielded packet is an independent owned clone — safe to enqueue or
+        /// pass to another thread. The caller is responsible for disposing each clone.
+        /// </summary>
+        public IEnumerable<MediaPacket> ReadPacketsCloned()
+        {
+            using (var scratch = new MediaPacket())
+            {
+                while (true)
+                {
+                    int ret = ReadPacketSafe(scratch);
+                    if (ret == ffmpeg.AVERROR_EOF)
+                        yield break;
+                    if (ret < 0)
+                        ret.ThrowIfError();
+                    var owned = scratch.Clone();
+                    scratch.Unref();
+                    yield return owned;
+                }
+            }
+        }
+
+        /// <summary>
+        /// One-shot helper: route demuxed packets through the supplied decoders and yield decoded frames.
+        /// Decoders are keyed by stream index. Streams without a decoder mapping are skipped.
+        /// The decoders are flushed automatically on EOF.
+        /// </summary>
+        /// <param name="decoders">Map of stream_index → decoder.</param>
+        /// <param name="filterMediaType">If non-null, only stream indices whose codecpar matches this media type are decoded.</param>
+        public IEnumerable<(int streamIndex, MediaFrame frame)> ReadFrames(IDictionary<int, MediaDecoder> decoders, AVMediaType? filterMediaType = null)
+        {
+            if (decoders == null) throw new ArgumentNullException(nameof(decoders));
+            using (var pkt = new MediaPacket())
+            {
+                while (true)
+                {
+                    int ret = ReadPacketSafe(pkt);
+                    if (ret == ffmpeg.AVERROR_EOF) break;
+                    if (ret < 0) ret.ThrowIfError();
+                    try
+                    {
+                        int idx = pkt.Ref.stream_index;
+                        if (!decoders.TryGetValue(idx, out var dec) || dec == null) continue;
+                        if (filterMediaType.HasValue && this[idx].CodecparRef.codec_type != filterMediaType.Value) continue;
+                        foreach (var frame in dec.DecodePacket(pkt))
+                            yield return (idx, frame);
+                    }
+                    finally { pkt.Unref(); }
+                }
+                // Flush each decoder.
+                foreach (var kv in decoders)
+                {
+                    if (kv.Value == null) continue;
+                    foreach (var frame in kv.Value.DecodePacket(null))
+                        yield return (kv.Key, frame);
+                }
+            }
         }
 
         protected int ReadPacketSafe(MediaPacket packet)
@@ -197,7 +238,7 @@ namespace FFmpeg.Sharp
             return ffmpeg.av_read_frame(pFormatContext, packet);
         }
 
-        #endregion IEnumerable<MediaPacket>
+        #endregion ReadPackets
 
         #region IDisposable
         private bool disposedValue;

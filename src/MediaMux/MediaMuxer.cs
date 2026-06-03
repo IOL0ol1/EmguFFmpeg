@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,8 +8,12 @@ namespace FFmpeg.Sharp
 {
     public unsafe class MediaMuxer : MediaFormatContext
     {
-        protected bool hasWriteHeader; // Fixed: use ffmpeg's flag is better.
-        protected bool hasWriteTrailer; // Fixed: use ffmpeg's flag is better.
+        protected bool hasWriteHeader;
+        protected bool hasWriteTrailer;
+        // Track encoders attached via AddStream(encoder) so Dispose can auto-flush them before writing trailer.
+        private readonly List<MediaEncoder> _attachedEncoders = new List<MediaEncoder>();
+        // Track any low-level failure so we don't try to write a trailer over a known-bad state.
+        private bool _wroteCorruptedHeader;
 
         protected MediaIOContext _ioContext;
 
@@ -18,30 +22,36 @@ namespace FFmpeg.Sharp
         public MediaOutputFormat Format => new MediaOutputFormat(pFormatContext->oformat);
 
         /// <summary>
-        /// write to stream
+        /// Write to a managed <see cref="Stream"/>.
         /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="oformat"></param>
-        public static MediaMuxer Create(Stream stream, MediaOutputFormat oformat)
+        /// <param name="stream">Output stream.</param>
+        /// <param name="oformat">Output format descriptor.</param>
+        /// <param name="leaveOpen">When <see langword="true"/> (default), the underlying stream is NOT disposed when this muxer is disposed.</param>
+        public static MediaMuxer Create(Stream stream, MediaOutputFormat oformat, bool leaveOpen = true)
         {
-            var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768);
+            if (oformat == null) throw new ArgumentNullException(nameof(oformat));
+            var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768, leaveOpen);
             AVFormatContext* pFormatContext = ffmpeg.avformat_alloc_context();
             pFormatContext->oformat = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                 pFormatContext->pb = ioContext;
-            var output = new MediaMuxer(pFormatContext) { _ioContext = ioContext };
-            return output;
+            return new MediaMuxer(pFormatContext) { _ioContext = ioContext };
         }
 
         /// <summary>
-        /// write to file.
-        /// <para><see cref="ffmpeg.avformat_alloc_output_context2(AVFormatContext**, AVOutputFormat*, string, string)"/></para>
-        /// <para><see cref="ffmpeg.avio_open(AVIOContext**, string, int)"/></para>
+        /// Write to a managed <see cref="Stream"/> with format auto-detected from <paramref name="formatName"/> or <paramref name="fileNameHint"/>.
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <param name="oformat"></param>
-        /// <param name="formatName"></param>
-        /// <param name="options"></param>
+        public static MediaMuxer Create(Stream stream, string formatName, string fileNameHint = null, bool leaveOpen = true)
+        {
+            var oformat = MediaOutputFormat.GuessFormat(formatName, fileNameHint, null);
+            if (oformat == null)
+                throw new FFmpegException("Cannot guess output format from formatName='" + formatName + "', fileNameHint='" + fileNameHint + "'");
+            return Create(stream, oformat, leaveOpen);
+        }
+
+        /// <summary>
+        /// Write to a file.
+        /// </summary>
         public static MediaMuxer Create(string fileName, MediaOutputFormat oformat = null, string formatName = null, MediaDictionary options = null)
         {
             AVFormatContext* pFormatContext = null;
@@ -64,23 +74,13 @@ namespace FFmpeg.Sharp
         { }
 
         /// <summary>
-        /// Print detailed information about the output format, such as duration,
-        ///     bitrate, streams, container, programs, metadata, side data, codec and time base.
+        /// Print detailed information about the output format.
         /// </summary>
         public void DumpFormat()
         {
             ffmpeg.av_dump_format(pFormatContext, 0, ((IntPtr)pFormatContext->url).PtrToStringUTF8(), 1);
         }
 
-        /// <summary>
-        /// Get timing information for the data currently output.
-        /// <para>The exact meaning of "currently output" depends on the format. It is mostly relevant for devices that have an internal buffer and/or work in real time.</para>
-        /// <para>Note: some formats or devices may not allow to measure dts and wall atomically.</para>
-        /// </summary>
-        /// <param name="stream">stream in the media file</param>
-        /// <param name="dts">DTS of the last packet output for the stream, in stream time_base units</param>
-        /// <param name="wall">absolute time when that packet whas output, in microsecond</param>
-        /// <returns></returns>
         public bool TryGetOutputTimeStamp(int stream, out long dts, out long wall)
         {
             fixed (long* pdts = &dts)
@@ -91,14 +91,9 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
-        /// Add a new stream to a media file.
-        /// <see cref="ffmpeg.avformat_new_stream(AVFormatContext*, AVCodec*)"/>.
+        /// Add a stream backed by <paramref name="encoder"/>. The encoder is registered for automatic
+        /// flushing in <see cref="Dispose(bool)"/>.
         /// </summary>
-        /// <param name="encoder">
-        /// if <paramref name="encoder"/> is not null, then call 
-        /// <see cref="ffmpeg.avcodec_parameters_from_context(AVCodecParameters*, AVCodecContext*)"/>
-        /// </param>
-        /// <returns>newly created stream or null on error.</returns>
         public MediaStream AddStream(MediaEncoder encoder = null)
         {
             AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
@@ -108,18 +103,11 @@ namespace FFmpeg.Sharp
             {
                 ffmpeg.avcodec_parameters_from_context(pStream->codecpar, encoder).ThrowIfError();
                 pStream->time_base = encoder.Ref.time_base;
+                _attachedEncoders.Add(encoder);
             }
             return stream;
         }
 
-        /// <summary>
-        /// Add a new stream to a media file.
-        /// <see cref="ffmpeg.avformat_new_stream(AVFormatContext*, AVCodec*)"/>.
-        /// </summary>
-        /// <param name="codecpar">
-        /// <see cref="ffmpeg.avcodec_parameters_copy(AVCodecParameters*, AVCodecParameters*)"/>
-        /// </param>
-        /// <returns>newly created stream or null on error.</returns>
         public MediaStream AddStream(AVCodecParameters codecpar)
         {
             AVStream* pStream = ffmpeg.avformat_new_stream(pFormatContext, null);
@@ -128,39 +116,30 @@ namespace FFmpeg.Sharp
             ffmpeg.avcodec_parameters_copy(pStream->codecpar, &codecpar).ThrowIfError();
             return stream;
         }
- 
-        /// <summary>
-        /// <see cref="ffmpeg.avformat_write_header(AVFormatContext*, AVDictionary**)"/>
-        /// </summary>
-        /// <param name="options">
-        /// An AVDictionary filled with AVFormatContext and muxer-private options. On return
-        /// this parameter will be destroyed and replaced with a dict containing options
-        /// that were not found. May be NULL.</param>
-        /// <returns>
-        /// AVSTREAM_INIT_IN_WRITE_HEADER on success if the codec had not already been fully
-        /// initialized in avformat_init, AVSTREAM_INIT_IN_INIT_OUTPUT on success if the
-        /// codec had already been fully initialized in avformat_init, negative AVERROR on
-        /// failure.
-        /// </returns>
-        /// <exception cref="FFmpegException"></exception>
+
         public int WriteHeader(MediaDictionary options = null)
         {
             hasWriteHeader = true;
-            var tmp = options ?? new MediaDictionary();
-            fixed (AVDictionary** pOptions = &tmp.pDictionary)
+            int ret;
+            if (options == null)
+                ret = ffmpeg.avformat_write_header(pFormatContext, null);
+            else
             {
-                return ffmpeg.avformat_write_header(pFormatContext, options == null ? null : pOptions).ThrowIfError();
+                fixed (AVDictionary** pOptions = &options.pDictionary)
+                    ret = ffmpeg.avformat_write_header(pFormatContext, pOptions);
             }
+            if (ret < 0)
+            {
+                _wroteCorruptedHeader = true;
+                ret.ThrowIfError();
+            }
+            return ret;
         }
 
         /// <summary>
-        /// <para><see cref="ffmpeg.av_packet_rescale_ts(AVPacket*, AVRational, AVRational)"/></para>
-        /// <para><see cref="ffmpeg.av_interleaved_write_frame(AVFormatContext*, AVPacket*)"/></para>
-        /// <para><see cref="ffmpeg.av_packet_unref"/></para>
+        /// Rescale the packet timestamps from <paramref name="codecTimeBase"/> to the stream's time base, then write it.
+        /// If <paramref name="codecTimeBase"/> is null we assume the packet's timestamps are already in the stream's time base.
         /// </summary>
-        /// <param name="packet"></param>
-        /// <param name="codecTimeBase"><see cref="AVCodecContext.time_base"/></param>
-        /// <returns></returns>
         public int WritePacket(MediaPacket packet, AVRational? codecTimeBase = null)
         {
             if (codecTimeBase != null)
@@ -171,31 +150,27 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
-        /// Flush codecs cache.
-        /// <para><see cref="MediaEncoder.EncodeFrame(MediaFrame, MediaPacket)"/></para>
-        /// <para><see cref="WritePacket(MediaPacket, AVRational?)"/></para> 
+        /// Rescale using <paramref name="encoder"/>.Ref.time_base — the common case.
         /// </summary>
-        /// <param name="mediaCodecs">Flush encode list</param>
+        public int WritePacket(MediaPacket packet, MediaEncoder encoder)
+            => WritePacket(packet, encoder?.Ref.time_base);
+
+        /// <summary>
+        /// Flush all encoders that declare AV_CODEC_CAP_DELAY (and others — non-delayed encoders are a no-op).
+        /// </summary>
         public void FlushCodecs(IEnumerable<MediaEncoder> mediaCodecs)
         {
-            if (mediaCodecs != null)
+            if (mediaCodecs == null) return;
+            foreach (var mediaCodec in mediaCodecs)
             {
-                foreach (var mediaCodec in mediaCodecs
-                    .Where(_ => (((AVCodecContext*)_)->codec->capabilities & ffmpeg.AV_CODEC_CAP_DELAY) != 0))
+                if (mediaCodec == null) continue;
+                foreach (var packet in mediaCodec.EncodeFrame(null))
                 {
-                    foreach (var packet in mediaCodec.EncodeFrame(null))
-                    {
-                        WritePacket(packet, mediaCodec.Ref.time_base);
-                    }
+                    WritePacket(packet, mediaCodec.Ref.time_base);
                 }
             }
         }
 
-        /// <summary>
-        /// Write the stream trailer to an output media file and free the file private data.
-        /// May only be called after a successful call to avformat_write_header. 
-        /// <para><see cref="ffmpeg.av_write_trailer(AVFormatContext*)"/></para>
-        /// </summary>
         public int WriteTrailer()
         {
             hasWriteTrailer = true;
@@ -205,22 +180,27 @@ namespace FFmpeg.Sharp
         #region IDisposable
         private bool disposedValue;
 
-        /// <summary>
-        /// <para><see cref="ffmpeg.avio_close(AVIOContext*)"/></para>
-        /// <para><see cref="ffmpeg.avformat_free_context(AVFormatContext*)"/></para>
-        /// </summary>
-        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (pFormatContext != null)
                 {
-                    // If no trailer is written, it is written automatically.
-                    // Fixed: External calls to ffmpeg.avformat_write_header
-                    // and ffmpeg.av_write_trailer function may cause errors.
-                    if (hasWriteHeader && !hasWriteTrailer)
-                        ffmpeg.av_write_trailer(pFormatContext);
+                    // Best-effort: flush any encoders registered via AddStream(encoder), then write trailer.
+                    // Wrap in try/catch — Dispose MUST NOT throw (esp. from a finalizer).
+                    if (hasWriteHeader && !hasWriteTrailer && !_wroteCorruptedHeader && pFormatContext->pb != null)
+                    {
+                        try
+                        {
+                            FlushCodecs(_attachedEncoders);
+                            ffmpeg.av_write_trailer(pFormatContext);
+                        }
+                        catch
+                        {
+                            // Swallow — disposing during exception unwind is the typical path here, surfacing
+                            // would mask the original error. Users who care should call WriteTrailer() explicitly.
+                        }
+                    }
                     if (_ioContext != null && (pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                     {
                         AVIOContext* pb = _ioContext;

@@ -99,14 +99,19 @@ namespace FFmpeg.Sharp
             }, contextName);
             if (filterContext.Ref.nb_inputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
-            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
                 throw new FFmpegException("FFmpegException.FilterTypeError");
             return filterContext;
         }
 
         public MediaFilterContext AddAudioSrcFilter(MediaFilter filter, string options = null, string contextName = null)
         {
-            return AddVideoSrcFilter(filter, options, contextName);
+            MediaFilterContext filterContext = AddFilter(filter, options, contextName);
+            if (filterContext.Ref.nb_inputs > 0)
+                throw new FFmpegException("FFmpegException.NotSourcesFilter");
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.output_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
+                throw new FFmpegException("FFmpegException.FilterTypeError");
+            return filterContext;
         }
 
         public MediaFilterContext AddAudioSinkFilter(MediaFilter filter, AVSampleFormat[] formats = null, int[] sampleRates = null, ulong[] channelLayouts = null, int[] channelCounts = null, int allChannelCounts = 0, string contextName = null)
@@ -188,6 +193,65 @@ namespace FFmpeg.Sharp
         public void Initialize()
         {
             ffmpeg.avfilter_graph_config(pFilterGraph, null).ThrowIfError();
+        }
+
+        /// <summary>
+        /// Worker thread count for parallel filters that support it. Set BEFORE <see cref="Initialize"/>.
+        /// 0 = auto.
+        /// </summary>
+        public int ThreadCount
+        {
+            get => pFilterGraph->nb_threads;
+            set => pFilterGraph->nb_threads = value;
+        }
+
+        /// <summary>
+        /// Propagate a HW device context to all filters in this graph (e.g. for scale_cuda, hwupload, hwdownload).
+        /// Must be called BEFORE <see cref="Initialize"/>. The buffer is internally av_buffer_ref'd by each filter.
+        /// </summary>
+        public void SetHWDevice(AVBufferRef* deviceRef)
+        {
+            if (deviceRef == null) throw new ArgumentNullException(nameof(deviceRef));
+            for (uint i = 0; i < pFilterGraph->nb_filters; i++)
+            {
+                var fc = pFilterGraph->filters[i];
+                if (fc->hw_device_ctx != null) ffmpeg.av_buffer_unref(&fc->hw_device_ctx);
+                fc->hw_device_ctx = ffmpeg.av_buffer_ref(deviceRef);
+            }
+        }
+
+        /// <summary>
+        /// Get the hw_frames_ctx attached to a buffersink filter (i.e. the output of a HW filter chain). Returns null when the sink is SW.
+        /// Useful when feeding a HW encoder created via <see cref="MediaEncoder.CreateHWVideoEncoder(MediaCodec, int, int, AVRational, AVPixelFormat, AVPixelFormat, AVHWDeviceType, string, AVBufferRef*, AVBufferRef*, int, Action{MediaCodecContext}, MediaDictionary)"/>.
+        /// </summary>
+        public static AVBufferRef* GetSinkHWFramesCtx(MediaFilterContext sink)
+        {
+            if (sink == null) throw new ArgumentNullException(nameof(sink));
+            return ffmpeg.av_buffersink_get_hw_frames_ctx(sink);
+        }
+
+        /// <summary>
+        /// Add a buffer src filter pre-configured for HW frames via <see cref="AVBufferSrcParameters"/>.
+        /// </summary>
+        public MediaFilterContext AddHWVideoSrcFilter(MediaFilter filter, AVBufferRef* hwFramesCtx, int width, int height, AVPixelFormat hwPixelFormat, AVRational timebase, AVRational framerate = default, string contextName = null)
+        {
+            if (hwFramesCtx == null) throw new ArgumentNullException(nameof(hwFramesCtx));
+            var ctx = AddFilter(filter, _ =>
+            {
+                var p = ffmpeg.av_buffersrc_parameters_alloc();
+                try
+                {
+                    p->width = width;
+                    p->height = height;
+                    p->format = (int)hwPixelFormat;
+                    p->time_base = timebase;
+                    p->frame_rate = framerate;
+                    p->hw_frames_ctx = ffmpeg.av_buffer_ref(hwFramesCtx);
+                    ffmpeg.av_buffersrc_parameters_set(_, p).ThrowIfError();
+                }
+                finally { ffmpeg.av_free(p); }
+            }, contextName);
+            return ctx;
         }
 
         public string Dump()

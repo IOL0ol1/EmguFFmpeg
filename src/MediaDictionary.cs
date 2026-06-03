@@ -10,12 +10,22 @@ namespace FFmpeg.Sharp
     {
         protected internal AVDictionary* pDictionary = null;
 
-        public MediaDictionary(AVDictionary* ptr, bool leaveOpen = true)
+        /// <summary>
+        /// Wrap an existing native dictionary.
+        /// </summary>
+        /// <param name="ptr">Native pointer (may be null — av_dict_set will lazily allocate).</param>
+        /// <param name="leaveOpen">
+        /// When <see langword="true"/> the wrapper will NOT free the underlying dictionary on dispose.
+        /// </param>
+        public MediaDictionary(AVDictionary* ptr, bool leaveOpen)
         {
             pDictionary = ptr;
             disposedValue = leaveOpen;
         }
 
+        /// <summary>
+        /// Allocate an empty dictionary. The wrapper owns it.
+        /// </summary>
         public MediaDictionary() { }
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
@@ -31,14 +41,14 @@ namespace FFmpeg.Sharp
         {
             get
             {
-                AVDictionaryEntry* entry;
-                if ((entry = (AVDictionaryEntry*)av_dict_get_safe(this, key, IntPtr.Zero, (int)AVDictReadFlags.MatchCase)) != null)
-                    return (*entry).GetValue();
-                throw new KeyNotFoundException();
+                if (TryGetValue(key, out var value))
+                    return value;
+                return null; // .NET conventional indexer for option-bag types returns null on miss
             }
             set
             {
-                Add(key, value, (int)AVDictWriteFlags.None);
+                // Upsert semantics: replace existing without throwing.
+                Add(key, value, AVDictWriteFlags.None);
             }
         }
 
@@ -59,10 +69,10 @@ namespace FFmpeg.Sharp
 
         public void Add(string key, string value)
         {
-            if (key == null || value == null)
-                throw new ArgumentNullException();
-            if (ContainsKey(key))
-                throw new ArgumentException();
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            // value == null is allowed by FFmpeg's av_dict_set semantics: it deletes the entry.
+            if (value != null && ContainsKey(key))
+                throw new ArgumentException("Key already exists; use the indexer for upsert semantics.", nameof(key));
             Add(key, value, AVDictWriteFlags.DontOverwrite);
         }
 
@@ -221,7 +231,7 @@ namespace FFmpeg.Sharp
             return value.pDictionary;
         }
 
-        private bool disposedValue = true;
+        private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {

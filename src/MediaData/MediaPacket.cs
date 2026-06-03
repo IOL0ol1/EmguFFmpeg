@@ -6,6 +6,14 @@ namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaPacket : IDisposable, ICloneable
     {
+        /// <summary>
+        /// Wrap an existing <see cref="AVPacket"/> pointer.
+        /// </summary>
+        /// <param name="pAVPacket">Native packet pointer (must be non-null).</param>
+        /// <param name="leaveOpen">
+        /// When <see langword="true"/>, the wrapper does NOT call <see cref="ffmpeg.av_packet_free(AVPacket**)"/> on dispose.
+        /// When <see langword="false"/>, the wrapper takes ownership and will free the packet.
+        /// </param>
         public MediaPacket(AVPacket* pAVPacket, bool leaveOpen)
             : this(pAVPacket)
         {
@@ -13,9 +21,42 @@ namespace FFmpeg.Sharp
         }
 
 
+        /// <summary>
+        /// Allocate a new empty packet via <see cref="ffmpeg.av_packet_alloc()"/>.
+        /// The wrapper owns the native packet and will free it on dispose.
+        /// </summary>
         public MediaPacket()
             : this(ffmpeg.av_packet_alloc(), false)
         { }
+
+        /// <summary>
+        /// Allocate a new <see cref="MediaPacket"/> and copy data from <paramref name="source"/> into it.
+        /// </summary>
+        public static MediaPacket FromBuffer(ReadOnlySpan<byte> source)
+        {
+            var pkt = new MediaPacket();
+            if (source.Length == 0) return pkt;
+            ffmpeg.av_new_packet(pkt, source.Length).ThrowIfError();
+            fixed (byte* src = source)
+            {
+                Buffer.MemoryCopy(src, pkt.Ref.data, pkt.Ref.size, source.Length);
+            }
+            return pkt;
+        }
+
+        /// <summary>
+        /// Read-only view of the packet's compressed payload.
+        /// </summary>
+        public ReadOnlySpan<byte> Data => pPacket->data == null
+            ? ReadOnlySpan<byte>.Empty
+            : new ReadOnlySpan<byte>(pPacket->data, pPacket->size);
+
+        /// <summary>
+        /// Writable view of the packet's compressed payload (use after <see cref="ffmpeg.av_packet_make_writable"/>).
+        /// </summary>
+        public Span<byte> AsSpan() => pPacket->data == null
+            ? Span<byte>.Empty
+            : new Span<byte>(pPacket->data, pPacket->size);
 
         /// <summary>
         /// <see cref="ffmpeg.av_packet_unref(AVPacket*)"/>
@@ -26,15 +67,12 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
-        /// Deep copy
-        /// <para><see cref="ffmpeg.av_packet_ref(AVPacket*, AVPacket*)"/></para>
-        /// <para><see cref="ffmpeg.av_packet_copy_props(AVPacket*, AVPacket*)"/></para>
+        /// Deep copy via <see cref="ffmpeg.av_packet_clone(AVPacket*)"/>. The returned packet is owned by the caller and must be disposed.
         /// </summary>
         /// <exception cref="FFmpegException"/>
-        /// <returns></returns>
         public MediaPacket Clone()
         {
-            return new MediaPacket(ffmpeg.av_packet_clone(this));
+            return new MediaPacket(ffmpeg.av_packet_clone(this), leaveOpen: false);
         }
 
         object ICloneable.Clone()
@@ -44,7 +82,8 @@ namespace FFmpeg.Sharp
 
         #region IDisposable Support
 
-        private bool disposedValue = true;
+        // Default `false` (owned). The (AVPacket*, bool leaveOpen) ctor flips to `true` for borrowed pointers.
+        private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {

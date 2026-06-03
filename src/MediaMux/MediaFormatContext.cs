@@ -16,7 +16,8 @@ namespace FFmpeg.Sharp
         { }
 
         #region IDisposable
-        private bool disposedValue = true;
+        // Default `false` (owned). The (ptr, leaveOpen) ctor flips to `true` for borrowed pointers.
+        private bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

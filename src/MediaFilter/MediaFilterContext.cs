@@ -77,25 +77,29 @@ namespace FFmpeg.Sharp
                         break;
                     ret.ThrowIfError();
                     yield return frame;
-                    if (ret > 0) frame.Unref();
+                    frame.Unref();
                 }
             }
             finally { if (dstframe == null) frame?.Dispose(); }
         }
-        // TODO
-        /*
-         * AVMediaType 	av_buffersink_get_type (const AVFilterContext *ctx)
-         * AVRational 	av_buffersink_get_time_base (const AVFilterContext *ctx)
-         * int 	av_buffersink_get_format (const AVFilterContext *ctx)
-         * AVRational 	av_buffersink_get_frame_rate (const AVFilterContext *ctx)
-         * int 	av_buffersink_get_w (const AVFilterContext *ctx)
-         * int 	av_buffersink_get_h (const AVFilterContext *ctx)
-         * AVRational 	av_buffersink_get_sample_aspect_ratio (const AVFilterContext *ctx)
-         * int 	av_buffersink_get_channels (const AVFilterContext *ctx)
-         * int 	av_buffersink_get_ch_layout (const AVFilterContext *ctx, AVChannelLayout *ch_layout)
-         * int 	av_buffersink_get_sample_rate (const AVFilterContext *ctx)
-         * AVBufferRef * 	av_buffersink_get_hw_frames_ctx (const AVFilterContext *ctx)
-         */
+
+        // Buffersink getters — call only on buffersink/abuffersink contexts and only AFTER avfilter_graph_config.
+        public AVMediaType BufferSinkGetType() => ffmpeg.av_buffersink_get_type(pFilterContext);
+        public AVRational BufferSinkGetTimeBase() => ffmpeg.av_buffersink_get_time_base(pFilterContext);
+        public int BufferSinkGetFormat() => ffmpeg.av_buffersink_get_format(pFilterContext);
+        public AVRational BufferSinkGetFrameRate() => ffmpeg.av_buffersink_get_frame_rate(pFilterContext);
+        public int BufferSinkGetWidth() => ffmpeg.av_buffersink_get_w(pFilterContext);
+        public int BufferSinkGetHeight() => ffmpeg.av_buffersink_get_h(pFilterContext);
+        public AVRational BufferSinkGetSampleAspectRatio() => ffmpeg.av_buffersink_get_sample_aspect_ratio(pFilterContext);
+        public int BufferSinkGetChannels() => ffmpeg.av_buffersink_get_channels(pFilterContext);
+        public AVChannelLayout BufferSinkGetChannelLayout()
+        {
+            var layout = new AVChannelLayout();
+            ffmpeg.av_buffersink_get_ch_layout(pFilterContext, &layout).ThrowIfError();
+            return layout;
+        }
+        public int BufferSinkGetSampleRate() => ffmpeg.av_buffersink_get_sample_rate(pFilterContext);
+        public AVBufferRef* BufferSinkGetHwFramesCtx() => ffmpeg.av_buffersink_get_hw_frames_ctx(pFilterContext);
         #endregion
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 
@@ -6,8 +7,16 @@ using FFmpeg.AutoGen;
 
 namespace FFmpeg.Sharp
 {
+    /// <summary>
+    /// Wraps <see cref="AVCodecParserContext"/>.
+    /// Use this when you have a raw elementary stream (e.g. an Annex-B .h264 file) and need to split it
+    /// into <see cref="AVPacket"/>-sized chunks before feeding a decoder.
+    /// </summary>
     public unsafe class MediaCodecParserContext : IDisposable
     {
+        /// <summary>Default rolling buffer size when streaming from a managed <see cref="Stream"/>.</summary>
+        public const int DefaultStreamBufferSize = 32 * 1024;
+
         protected AVCodecParserContext* pCodecParserContext;
 
 
@@ -45,83 +54,110 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
-        /// TODO:
+        /// Parse complete packets from a managed <see cref="Stream"/>.
+        /// <para>
+        /// Each yielded <see cref="MediaPacket"/> owns its data via <see cref="ffmpeg.av_packet_from_data"/>, so the
+        /// consumer is free to enqueue or process it asynchronously. The packet is unrefed automatically on the next
+        /// MoveNext to keep the steady-state footprint constant — call <see cref="MediaPacket.Clone"/> if you need to outlive that.
+        /// </para>
         /// </summary>
-        /// <param name="codecContext"></param>
-        /// <param name="stream"></param>
-        /// <param name="packet"></param>
-        /// <returns></returns>
-        public IEnumerable<MediaPacket> ParserPackets(MediaCodecContext codecContext, Stream stream, MediaPacket packet = null)
+        /// <param name="codecContext">Decoder context for the same codec id this parser was initialized with.</param>
+        /// <param name="stream">Source byte stream containing the elementary stream.</param>
+        /// <param name="bufferSize">Size of the rolling buffer used to feed FFmpeg (must include AV_INPUT_BUFFER_PADDING_SIZE).</param>
+        public IEnumerable<MediaPacket> ParsePackets(MediaCodecContext codecContext, Stream stream, int bufferSize = DefaultStreamBufferSize)
         {
-            var bufSize = 20480 + 64; // buffer size + AV_INPUT_BUFFER_PADDING_SIZE
-            var buf = new byte[bufSize];
-            int outSize;
-            var pkt = packet;
-            if (pkt == null)
-            {
-                pkt = new MediaPacket();
-                pkt.Ref.dts = ffmpeg.AV_NOPTS_VALUE;
-                pkt.Ref.pts = ffmpeg.AV_NOPTS_VALUE;
-                pkt.Ref.pos = 0;
-            }
+            if (codecContext == null) throw new ArgumentNullException(nameof(codecContext));
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
+            if (bufferSize <= ffmpeg.AV_INPUT_BUFFER_PADDING_SIZE)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
+
+            // Rent from the shared pool so a long-running parser doesn't churn the GC heap.
+            var rented = ArrayPool<byte>.Shared.Rent(bufferSize);
             try
             {
-                while ((outSize = stream.Read(buf, 0, bufSize)) != 0)
+                int outSize;
+                while ((outSize = stream.Read(rented, 0, bufferSize)) > 0)
                 {
-                    for (int offset = 0; offset < outSize;)
+                    int offset = 0;
+                    while (offset < outSize)
                     {
-                        var ret = Parser2(codecContext, pkt, buf, offset).ThrowIfError();
-                        offset += ret;
-                        if (packet.Ref.size > 0)
-                            yield return pkt;
+                        // pkt is owned by this method only — yield Clones so consumers' lifetime is independent.
+                        using (var pkt = new MediaPacket())
+                        {
+                            int consumed = ParseInto(codecContext, pkt, new ReadOnlySpan<byte>(rented, offset, outSize - offset));
+                            offset += consumed;
+                            if (pkt.Ref.size > 0)
+                                yield return pkt; // pkt.Dispose() runs on next MoveNext; consumer must Clone to outlive that.
+                        }
                     }
                 }
             }
             finally
             {
-                if (packet == null) pkt?.Dispose();
+                ArrayPool<byte>.Shared.Return(rented);
             }
         }
 
+        /// <summary>
+        /// Parse a chunk of bytes into <paramref name="packet"/>. Returns the number of bytes consumed.
+        /// The <paramref name="packet"/>'s data pointer is replaced with a refcounted copy of the parsed slice, so
+        /// it remains valid after <paramref name="input"/> goes out of scope.
+        /// </summary>
+        public int ParseInto(MediaCodecContext codecContext, MediaPacket packet, ReadOnlySpan<byte> input)
+        {
+            if (codecContext == null) throw new ArgumentNullException(nameof(codecContext));
+            if (packet == null) throw new ArgumentNullException(nameof(packet));
+            if (input.Length == 0) return 0;
+
+            byte* poutbuf = null;
+            int poutbufSize = 0;
+            int consumed;
+            fixed (byte* pIn = input)
+            {
+                consumed = ffmpeg.av_parser_parse2(
+                    pCodecParserContext, codecContext,
+                    &poutbuf, &poutbufSize,
+                    pIn, input.Length,
+                    packet.Ref.pts, packet.Ref.dts, packet.Ref.pos);
+            }
+            consumed.ThrowIfError();
+
+            if (poutbufSize > 0)
+            {
+                // av_parser_parse2 returns a pointer that aliases either the input or an internal parser-owned buffer.
+                // Either way, we MUST copy into a packet-owned, refcounted buffer before returning to managed code,
+                // otherwise the data pointer can become dangling.
+                ffmpeg.av_new_packet(packet, poutbufSize).ThrowIfError();
+                Buffer.MemoryCopy(poutbuf, packet.Ref.data, packet.Ref.size, poutbufSize);
+            }
+            else
+            {
+                packet.Ref.data = null;
+                packet.Ref.size = 0;
+            }
+            return consumed;
+        }
 
         /// <summary>
-        /// TODO:
+        /// Low-level passthrough to <see cref="ffmpeg.av_parser_parse2"/>. Caller is responsible for ensuring
+        /// <paramref name="buf"/> lives until the resulting packet data is consumed or copied.
         /// </summary>
-        /// <param name="codecContext"></param>
-        /// <param name="poutbuf"></param>
-        /// <param name="poutbufSize"></param>
-        /// <param name="buf"></param>
-        /// <param name="bufSize"></param>
-        /// <param name="pts"></param>
-        /// <param name="dts"></param>
-        /// <param name="pos"></param>
-        /// <returns></returns>
         public int Parser2(MediaCodecContext codecContext, IntPtr poutbuf, IntPtr poutbufSize, IntPtr buf, int bufSize, long pts, long dts, long pos)
         {
             return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, (byte**)poutbuf, (int*)poutbufSize, (byte*)buf, bufSize, pts, dts, pos);
         }
 
-
-        public int Parser2(MediaCodecContext codecContext, MediaPacket packet, byte[] buf, int bufOffset = 0)
-        {
-            fixed (byte* pbuf = buf)
-            {
-                byte* pbufStart = pbuf + bufOffset;
-                return ffmpeg.av_parser_parse2(pCodecParserContext, codecContext, &((AVPacket*)packet)->data, &((AVPacket*)packet)->size, pbufStart, buf.Length - bufOffset, packet.Ref.pts, packet.Ref.dts, packet.Ref.pos);
-            }
-        }
-
-        private bool disposedValue = true;
+        private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                if (disposing)
+                if (pCodecParserContext != null)
                 {
-                    // nothing
+                    ffmpeg.av_parser_close(pCodecParserContext);
+                    pCodecParserContext = null;
                 }
-                ffmpeg.av_parser_close(pCodecParserContext);
                 disposedValue = true;
             }
         }
@@ -136,5 +172,5 @@ namespace FFmpeg.Sharp
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-    } 
+    }
 }

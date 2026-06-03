@@ -22,15 +22,13 @@ namespace FFmpeg.Sharp.Example
             var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_MP2);
             using (var decoder = MediaDecoder.Create(codec))
             using (var parser = new MediaCodecParserContext(codec.Ref.id))
-            using (var pkt = new MediaPacket())
             using (var decoded_frame = new MediaFrame())
             using (var inStream = File.OpenRead(input))
             using (var outStream = File.OpenWrite(output))
             {
-                pkt.Ref.dts = ffmpeg.AV_NOPTS_VALUE;
-                pkt.Ref.pts = ffmpeg.AV_NOPTS_VALUE;
-                pkt.Ref.pos = 0;
-                foreach (var packet in parser.ParserPackets(decoder, inStream, pkt))
+                // ParsePackets owns its own MediaPacket internally — the yielded packet's data is
+                // valid only until the next MoveNext, which is fine since we consume it inline.
+                foreach (var packet in parser.ParsePackets(decoder, inStream))
                 {
                     foreach (var frame in decoder.DecodePacket(packet, decoded_frame))
                     {

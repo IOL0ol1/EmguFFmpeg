@@ -1,133 +1,100 @@
-﻿using System;
+using System;
 using FFmpeg.AutoGen;
 
 namespace FFmpeg.Sharp
 {
     /// <summary>
-    /// <see cref="AVAudioFifo"/> wapper
+    /// <see cref="AVAudioFifo"/> wrapper. Append samples with <see cref="Add(MediaFrame)"/>, drain with
+    /// <see cref="Read(MediaFrame, int)"/>. Backing storage doubles on demand to amortize re-allocations.
     /// </summary>
     public unsafe class AudioFifo : IDisposable
     {
         protected AVAudioFifo* pAudioFifo;
+        private readonly AVSampleFormat _format;
+        private readonly int _channels;
+        private bool disposedValue;
 
         public AudioFifo(AVAudioFifo* pAVAudioFifo, bool isDisposeByOwner = true)
         {
+            if (pAVAudioFifo == null) throw new ArgumentNullException(nameof(pAVAudioFifo));
             pAudioFifo = pAVAudioFifo;
             disposedValue = !isDisposeByOwner;
         }
 
-        /// <summary>
-        /// alloc <see cref="AVAudioFifo"/>
-        /// </summary>
-        /// <param name="format"></param>
-        /// <param name="channels"></param>
-        /// <param name="nbSamples"></param>
         public AudioFifo(AVSampleFormat format, int channels, int nbSamples = 1)
             : this(ffmpeg.av_audio_fifo_alloc(format, channels, nbSamples <= 0 ? 1 : nbSamples), true)
-        { }
+        {
+            _format = format;
+            _channels = channels;
+        }
 
-        /// <summary>
-        /// Get the current number of samples in the AVAudioFifo available for reading.
-        /// </summary>
+        /// <summary>Samples currently buffered.</summary>
         public int Size => ffmpeg.av_audio_fifo_size(pAudioFifo);
 
-        /// <summary>
-        /// Get the current number of samples in the AVAudioFifo available for writing.
-        /// </summary>
+        /// <summary>Samples that fit without re-allocation.</summary>
         public int Space => ffmpeg.av_audio_fifo_space(pAudioFifo);
 
-        /// <summary>
-        ///  Peek data from an AVAudioFifo.
-        /// </summary>
-        /// <param name="data"> audio data plane pointers</param>
-        /// <param name="nbSamples">number of samples to peek</param>
-        /// <returns>
-        /// number of samples actually peek, or negative AVERROR code on failure. The number
-        /// of samples actually peek will not be greater than nb_samples, and will only be
-        /// less than nb_samples if av_audio_fifo_size is less than nb_samples.
-        /// </returns>
+        /// <summary>Ensure at least <paramref name="totalCapacity"/> samples of total capacity. Uses geometric growth.</summary>
+        public void EnsureCapacity(int totalCapacity)
+        {
+            int current = Size + Space;
+            if (current >= totalCapacity) return;
+            int target = Math.Max(totalCapacity, current * 2);
+            ffmpeg.av_audio_fifo_realloc(pAudioFifo, target).ThrowIfError();
+        }
+
         public int Peek(void** data, int nbSamples)
-        {
-            return ffmpeg.av_audio_fifo_peek(pAudioFifo, data, nbSamples).ThrowIfError();
-        }
+            => ffmpeg.av_audio_fifo_peek(pAudioFifo, data, nbSamples).ThrowIfError();
 
-        /// <summary>
-        /// Peek data from an AVAudioFifo.
-        /// </summary>
-        /// <param name="data">audio data plane pointers</param>
-        /// <param name="nbSamples">number of samples to peek</param>
-        /// <param name="Offset">offset from current read position</param>
-        /// <returns>
-        /// number of samples actually peek, or negative AVERROR code on failure. The number
-        /// of samples actually peek will not be greater than nb_samples, and will only be
-        /// less than nb_samples if av_audio_fifo_size is less than nb_samples.
-        /// </returns>
-        public int PeekAt(void** data, int nbSamples, int Offset)
-        {
-            return ffmpeg.av_audio_fifo_peek_at(pAudioFifo, data, nbSamples, Offset).ThrowIfError();
-        }
+        public int PeekAt(void** data, int nbSamples, int offset)
+            => ffmpeg.av_audio_fifo_peek_at(pAudioFifo, data, nbSamples, offset).ThrowIfError();
 
-        /// <summary>
-        /// auto realloc if space less than nbSamples
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="nbSamples"></param>
-        /// <exception cref="FFmpegException"/>
+        /// <summary>Auto-grows the buffer with a 2× growth factor if there's not enough room.</summary>
         public int Add(void** data, int nbSamples)
         {
-            if (Space < nbSamples)
-            {
-                int ret;
-                if ((ret = ffmpeg.av_audio_fifo_realloc(pAudioFifo, Size + nbSamples).ThrowIfError()) < 0)
-                    return ret;
-            }
+            EnsureCapacity(Size + nbSamples);
             return ffmpeg.av_audio_fifo_write(pAudioFifo, data, nbSamples).ThrowIfError();
         }
 
-        /// <summary>
-        /// Read data from an AVAudioFifo.
-        /// </summary>
-        /// <param name="data">audio data plane pointers</param>
-        /// <param name="nbSamples">number of samples to read</param>
-        /// <exception cref="FFmpegException"/>
-        /// <returns>
-        /// number of samples actually read, or negative AVERROR code on failure. The number
-        /// of samples actually read will not be greater than nb_samples, and will only be
-        /// less than nb_samples if av_audio_fifo_size is less than nb_samples.
-        /// </returns>
+        /// <summary>Append all samples from <paramref name="frame"/> (managed-friendly overload).</summary>
+        public int Add(MediaFrame frame)
+        {
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
+            return Add((void**)frame.Ref.extended_data, frame.Ref.nb_samples);
+        }
+
         public int Read(void** data, int nbSamples)
-        {
-            return ffmpeg.av_audio_fifo_read(pAudioFifo, data, nbSamples).ThrowIfError();
-        }
+            => ffmpeg.av_audio_fifo_read(pAudioFifo, data, nbSamples).ThrowIfError();
 
         /// <summary>
-        /// Drain data from an <see cref="AVAudioFifo"/>.
+        /// Read up to <paramref name="nbSamples"/> samples into <paramref name="dstFrame"/>'s extended_data planes.
+        /// The frame must already be sized (see <see cref="MediaFrame.CreateAudioFrame(AVChannelLayout, int, AVSampleFormat, int, int)"/>).
         /// </summary>
-        /// <param name="nbSamples">number of samples to drain</param>
-        /// <returns>0 if OK, or negative AVERROR code on failure</returns>
-        /// <exception cref="FFmpegException"/>
+        /// <returns>Number of samples actually read (may be less than requested at end-of-stream).</returns>
+        public int Read(MediaFrame dstFrame, int nbSamples)
+        {
+            if (dstFrame == null) throw new ArgumentNullException(nameof(dstFrame));
+            int actual = ffmpeg.av_audio_fifo_read(pAudioFifo, (void**)dstFrame.Ref.extended_data, nbSamples).ThrowIfError();
+            dstFrame.Ref.nb_samples = actual;
+            return actual;
+        }
+
         public int Drain(int nbSamples)
-        {
-            return ffmpeg.av_audio_fifo_drain(pAudioFifo, nbSamples).ThrowIfError();
-        }
+            => ffmpeg.av_audio_fifo_drain(pAudioFifo, nbSamples).ThrowIfError();
 
-        /// <summary>
-        /// Clear tha <see cref="AVAudioFifo"/> buffer
-        /// </summary>
+        /// <summary>Clear the buffer.</summary>
         public void Reset()
-        {
-            ffmpeg.av_audio_fifo_reset(pAudioFifo);
-        }
-
-        #region IDisposable Support
-
-        private bool disposedValue = false;
+            => ffmpeg.av_audio_fifo_reset(pAudioFifo);
 
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                ffmpeg.av_audio_fifo_free(pAudioFifo);
+                if (pAudioFifo != null)
+                {
+                    ffmpeg.av_audio_fifo_free(pAudioFifo);
+                    pAudioFifo = null;
+                }
                 disposedValue = true;
             }
         }
@@ -142,7 +109,5 @@ namespace FFmpeg.Sharp
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
-        #endregion IDisposable Support
     }
 }

@@ -22,7 +22,6 @@ namespace FFmpeg.Sharp.Example
             var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_H264);
             using (var f = File.OpenRead(filename))
             using (var of = File.Create(outfilename))
-            using (var pkt = new MediaPacket())
             using (var parser = new MediaCodecParserContext(codec.Ref.id))
             using (var c = MediaDecoder.Create(codec, _ =>
              {
@@ -34,18 +33,12 @@ namespace FFmpeg.Sharp.Example
              }))
             using (var frame = new MediaFrame())
             {
-                pkt.Ref.dts = ffmpeg.AV_NOPTS_VALUE;
-                pkt.Ref.pts = ffmpeg.AV_NOPTS_VALUE;
-                pkt.Ref.pos = 0;
-                foreach (var oPacket in parser.ParserPackets(c, f, pkt))
+                foreach (var oPacket in parser.ParsePackets(c, f))
                 {
                     foreach (var oFrame in c.DecodePacket(oPacket, frame))
                     {
                         PgmSave(oFrame, of);
                     }
-                    pkt.Ref.dts = ffmpeg.AV_NOPTS_VALUE;
-                    pkt.Ref.pts = ffmpeg.AV_NOPTS_VALUE;
-                    pkt.Ref.pos = 0;
                 }
 
                 /* flush the decoder */

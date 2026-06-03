@@ -1,132 +1,209 @@
 FFmpeg.Sharp
 =====================
-**A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.**     
+**A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) wrapper library.**
 
 [![NuGet version (FFmpeg4Sharp)](https://img.shields.io/nuget/v/FFmpeg4Sharp.svg)](https://www.nuget.org/packages/FFmpeg4Sharp/)
 [![NuGet downloads (FFmpeg4Sharp)](https://img.shields.io/nuget/dt/FFmpeg4Sharp.svg)](https://www.nuget.org/packages/FFmpeg4Sharp/)
-[![Build status](https://ci.appveyor.com/api/projects/status/rrsd6t3pn1gqurbt?svg=true)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg-hhiy2)    
+[![Build status](https://ci.appveyor.com/api/projects/status/rrsd6t3pn1gqurbt?svg=true)](https://ci.appveyor.com/project/IOL0ol1/emguffmpeg-hhiy2)
 
-This is **NOT** a ffmpeg command-line library.    
-dev branch is under construction.    
-FFmpeg API are unstable, please use ffmpeg library version > 5 
+This is **NOT** a ffmpeg command-line library.
+Please use FFmpeg shared libraries version >= 5.
 
+## Install
 
-## Usage
-### Get ffmpeg *.dll    
-Manually download the *.dll files that comply with the license from [ffmpeg.org](http://www.ffmpeg.org/download.html).   
-You can get the nightly version on Nuget    
+### Get ffmpeg DLLs
+Either download from [ffmpeg.org](http://www.ffmpeg.org/download.html) according to the license you need, or pull a NuGet redistributable:
+
 ```
 NuGet\Install-Package FFmpeg.GPL
-NuGet\Install-Package FFmpeg.LGPL 
+NuGet\Install-Package FFmpeg.LGPL
 ```
 
-### Install FFmpeg4Sharp 
+### Install FFmpeg4Sharp
 ```
 NuGet\Install-Package FFmpeg4Sharp
 ```
-add namespace 
+
+Namespaces:
 ```csharp
 using FFmpeg.AutoGen;
 using FFmpeg.Sharp;
 ```
-### Quick start
-#### Mux and encode
+
+## Quick start
+
+### Encode and mux
+The shortest possible path uses the new `MediaSink` one-stop API — it owns the muxer + encoder(s), auto-assigns pts, flushes encoders, and writes the trailer on dispose.
+
 ```csharp
-/// Create a video file
-var fps = 29.97d;
-var width = 800;
-var heith = 600;
-var output = "path-to-your-output-file.mp4";
-using (var muxer = MediaMuxer.Create(output))
+const string output = "out.mp4";
+using var sink = MediaSink.Create(output);
+int v = sink.AddVideo(MediaEncoder.Video()
+    .OutputFormat(sink.Muxer.Format)
+    .Size(800, 600)
+    .Fps(29.97)
+    .Configure(c => c.Ref.thread_count = 10)
+    .Build());
+sink.Start();
+
+using var frame = MediaFrame.CreateVideoFrame(800, 600, AVPixelFormat.AV_PIX_FMT_YUV420P);
+for (int i = 0; i < 300; i++)
 {
-    using (var encoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.Ref.thread_count = 10))
+    // ... fill frame.Ref.data[plane] ...
+    sink.WriteVideoFrame(v, frame); // pts auto-assigned
+}
+// sink.Dispose() flushes the encoder and writes the trailer.
+```
+
+### Demux and decode
+Use `MediaDemuxer.ReadFrames` for the common case: route packets to per-stream decoders and yield decoded frames in one call.
+
+```csharp
+var input  = "input.mp4";
+var output = "frames-out";
+
+using var demuxer = MediaDemuxer.Open(input);
+var decoders = demuxer
+    .Select(s => (s.Index, decoder: MediaDecoder.CreateDecoder(s.CodecparRef)))
+    .Where(p => p.decoder != null)
+    .ToDictionary(p => p.Index, p => p.decoder);
+
+using var convert    = new Swscale();
+using var bgrFrame   = MediaFrame.CreateVideoFrame(decoders.First().Value.Ref.width,
+                                                   decoders.First().Value.Ref.height,
+                                                   AVPixelFormat.AV_PIX_FMT_BGR24);
+try
+{
+    foreach (var (streamIndex, frame) in demuxer.ReadFrames(decoders, AVMediaType.AVMEDIA_TYPE_VIDEO))
     {
-        var stream = muxer.AddStream(encoder);
-        muxer.WriteHeader();
-        using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, encoder.Ref.pix_fmt))
-        {
-            for (var i = 0; i < 300; i++)
-            {
-                // Your code to fill AVFrame.data
-                vFrame.Ref.pts = i;
-                foreach (var packet in encoder.EncodeFrame(vFrame))
-                {
-                    packet.Ref.stream_index = stream.Ref.index;
-                    muxer.WritePacket(packet, encoder.Ref.time_base);
-                }
-            }
-        }
-        muxer.FlushCodecs(new[] { encoder });
-        muxer.WriteTrailer();
+        convert.Convert(frame, bgrFrame); // single-frame, no array allocation; auto-resets on size change
+        // save bgrFrame somewhere
+    }
+}
+finally
+{
+    foreach (var d in decoders.Values) d.Dispose();
+}
+```
+
+### Hardware-accelerated decode (zero-copy GPU frames)
+```csharp
+using var demuxer = MediaDemuxer.Open("input.mp4");
+MediaCodec dec = null;
+var vi = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref dec);
+
+using var hwDecoder = MediaDecoder.CreateDecoder(demuxer[vi].CodecparRef, ctx =>
+{
+    ctx.Ref.thread_count = 10;
+    ctx.InitHWDeviceContext("d3d11va"); // or "cuda", "qsv", "vaapi", ...
+});
+
+using var pkt = new MediaPacket();
+using var recv = new MediaFrame();
+using var sw   = new MediaFrame(); // optional — omit to keep zero-copy GPU surface
+
+foreach (var p in demuxer.ReadPackets(pkt))
+{
+    if (p.StreamIndex != vi) continue;
+    foreach (var frame in hwDecoder.DecodePacket(p, recv, sw))
+    {
+        // `frame` is the SW download. Pass null for swFrame above to receive the raw HW surface instead.
     }
 }
 ```
-#### Demux and decode
+
+### Hardware-accelerated transcode (HW → HW, no GPU↔CPU bounce)
 ```csharp
-/// Video to BGR images
-var input = "path-to-your-input-file.mp4";
-var output = "path-to-your-output-dir";
-using (var demuxer = MediaDemuxer.Open(input))
-using (var convert = new Swscale())
-using (var bgrFrame = new MediaFrame())
+using var demuxer = MediaDemuxer.Open("input.mp4");
+MediaCodec dec = null;
+int vi = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref dec);
+
+using var hwDecoder = MediaDecoder.CreateDecoder(demuxer[vi].CodecparRef,
+    ctx => ctx.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA));
+
+using var hwEncoder = MediaEncoder.Video()
+    .Codec("h264_nvenc")
+    .Size(demuxer[vi].CodecparRef.width, demuxer[vi].CodecparRef.height)
+    .Fps(30)
+    .UseHardware(AVPixelFormat.AV_PIX_FMT_CUDA, AVPixelFormat.AV_PIX_FMT_NV12,
+                 AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA)
+    .UseHardwareDevice(hwDecoder.GetHWDeviceRef()) // share the same CUDA context
+    .Bitrate(4_000_000)
+    .Build();
+```
+
+### Audio resample to encoder.frame_size
+```csharp
+using var resampler = AudioResampler.For(audioDecoder, audioEncoder);
+
+foreach (var (_, decoded) in demuxer.ReadFrames(audioDecoders, AVMediaType.AVMEDIA_TYPE_AUDIO))
 {
-    var decoders = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.Ref.thread_count = 10)).ToList();
-    foreach (var packet in demuxer.ReadPackets())
+    foreach (var fixedFrame in resampler.Convert(decoded))
     {
-        var decoder = decoders[packet.Ref.stream_index];
-        if (decoder != null && decoder.Ref.codec_type == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO)
-        {
-            // pre-allocate dst frame once; Swscale.Convert auto-resets on first call from frame metadata.
-            if (bgrFrame.Ref.width == 0)
-            {
-                bgrFrame.Ref.width = decoder.Ref.width;
-                bgrFrame.Ref.height = decoder.Ref.height;
-                bgrFrame.Ref.format = (int)FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24;
-                bgrFrame.AllocateBuffer();
-            }
-            foreach (var frame in decoder.DecodePacket(packet))
-            {
-                // frame is YUV AVFrame
-                foreach (var bgrframe in convert.Convert(frame, bgrFrame))
-                {
-                    // use opencvsharp save to jpg
-                    //using (var mat = new Mat(bgrframe.Ref.height, bgrframe.Ref.width, MatType.CV_8UC3))
-                    //{
-                    //    var srcLineSize = bgrframe.Ref.linesize[0];
-                    //    var dstLineSize = (int)mat.Step();
-                    //    FFmpegUtil.CopyPlane((IntPtr)bgrframe.Ref.data[0], srcLineSize,
-                    //        mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
-                    //    if (frame.Ref.pkt_dts >= 0)
-                    //        mat.SaveImage(Path.Combine(output, $"{demuxer[packet.Ref.stream_index].ToTimeSpan(frame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
-                    //}
-                }
-            }
-        }
+        sink.WriteAudioFrame(audioTrack, fixedFrame);
+        fixedFrame.Dispose();
     }
-    decoders.ForEach(_ => _?.Dispose());
+}
+foreach (var tail in resampler.Flush()) // drain
+{
+    sink.WriteAudioFrame(audioTrack, tail);
+    tail.Dispose();
 }
 ```
-More see **[Example](./example/FFmpegSharp.Example)**
 
-## Breaking changes in 8.0.0
-- Tracks **FFmpeg.AutoGen 8.1.0** (was 7.x). Drops the `FFmpeg.AutoGen.Abstractions` shim namespace; types are now under `FFmpeg.AutoGen` directly.
-- **Renamed wrappers**: `OutputFormat → MediaOutputFormat`, `InputFormat → MediaInputFormat`, `PixelConverter → Swscale`, `SampleConverter → Swresample`, `IFrameConverter → IConverter`. The old types are gone.
-- **Property access**: the per-field PascalCase property mirrors on `MediaFrame / MediaPacket / MediaCodecContext / MediaFormatContext / MediaStream / MediaCodec / MediaFilter*` were deleted (~600 LOC of boilerplate). Use `instance.Ref.snake_case_field` (returns `ref AVStruct` — readable and writable, zero-copy) for all field access. Example: `frame.Width = 1920` → `frame.Ref.width = 1920`; `packet.Pts` → `packet.Ref.pts`. The previous `Const` snapshot accessor is also removed — `Ref` covers both read and write needs.
-- **Swscale** now requires a pre-allocated destination `MediaFrame` (with `Width`/`Height`/`Format` set + `AllocateBuffer()`). The old `PixelConverter.Convert(src)` single-arg overload that allocated internally is gone. Default `new Swscale()` leaves the context null and lazily configures on first `Convert(src, dst)` call from frame metadata.
-- **Swresample** constructor requires full in/out parameters (`new Swresample(outCh, outFmt, outRate, inCh, inFmt, inRate)`). The old `SampleConverter.SetOpts(...)` deferred-config API is gone.
-- **`MediaFrame.GetBytes`** now has a zero-allocation `Span<byte>` overload: `int GetBytes(Span<byte> dst, bool padding = true)`. Use `int GetBytesSize(bool padding = true)` to size the buffer. The `byte[] GetBytes()` convenience overload is preserved.
+More: **[example/](./example)**.
 
-## ROADMAP
+## Breaking changes in 8.1.0
 
-- Easy api to cut/seek/mute audio clip.
-- Easy api to cut/seek video clip.
-- More example and test.
-- Filter support.
-- Data exchange with NAudio and SharpAVI.
+This release is a heavyweight cleanup driven by an audit (see `docs/migration-7-to-8.md` for full details and before/after snippets).
+
+Highlights:
+- `MediaFrame.Clone()` / `MediaPacket.Clone()` no longer leak (`disposedValue` default flipped).
+- `MediaDemuxer.Open(Stream)` / `MediaMuxer.Create(Stream)` no longer close your stream by default — pass `leaveOpen: false` to opt in.
+- `MediaIOContext` callbacks catch managed exceptions and surface them as `IOException` on the next managed call (no more crashes from network blips).
+- `MediaDemuxer.ReadPackets` no longer yields a ghost packet at EOF; pair with `ReadPacketsCloned()` for safe enqueuing.
+- `MediaCodecParserContext.ParserPackets` — fixed NRE and dangling-pointer-on-byte[] bug.
+- `MediaEncoder.EncodeFrame` no longer calls `av_frame_make_writable` in `finally` (you can call `MediaEncoder.MakeWritable(frame)` yourself before reuse).
+- New builder: `MediaEncoder.Video()` / `MediaEncoder.Audio()` replaces the 14 legacy CreateXxxEncoder overloads.
+- New hardware encoder path: `MediaEncoder.CreateHWVideoEncoder(...)` + `MediaCodecContext.AttachHWDevice/AttachHWFramesContext`.
+- New `MediaFrame.IsHardwareFrame` / `TransferToSoftware` / `AllocateOnHWFrames`.
+- New `MediaSink`, `AudioResampler`, `Swscale.Options`, `Swresample.Flush(...)`.
+- `IConverter.Convert` now returns `int` (frames written), not `IEnumerable<MediaFrame>`. The old enumerable behaviour is available via `Swscale.ConvertEnumerable` marked `[Obsolete]`.
+- Typo fixes: `MediaCodec.GetSampelFmts` → `GetSampleFormats`, `MediaFilter.GetGetFilters` → `GetFilters` (old names kept as `[Obsolete]` forwarders).
+- `MediaDictionary` indexer returns `null` on miss instead of throwing.
+- PascalCase shortcuts on `MediaFrame` / `MediaPacket` / `MediaStream` (`Width`, `Height`, `Pts`, `StreamIndex`, `Format`, ...). The `.Ref.snake_case` escape hatch is still available.
+
+## Troubleshooting
+
+**`DllNotFoundException: avformat-XX.dll`** — FFmpeg.AutoGen does not ship native binaries. Either install `FFmpeg.GPL` / `FFmpeg.LGPL` NuGets, or set the loader's search root before any FFmpeg call:
+```csharp
+ffmpeg.RootPath = @"C:\path\to\ffmpeg\bin";
+// or AppDomain.CurrentDomain.BaseDirectory, or any folder that contains avcodec/avformat/avutil/swscale/swresample DLLs
+```
+
+**Version mismatch** — this library tracks FFmpeg shared libraries 7.x / 8.x (corresponding FFmpeg.AutoGen versions 7.x / 8.x). FFmpeg 6.x or earlier are not supported.
+
+**`AV_DICT_DONT_STRDUP_KEY` / `AV_DICT_DONT_STRDUP_VAL`** — these flags transfer ownership of an av_malloc'd buffer to the dictionary, which the managed wrapper cannot do safely. They are marked `[Obsolete(error=true)]`.
+
+**HW decode falls back to software silently** — pass `fallbackToSw: false` (the default) to `InitHWDeviceContext` to make this fail instead. Use `fallbackToSw: true` to opt into the graceful fallback.
+
+**HW encode `EINVAL` on first frame** — feed frames whose `format` matches the encoder's `hwPixelFormat`, allocated with `MediaFrame.AllocateOnHWFrames(encoder.GetHWFramesRef())` instead of `AllocateBuffer()`.
+
+**Stream gets unexpectedly closed** — `MediaDemuxer.Open(Stream)` / `MediaMuxer.Create(Stream)` default to `leaveOpen: true` since 8.1.0, but if you upgraded from 7.x your old call sites may still be wiring the wrapper's lifecycle to your stream. Inspect the third (boolean) argument.
+
+## Roadmap
+- Easy API for cut/seek/mute audio clip.
+- Easy API for cut/seek video clip.
+- More examples and tests.
+- Filter graph parser (`avfilter_graph_parse2`).
 - Subtitle support.
+- Async/IAsyncEnumerable surface for encode/mux (read side is done).
+
+## Related
+- [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) — the underlying P/Invoke bindings.
+- [FFmpeg API documentation](https://ffmpeg.org/doxygen/trunk/index.html).
 
 ## License
-This project is licensed under the MIT license.    
+This project is licensed under the MIT license.
 
-But if you use the part of FFmpeg licensed under the GPL,    
-the whole project will be contagious by the GPL.
+If you use FFmpeg builds licensed under the GPL, that license is contagious.
