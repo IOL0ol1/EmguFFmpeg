@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Runtime.Serialization;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     /// <summary>
     /// FFmpeg exception

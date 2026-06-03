@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp.Example
+namespace FFmpeg.Sharp.Example
 {
     internal class DecodeVideo : ExampleBase
     {
@@ -34,6 +34,9 @@ namespace FFmpegSharp.Example
              }))
             using (var frame = new MediaFrame())
             {
+                pkt.Ref.dts = ffmpeg.AV_NOPTS_VALUE;
+                pkt.Ref.pts = ffmpeg.AV_NOPTS_VALUE;
+                pkt.Ref.pos = 0;
                 foreach (var oPacket in parser.ParserPackets(c, f, pkt))
                 {
                     foreach (var oFrame in c.DecodePacket(oPacket, frame))

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaDecoder  : MediaCodecContext
     { 

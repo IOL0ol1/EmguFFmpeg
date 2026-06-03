@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 using OpenCvSharp;
 
-namespace FFmpegSharp.Example
+namespace FFmpeg.Sharp.Example
 {
     internal class CreateMPEG4 : ExampleBase
     {
+
         public CreateMPEG4() : this($"{nameof(CreateMPEG4)}-output.mp4")
         {
         }
@@ -24,11 +25,15 @@ namespace FFmpegSharp.Example
             var s = Stopwatch.StartNew();
             using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), MediaOutputFormat.GuessFormat(null, outputFile, null)))
             using (var convert = new Swscale())
+            using (var convertDst = new MediaFrame())
             {
                 using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.Ref.thread_count = 10))
-                using (var f = MediaFrame.CreateVideoFrame(vEncoder.Ref.width, vEncoder.Ref.height, vEncoder.Ref.pix_fmt))
                 {
-                    //convert.SetOpts(width, heith, vEncoder.Ref.pix_fmt);
+                    // pre-allocate dst frame in encoder's pixel format; Swscale.Convert auto-Resets on first call.
+                    convertDst.Ref.width = width;
+                    convertDst.Ref.height = heith;
+                    convertDst.Ref.format = (int)vEncoder.Ref.pix_fmt;
+                    convertDst.AllocateBuffer();
                     var vStream = muxer.AddStream(vEncoder);
                     muxer.WriteHeader();
 
@@ -37,7 +42,7 @@ namespace FFmpegSharp.Example
                         for (var i = 0; i < 3000; i++)
                         {
                             FillBgr24(vFrame, i);
-                            foreach (var frame in convert.Convert(vFrame, f))
+                            foreach (var frame in convert.Convert(vFrame, convertDst))
                             {
                                 //FillYuv420P(vFrame, i);
                                 frame.Ref.pts = i;
@@ -55,6 +60,7 @@ namespace FFmpegSharp.Example
             }
             Console.WriteLine($"{s.Elapsed.TotalMilliseconds}ms");
         }
+
 
         private static unsafe void FillBgr24(MediaFrame frame, int i)
         {

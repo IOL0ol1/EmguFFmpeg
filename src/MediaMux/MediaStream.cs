@@ -1,18 +1,15 @@
-﻿using System;
-using FFmpeg.AutoGen.Abstractions;
+using System;
+using FFmpeg.AutoGen;
 
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
-    public unsafe partial class MediaStream 
-    { 
-        public AVCodecParameters* Codecpar
-        {
-            get => pStream->codecpar;
-            set => pStream->codecpar = value;
-        }
-
-        public AVCodecParameters CodecparRef => *pStream->codecpar;
+    public unsafe partial class MediaStream
+    {
+        /// <summary>
+        /// Direct access to the codec parameters of this stream.
+        /// </summary>
+        public ref AVCodecParameters CodecparRef => ref *pStream->codecpar;
 
         /// <summary>
         /// Convert to TimeSpan.
@@ -24,7 +21,7 @@ namespace FFmpegSharp
         /// <exception cref="FFmpegException"/>
         /// <returns></returns>
         public TimeSpan ToTimeSpan(long pts)
-        { 
+        {
             return TimeSpan.FromSeconds(pts * ffmpeg.av_q2d(pStream->time_base));
         }
 

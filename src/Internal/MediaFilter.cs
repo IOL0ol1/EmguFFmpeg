@@ -1,13 +1,12 @@
-﻿using System;
-using FFmpeg.AutoGen.Abstractions;
+using System;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaFilter
     {
         /// <summary>
-        /// Pointer to the underlying FFmpeg structure.
-        /// WARNING: Be careful when accessing or modifying this field directly.
+        /// Be careful!!!
         /// </summary>
         protected AVFilter* pFilter = null;
 
@@ -30,9 +29,9 @@ namespace FFmpegSharp
         { }
 
         /// <summary>
-        /// WARNING: Be careful when modifying this field directly.
+        /// Direct access to the underlying struct fields.
+        /// WARNING: Be careful when modifying. Tracks AVFilter struct evolution upstream.
         /// </summary>
         public ref AVFilter Ref => ref *pFilter;
-
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace FFmpegSharp.Example
+namespace FFmpeg.Sharp.Example
 {
     internal class Metadata : ExampleBase
     {

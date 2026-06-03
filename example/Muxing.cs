@@ -1,9 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using FFmpeg.AutoGen.Abstractions;
+using System.Runtime.Intrinsics.X86;
+using System.Security.Cryptography;
+using System.Text;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp.Example
+namespace FFmpeg.Sharp.Example
 {
     internal class Muxing : ExampleBase
     {
@@ -22,73 +25,96 @@ namespace FFmpegSharp.Example
 
             bool encode_video = false, encode_audio = false;
             using (var oc = MediaMuxer.Create(filename))
-            using (var sws = new Swscale())
-            using (var swr = new Swresample())  /* create resampler context */
             using (var vframe = new MediaFrame())
             using (var vtmpframe = new MediaFrame())
             using (var aframe = new MediaFrame())
             using (var atmpframe = new MediaFrame())
             {
                 var fmt = oc.Format;
-                var ap = new Parames();
-                var vp = new Parames();
-
-                var encoders = new List<MediaEncoder>();
-                /* Add the audio and video streams using the default format codecs
-                 * and initialize the codecs. */
-                if (fmt.Ref.audio_codec != AVCodecID.AV_CODEC_ID_NONE)
+                Swscale sws = null;
+                Swresample swr = null;
+                try
                 {
-                    var encoder = AddStream(oc, MediaCodec.FindEncoder(fmt.Ref.audio_codec), AVMediaType.AVMEDIA_TYPE_AUDIO, ap);
-                    encoders.Add(encoder);
-                    /* set resampler context options */
-                    encode_audio = true;
+                    var ap = new Parames();
+                    var vp = new Parames();
 
-                    var nbsamples = (encoder.Ref.codec->capabilities & ffmpeg.AV_CODEC_CAP_VARIABLE_FRAME_SIZE) != 0 ? 10000 : encoder.Ref.frame_size;
-
-                    swr.SetOpts(encoder.Ref.ch_layout, encoder.Ref.sample_rate, encoder.Ref.sample_fmt, nbsamples);
-
-                    // src
-                    atmpframe.Ref.ch_layout = encoder.Ref.ch_layout;
-                    atmpframe.Ref.nb_samples = nbsamples;
-                    atmpframe.Ref.format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
-                    atmpframe.Ref.sample_rate = encoder.Ref.sample_rate;
-                    atmpframe.AllocateBuffer();
-                }
-                if (fmt.Ref.video_codec != AVCodecID.AV_CODEC_ID_NONE)
-                {
-                    var encoder = AddStream(oc, MediaCodec.FindEncoder(fmt.Ref.video_codec), AVMediaType.AVMEDIA_TYPE_VIDEO, vp);
-                    encoders.Add(encoder);
-                    encode_video = true;
-
-                    sws.SetOpts(encoder.Ref.width, encoder.Ref.height, encoder.Ref.pix_fmt);
-
-                    // src
-                    vtmpframe.Ref.width = encoder.Ref.width;
-                    vtmpframe.Ref.height = encoder.Ref.height;
-                    vtmpframe.Ref.format = (int)AVPixelFormat.AV_PIX_FMT_YUV420P;
-                    vtmpframe.AllocateBuffer();
-                }
-                oc.DumpFormat();
-                oc.WriteHeader();
-
-                while (encode_video || encode_audio)
-                {
-                    /* select the stream to encode */
-                    if (encode_video &&
-                        (!encode_audio || ffmpeg.av_compare_ts(vp.nextPts, encoders[1].Ref.time_base,
-                                                        ap.nextPts, encoders[0].Ref.time_base) <= 0))
+                    var encoders = new List<MediaEncoder>();
+                    /* Add the audio and video streams using the default format codecs
+                     * and initialize the codecs. */
+                    if (fmt.Ref.audio_codec != AVCodecID.AV_CODEC_ID_NONE)
                     {
-                        encode_video = WriteVideoFrame(oc, sws, encoders[1], vtmpframe, vframe, vp);
+                        var encoder = AddStream(oc, MediaCodec.FindEncoder(fmt.Ref.audio_codec), AVMediaType.AVMEDIA_TYPE_AUDIO, ap);
+                        encoders.Add(encoder);
+                        encode_audio = true;
+
+                        var nbsamples = (encoder.GetCodec().Ref.capabilities & ffmpeg.AV_CODEC_CAP_VARIABLE_FRAME_SIZE) != 0 ? 10000 : encoder.Ref.frame_size;
+
+                        // src (S16 input)
+                        atmpframe.Ref.ch_layout = encoder.Ref.ch_layout;
+                        atmpframe.Ref.nb_samples = nbsamples;
+                        atmpframe.Ref.format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
+                        atmpframe.Ref.sample_rate = encoder.Ref.sample_rate;
+                        atmpframe.AllocateBuffer();
+
+                        // dst (encoder format)
+                        aframe.Ref.ch_layout = encoder.Ref.ch_layout;
+                        aframe.Ref.nb_samples = nbsamples;
+                        aframe.Ref.format = (int)encoder.Ref.sample_fmt;
+                        aframe.Ref.sample_rate = encoder.Ref.sample_rate;
+                        aframe.AllocateBuffer();
+
+                        swr = new Swresample(encoder.Ref.ch_layout, encoder.Ref.sample_fmt, encoder.Ref.sample_rate,
+                                             atmpframe.Ref.ch_layout, AVSampleFormat.AV_SAMPLE_FMT_S16, encoder.Ref.sample_rate);
                     }
-                    else
+                    if (fmt.Ref.video_codec != AVCodecID.AV_CODEC_ID_NONE)
                     {
-                        encode_audio = WriteAudioFrame(oc, swr, encoders[0], atmpframe, aframe, ap);
+                        var encoder = AddStream(oc, MediaCodec.FindEncoder(fmt.Ref.video_codec), AVMediaType.AVMEDIA_TYPE_VIDEO, vp);
+                        encoders.Add(encoder);
+                        encode_video = true;
+
+                        // src (YUV420P input)
+                        vtmpframe.Ref.width = encoder.Ref.width;
+                        vtmpframe.Ref.height = encoder.Ref.height;
+                        vtmpframe.Ref.format = (int)AVPixelFormat.AV_PIX_FMT_YUV420P;
+                        vtmpframe.AllocateBuffer();
+
+                        // dst (encoder pixel format)
+                        vframe.Ref.width = encoder.Ref.width;
+                        vframe.Ref.height = encoder.Ref.height;
+                        vframe.Ref.format = (int)encoder.Ref.pix_fmt;
+                        vframe.AllocateBuffer();
+
+                        sws = new Swscale(encoder.Ref.width, encoder.Ref.height, AVPixelFormat.AV_PIX_FMT_YUV420P,
+                                          encoder.Ref.width, encoder.Ref.height, encoder.Ref.pix_fmt);
                     }
+                    oc.DumpFormat();
+                    oc.WriteHeader();
+
+                    while (encode_video || encode_audio)
+                    {
+                        /* select the stream to encode */
+                        if (encode_video &&
+                            (!encode_audio || ffmpeg.av_compare_ts(vp.nextPts, encoders[1].Ref.time_base,
+                                                            ap.nextPts, encoders[0].Ref.time_base) <= 0))
+                        {
+                            encode_video = WriteVideoFrame(oc, sws, encoders[1], vtmpframe, vframe, vp);
+                        }
+                        else
+                        {
+                            encode_audio = WriteAudioFrame(oc, swr, encoders[0], atmpframe, aframe, ap);
+                        }
+                    }
+                    oc.FlushCodecs(encoders);
+                    oc.WriteTrailer();
+                    encoders.ForEach(_ => _?.Dispose());
                 }
-                oc.FlushCodecs(encoders);
-                oc.WriteTrailer();
-                encoders.ForEach(_ => _?.Dispose());
+                finally
+                {
+                    sws?.Dispose();
+                    swr?.Dispose();
+                }
             }
+
         }
 
         private static MediaEncoder AddStream(MediaMuxer oc, MediaCodec codec, AVMediaType mediaType, Parames p)
@@ -108,7 +134,6 @@ namespace FFmpegSharp.Example
                     /* increment frequency by 110 Hz per second */
                     p.tincr2 = 2 * Math.PI * 110.0 / aencoder.Ref.sample_rate / aencoder.Ref.sample_rate;
                     return aencoder;
-
                 case AVMediaType.AVMEDIA_TYPE_VIDEO:
                     var vbitrate = 400000;
                     var width = 352;
@@ -126,7 +151,6 @@ namespace FFmpegSharp.Example
                     });
                     oc.AddStream(vencoder).Ref.id = (int)oc.Ref.nb_streams - 1;
                     return vencoder;
-
                 default:
                     break;
             }
@@ -195,6 +219,7 @@ namespace FFmpegSharp.Example
             return frame == null ? false : true;
         }
 
+
         /// <summary>
         /// Prepare a dummy image.
         /// </summary>
@@ -202,11 +227,12 @@ namespace FFmpegSharp.Example
         /// <param name="frame_index"></param>
         /// <param name="width"></param>
         /// <param name="height"></param>
-        private static unsafe void FillYuvImage(MediaFrame pict, int frame_index, int width, int height)
+        private unsafe static void FillYuvImage(MediaFrame pict, int frame_index, int width, int height)
         {
             int x, y, i;
 
             i = frame_index;
+
 
             unchecked
             {
@@ -234,5 +260,6 @@ namespace FFmpegSharp.Example
             public double tincr2 { get; set; }
             public long nextPts { get; set; }
         }
+
     }
 }

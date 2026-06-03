@@ -1,4 +1,4 @@
-FFmpeg4Sharp
+FFmpeg.Sharp
 =====================
 **A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.**     
 
@@ -27,7 +27,7 @@ NuGet\Install-Package FFmpeg4Sharp
 add namespace 
 ```csharp
 using FFmpeg.AutoGen;
-using FFmpegSharp;
+using FFmpeg.Sharp;
 ```
 ### Quick start
 #### Mux and encode
@@ -39,20 +39,20 @@ var heith = 600;
 var output = "path-to-your-output-file.mp4";
 using (var muxer = MediaMuxer.Create(output))
 {
-    using (var encoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.ThreadCount = 10))
+    using (var encoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.Ref.thread_count = 10))
     {
         var stream = muxer.AddStream(encoder);
         muxer.WriteHeader();
-        using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, encoder.PixFmt))
+        using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, encoder.Ref.pix_fmt))
         {
             for (var i = 0; i < 300; i++)
             {
                 // Your code to fill AVFrame.data
-                vFrame.Pts = i;
+                vFrame.Ref.pts = i;
                 foreach (var packet in encoder.EncodeFrame(vFrame))
                 {
-                    packet.StreamIndex = stream.Index;
-                    muxer.WritePacket(packet, encoder.TimeBase);
+                    packet.Ref.stream_index = stream.Ref.index;
+                    muxer.WritePacket(packet, encoder.Ref.time_base);
                 }
             }
         }
@@ -67,29 +67,37 @@ using (var muxer = MediaMuxer.Create(output))
 var input = "path-to-your-input-file.mp4";
 var output = "path-to-your-output-dir";
 using (var demuxer = MediaDemuxer.Open(input))
-using (var convert = new PixelConverter())
+using (var convert = new Swscale())
+using (var bgrFrame = new MediaFrame())
 {
-    var decoders = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.ThreadCount = 10)).ToList();
+    var decoders = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.Ref.thread_count = 10)).ToList();
     foreach (var packet in demuxer.ReadPackets())
     {
-        var decoder = decoders[packet.StreamIndex];
-        if (decoder != null && decoder.CodecType == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO)
+        var decoder = decoders[packet.Ref.stream_index];
+        if (decoder != null && decoder.Ref.codec_type == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO)
         {
-            convert.SetOpts(decoder.Width, decoder.Height, FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24);
+            // pre-allocate dst frame once; Swscale.Convert auto-resets on first call from frame metadata.
+            if (bgrFrame.Ref.width == 0)
+            {
+                bgrFrame.Ref.width = decoder.Ref.width;
+                bgrFrame.Ref.height = decoder.Ref.height;
+                bgrFrame.Ref.format = (int)FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24;
+                bgrFrame.AllocateBuffer();
+            }
             foreach (var frame in decoder.DecodePacket(packet))
             {
                 // frame is YUV AVFrame
-                foreach (var bgrframe in convert.Convert(frame))
+                foreach (var bgrframe in convert.Convert(frame, bgrFrame))
                 {
                     // use opencvsharp save to jpg
-                    //using (var mat = new Mat(bgrframe.Height, bgrframe.Width, MatType.CV_8UC3))
+                    //using (var mat = new Mat(bgrframe.Ref.height, bgrframe.Ref.width, MatType.CV_8UC3))
                     //{
-                    //    var srcLineSize = bgrframe.Linesize[0];
+                    //    var srcLineSize = bgrframe.Ref.linesize[0];
                     //    var dstLineSize = (int)mat.Step();
                     //    FFmpegUtil.CopyPlane((IntPtr)bgrframe.Ref.data[0], srcLineSize,
                     //        mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
-                    //    if (frame.PktDts >= 0)
-                    //        mat.SaveImage(Path.Combine(output, $"{demuxer[packet.StreamIndex].ToTimeSpan(frame.PktDts).TotalMilliseconds}ms.jpg"));
+                    //    if (frame.Ref.pkt_dts >= 0)
+                    //        mat.SaveImage(Path.Combine(output, $"{demuxer[packet.Ref.stream_index].ToTimeSpan(frame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
                     //}
                 }
             }
@@ -99,6 +107,15 @@ using (var convert = new PixelConverter())
 }
 ```
 More see **[Example](./example/FFmpegSharp.Example)**
+
+## Breaking changes in 8.0.0
+- Tracks **FFmpeg.AutoGen 8.1.0** (was 7.x). Drops the `FFmpeg.AutoGen.Abstractions` shim namespace; types are now under `FFmpeg.AutoGen` directly.
+- **Renamed wrappers**: `OutputFormat → MediaOutputFormat`, `InputFormat → MediaInputFormat`, `PixelConverter → Swscale`, `SampleConverter → Swresample`, `IFrameConverter → IConverter`. The old types are gone.
+- **Property access**: the per-field PascalCase property mirrors on `MediaFrame / MediaPacket / MediaCodecContext / MediaFormatContext / MediaStream / MediaCodec / MediaFilter*` were deleted (~600 LOC of boilerplate). Use `instance.Ref.snake_case_field` (returns `ref AVStruct` — readable and writable, zero-copy) for all field access. Example: `frame.Width = 1920` → `frame.Ref.width = 1920`; `packet.Pts` → `packet.Ref.pts`. The previous `Const` snapshot accessor is also removed — `Ref` covers both read and write needs.
+- **Swscale** now requires a pre-allocated destination `MediaFrame` (with `Width`/`Height`/`Format` set + `AllocateBuffer()`). The old `PixelConverter.Convert(src)` single-arg overload that allocated internally is gone. Default `new Swscale()` leaves the context null and lazily configures on first `Convert(src, dst)` call from frame metadata.
+- **Swresample** constructor requires full in/out parameters (`new Swresample(outCh, outFmt, outRate, inCh, inFmt, inRate)`). The old `SampleConverter.SetOpts(...)` deferred-config API is gone.
+- **`MediaFrame.GetBytes`** now has a zero-allocation `Span<byte>` overload: `int GetBytes(Span<byte> dst, bool padding = true)`. Use `int GetBytesSize(bool padding = true)` to size the buffer. The `byte[] GetBytes()` convenience overload is preserved.
+
 ## ROADMAP
 
 - Easy api to cut/seek/mute audio clip.

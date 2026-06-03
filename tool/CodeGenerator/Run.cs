@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
 namespace CodeGenerator
 {
@@ -52,27 +52,25 @@ namespace CodeGenerator
             public string OutTypeName { get; set; }
         }
 
-        public static GeneratorOutput CodeGenerator(Info info, string @namespace = "FFmpegSharp")
+        public static GeneratorOutput CodeGenerator(Info info, string @namespace = "FFmpeg.Sharp")
         {
             var type = info.Type;
             var dstTypeName = info.Name;
             //var isDisposable = info.IsDisposable;
             using var sw = new StringWriter();
-            var srcTypeName = type.Name.Replace("FFmpeg.AutoGen.Abstractions.", "").Replace("FFmpeg.AutoGen.", "");
+            var srcTypeName = type.Name.Replace("FFmpeg.AutoGen.", "");
             dstTypeName ??= $"{Regex.Replace(srcTypeName, @"^AV", "Media")}";
             var pTypeName = $"{Regex.Replace(srcTypeName, @"^AV", "p")}";
 
             sw.WriteLine($"using System;");
-            //sw.WriteLine($"using System.Runtime.CompilerServices;");
-            sw.WriteLine($"using FFmpeg.AutoGen.Abstractions;");
+            sw.WriteLine($"using FFmpeg.AutoGen;");
             sw.WriteLine(@"");
             sw.WriteLine($"namespace {@namespace}");
             sw.WriteLine(@"{");
             sw.WriteLine($"    public unsafe partial class {dstTypeName}");
             sw.WriteLine(@"    {");
             sw.WriteLine(@"        /// <summary>");
-            sw.WriteLine(@"        /// Pointer to the underlying FFmpeg structure.");
-            sw.WriteLine(@"        /// WARNING: Be careful when accessing or modifying this field directly.");
+            sw.WriteLine(@"        /// Be careful!!!");
             sw.WriteLine(@"        /// </summary>");
             sw.WriteLine($"        protected {srcTypeName}* {pTypeName} = null;");
             sw.WriteLine(@"");
@@ -95,42 +93,11 @@ namespace CodeGenerator
             sw.WriteLine(@"        { }");
             sw.WriteLine(@"");
             sw.WriteLine(@"        /// <summary>");
-            sw.WriteLine(@"        /// WARNING: Be careful when modifying this field directly.");
+            sw.WriteLine($"        /// Direct access to the underlying struct fields.");
+            sw.WriteLine($"        /// WARNING: Be careful when modifying. Tracks {srcTypeName} struct evolution upstream.");
             sw.WriteLine(@"        /// </summary>");
             sw.WriteLine($"        public ref {srcTypeName} Ref => ref *{pTypeName};");
             sw.WriteLine(@"");
-
-            //foreach (var element in type.GetMembers(BindingFlags.Public | BindingFlags.Instance))
-            //{
-            //    var srcTypeWithName = $"{element}";
-            //    if (element.CustomAttributes.Any(_ => _.AttributeType == typeof(ObsoleteAttribute))
-            //    || element.MemberType != MemberTypes.Field
-            //    || srcTypeWithName.Contains('*')
-            //    || srcTypeWithName.Contains("_func "))
-            //        continue;
-
-            //    var tmp = srcTypeWithName.Split(' ');
-            //    var srcName = element.Name;
-            //    var dstType = tmp[0]
-            //        .Replace("FFmpeg.AutoGen.Abstractions.", "").Replace("FFmpeg.AutoGen.", "")
-            //        .Replace("Void", "void")
-            //        .Replace("Byte", "byte")
-            //        .Replace("UInt16", "ushort")
-            //        .Replace("Int16", "short")
-            //        .Replace("UInt32", "uint")
-            //        .Replace("Int32", "int")
-            //        .Replace("UInt64", "ulong")
-            //        .Replace("Int64", "long")
-            //        .Replace("Single", "float")
-            //        .Replace("Double", "double");
-            //    var dstName = string.Join("", tmp[1].Split('_').Select(_ => $"{char.ToUpper(_[0])}{_[1..]}"));
-            //    sw.WriteLine($"        public {dstType} {dstName}");
-            //    sw.WriteLine(@"        {");
-            //    sw.WriteLine($"            get => {pTypeName}->{srcName};");
-            //    sw.WriteLine($"            set => {pTypeName}->{srcName} = value;");
-            //    sw.WriteLine(@"        }");
-            //    sw.WriteLine("");
-            //}
             sw.WriteLine(@"    }");
             sw.WriteLine(@"}");
             return new GeneratorOutput { SourceCode = sw.ToString(), OutTypeName = dstTypeName };

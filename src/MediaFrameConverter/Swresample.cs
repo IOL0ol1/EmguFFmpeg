@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     /// <summary>
     /// <see cref="SwrContext"/> wapper, include a <see cref="AVAudioFifo"/>.
@@ -39,7 +39,7 @@ namespace FFmpegSharp
         public IEnumerable<MediaFrame> Convert(MediaFrame srcFrame, MediaFrame dstFrame)
         {
             ffmpeg.swr_convert_frame(pSwrContext, dstFrame, srcFrame).ThrowIfError();
-            return [dstFrame];
+            return new[] { dstFrame };
         }
 
         public static implicit operator SwrContext*(Swresample value)

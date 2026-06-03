@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 using Microsoft.VisualBasic;
 using OpenCvSharp;
 
-namespace FFmpegSharp.Example.Other.Net
+namespace FFmpeg.Sharp.Example.Other.Net
 {
     internal class TSClient : ExampleBase
     {

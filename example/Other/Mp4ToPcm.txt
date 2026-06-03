@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 using NAudio.Wave;
 
-namespace FFmpegSharp.Example.Other
+namespace FFmpeg.Sharp.Example.Other
 {
     internal class Mp4ToPcm : ExampleBase
     {

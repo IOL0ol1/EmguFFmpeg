@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     /// <summary>
     /// <see cref="SwsContext"/> wapper
@@ -17,19 +17,19 @@ namespace FFmpegSharp
             disposedValue = !isDisposeByOwner;
         }
 
-        public Swscale() : this(ffmpeg.sws_alloc_context())
+        public Swscale()
         { }
 
         public Swscale(int srcWidth, int srcHeight, AVPixelFormat srcFormat,
             int dstWidth, int dstHeight, AVPixelFormat dstFormat,
-            int flags = ffmpeg.SWS_BILINEAR, SwsFilter* swsFilter = null, SwsFilter* dstFilter = null, double* param = null)
+            int flags = (int)SwsFlags.SWS_BILINEAR, SwsFilter* swsFilter = null, SwsFilter* dstFilter = null, double* param = null)
         {
             Reset(srcWidth, srcHeight, srcFormat, dstWidth, dstHeight, dstFormat, flags, swsFilter, dstFilter, param);
         }
 
         public void Reset(int srcWidth, int srcHeight, AVPixelFormat srcFormat,
             int dstWidth, int dstHeight, AVPixelFormat dstFormat,
-            int flags = ffmpeg.SWS_BILINEAR, SwsFilter* swsFilter = null, SwsFilter* dstFilter = null, double* param = null)
+            int flags = (int)SwsFlags.SWS_BILINEAR, SwsFilter* swsFilter = null, SwsFilter* dstFilter = null, double* param = null)
         {
             ffmpeg.sws_freeContext(pContext);
             pContext = ffmpeg.sws_getContext(srcWidth, srcHeight, srcFormat, dstWidth, dstHeight, dstFormat, flags, swsFilter, dstFilter, param);
@@ -43,7 +43,7 @@ namespace FFmpegSharp
             if (pContext == null)
                 Reset(src->width, src->height, (AVPixelFormat)src->format, dst->width, dst->height, (AVPixelFormat)dst->format);
             ffmpeg.sws_scale_frame(pContext, srcframe, dstframe).ThrowIfError();
-            return [dstframe];
+            return new[] { dstframe };
         }
 
         public static implicit operator SwsContext*(Swscale value)

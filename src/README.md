@@ -1,6 +1,6 @@
 FFmpeg4Sharp
 =====================
-**A [FFmpeg.AutoGen.Abstractions](https://github.com/Ruslan-B/FFmpeg.AutoGen.Abstractions) Warpper Library.**     
+**A [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) Warpper Library.**     
 
 [![NuGet version (FFmpeg4Sharp)](https://img.shields.io/nuget/v/FFmpeg4Sharp.svg)](https://www.nuget.org/packages/FFmpeg4Sharp/)
 [![NuGet downloads (FFmpeg4Sharp)](https://img.shields.io/nuget/dt/FFmpeg4Sharp.svg)](https://www.nuget.org/packages/FFmpeg4Sharp/)
@@ -17,8 +17,8 @@ Manually download the *.dll files that comply with the license from [ffmpeg.org]
 NuGet\Install-Package FFmpeg4Sharp
 ```
 ```csharp
-using FFmpeg.AutoGen.Abstractions;
-using FFmpegSharp;
+using FFmpeg.AutoGen;
+using FFmpeg.Sharp;
 ```
 ### Mux and encode
 ```csharp
@@ -29,20 +29,20 @@ var heith = 600;
 var output = "path-to-your-output-file.mp4";
 using (var muxer = MediaMuxer.Create(output))
 {
-    using (var encoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.ThreadCount = 10))
+    using (var encoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.Ref.thread_count = 10))
     {
         var stream = muxer.AddStream(encoder);
         muxer.WriteHeader();
-        using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, encoder.PixFmt))
+        using (var vFrame = MediaFrame.CreateVideoFrame(width, heith, encoder.Ref.pix_fmt))
         {
             for (var i = 0; i < 300; i++)
             {
                 // Your code to fill AVFrame.data
-                vFrame.Pts = i;
+                vFrame.Ref.pts = i;
                 foreach (var packet in encoder.EncodeFrame(vFrame))
                 {
-                    packet.StreamIndex = stream.Index;
-                    muxer.WritePacket(packet, encoder.TimeBase);
+                    packet.Ref.stream_index = stream.Ref.index;
+                    muxer.WritePacket(packet, encoder.Ref.time_base);
                 }
             }
         }
@@ -57,29 +57,37 @@ using (var muxer = MediaMuxer.Create(output))
 var input = "path-to-your-input-file.mp4";
 var output = "path-to-your-output-dir";
 using (var demuxer = MediaDemuxer.Open(input))
-using (var convert = new PixelConverter())
+using (var convert = new Swscale())
+using (var bgrFrame = new MediaFrame())
 {
-    var decoders = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.ThreadCount = 10)).ToList();
+    var decoders = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.Ref.thread_count = 10)).ToList();
     foreach (var packet in demuxer.ReadPackets())
     {
-        var decoder = decoders[packet.StreamIndex];
-        if (decoder != null && decoder.CodecType == FFmpeg.AutoGen.Abstractions.AVMediaType.AVMEDIA_TYPE_VIDEO)
+        var decoder = decoders[packet.Ref.stream_index];
+        if (decoder != null && decoder.Ref.codec_type == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO)
         {
-            convert.SetOpts(decoder.Width, decoder.Height, FFmpeg.AutoGen.Abstractions.AVPixelFormat.AV_PIX_FMT_BGR24);
+            // pre-allocate dst frame once; Swscale.Convert auto-resets on first call from frame metadata.
+            if (bgrFrame.Ref.width == 0)
+            {
+                bgrFrame.Ref.width = decoder.Ref.width;
+                bgrFrame.Ref.height = decoder.Ref.height;
+                bgrFrame.Ref.format = (int)FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24;
+                bgrFrame.AllocateBuffer();
+            }
             foreach (var frame in decoder.DecodePacket(packet))
             {
                 // frame is YUV AVFrame
-                foreach (var bgrframe in convert.Convert(frame))
+                foreach (var bgrframe in convert.Convert(frame, bgrFrame))
                 {
                     // use opencvsharp save to jpg
-                    //using (var mat = new Mat(bgrframe.Height, bgrframe.Width, MatType.CV_8UC3))
+                    //using (var mat = new Mat(bgrframe.Ref.height, bgrframe.Ref.width, MatType.CV_8UC3))
                     //{
-                    //    var srcLineSize = bgrframe.Linesize[0];
+                    //    var srcLineSize = bgrframe.Ref.linesize[0];
                     //    var dstLineSize = (int)mat.Step();
                     //    FFmpegUtil.CopyPlane((IntPtr)bgrframe.Ref.data[0], srcLineSize,
                     //        mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
-                    //    if (frame.PktDts >= 0)
-                    //        mat.SaveImage(Path.Combine(output, $"{demuxer[packet.StreamIndex].ToTimeSpan(frame.PktDts).TotalMilliseconds}ms.jpg"));
+                    //    if (frame.Ref.pkt_dts >= 0)
+                    //        mat.SaveImage(Path.Combine(output, $"{demuxer[packet.Ref.stream_index].ToTimeSpan(frame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
                     //}
                 }
             }
@@ -88,7 +96,7 @@ using (var convert = new PixelConverter())
     decoders.ForEach(_ => _?.Dispose());
 }
 ```
-More see **[Example](../example/FFmpegSharp.Example)**
+More see **[Example](../example/FFmpeg.Sharp.Example)**
 ## ROADMAP
 
 - Easy api to cut/seek/mute audio clip.

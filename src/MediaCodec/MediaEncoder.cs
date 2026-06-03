@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public unsafe class MediaEncoder : MediaCodecContext
     {
@@ -23,7 +23,7 @@ namespace FFmpegSharp
                 c.Ref.width = width;
                 c.Ref.height = height;
                 c.Ref.time_base = frameRate.ToInvert();
-                c.Ref.framerate  = frameRate;
+                c.Ref.framerate = frameRate;
                 if (pixelFormat == AVPixelFormat.AV_PIX_FMT_NONE)
                 {
                     var pixelFmts = new MediaCodec(c.Ref.codec).GetPixelFmts();

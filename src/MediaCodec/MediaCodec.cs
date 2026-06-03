@@ -1,11 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using FFmpeg.AutoGen.Abstractions;
 
-namespace FFmpegSharp
+using FFmpeg.AutoGen;
+
+
+namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaCodec
     {
+
         /// <summary>
         /// Get <see cref="MediaCodec"/> by <see cref="ffmpeg.avcodec_find_encoder_by_name(string)"/>
         /// </summary>
@@ -52,13 +55,14 @@ namespace FFmpegSharp
             return pCodec == null ? null : new MediaCodec(pCodec);
         }
 
+
         public string Name => ((IntPtr)pCodec->name).PtrToStringUTF8();
         public string LongName => ((IntPtr)pCodec->long_name).PtrToStringUTF8();
         public string WrapperName => ((IntPtr)pCodec->wrapper_name).PtrToStringUTF8();
         public bool IsDecoder => ffmpeg.av_codec_is_decoder(pCodec) != 0;
         public bool IsEncoder => ffmpeg.av_codec_is_encoder(pCodec) != 0;
 
-        protected static IntPtr av_codec_iterate_safe(IntPtrPtr opaque)
+        protected static IntPtr av_codec_iterate_safe(IntPtrRef opaque)
         {
             fixed (void** pp = &opaque.IntPtr)
                 return (IntPtr)ffmpeg.av_codec_iterate(pp);
@@ -70,7 +74,7 @@ namespace FFmpegSharp
         public static IEnumerable<MediaCodec> GetCodecs()
         {
             IntPtr pCodec;
-            IntPtrPtr opaque = new IntPtrPtr();
+            IntPtrRef opaque = new IntPtrRef();
             while ((pCodec = av_codec_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new MediaCodec(pCodec);
@@ -92,7 +96,7 @@ namespace FFmpegSharp
             KeyValuePair<int, string>? profile;
             for (int i = 0; (profile = av_get_profile_name_safe(this, i)) != null; i++)
             {
-                if (profile.Value.Key == ffmpeg.FF_PROFILE_UNKNOWN)
+                if (profile.Value.Key == ffmpeg.AV_PROFILE_UNKNOWN)
                     yield break;
                 else
                     yield return profile.Value;
@@ -114,95 +118,55 @@ namespace FFmpegSharp
             }
         }
 
-        protected static AVPixelFormat? pix_fmts_next_safe(MediaCodec codec, int i)
+        /// <summary>
+        /// Query supported configs of type <typeparamref name="T"/> via
+        /// <see cref="ffmpeg.avcodec_get_supported_config"/>. Returns an empty array when
+        /// the codec accepts any value (FFmpeg sets out_configs to NULL in that case) or
+        /// when the call fails.
+        /// </summary>
+        protected T[] GetSupportedConfig<T>(AVCodecConfig config) where T : unmanaged
         {
-            var ptr = codec.pCodec->pix_fmts + i;
-            return ptr != null ? *ptr : (AVPixelFormat?)null;
+            void* outConfigs;
+            int numConfigs;
+            int ret = ffmpeg.avcodec_get_supported_config(null, pCodec, config, 0, &outConfigs, &numConfigs);
+            if (ret < 0 || outConfigs == null || numConfigs <= 0)
+                return Array.Empty<T>();
+            var arr = new T[numConfigs];
+            var p = (T*)outConfigs;
+            for (int i = 0; i < numConfigs; i++)
+                arr[i] = p[i];
+            return arr;
         }
 
+        /// <summary>
+        /// List of supported pixel formats. Replaces the deprecated <c>AVCodec.pix_fmts</c> field.
+        /// </summary>
         public IEnumerable<AVPixelFormat> GetPixelFmts()
-        {
-            AVPixelFormat? p;
-            for (int i = 0; (p = pix_fmts_next_safe(this, i)) != null; i++)
-            {
-                if (p == AVPixelFormat.AV_PIX_FMT_NONE)
-                    yield break;
-                else
-                    yield return p.Value;
-            }
-        }
+            => GetSupportedConfig<AVPixelFormat>(AVCodecConfig.AV_CODEC_CONFIG_PIX_FORMAT);
 
-        protected AVRational? supported_framerates_next_safe(MediaCodec codec, int i)
-        {
-            var ptr = codec.pCodec->supported_framerates + i;
-            return ptr != null ? *ptr : (AVRational?)null;
-        }
-
+        /// <summary>
+        /// List of supported frame rates. Replaces the deprecated <c>AVCodec.supported_framerates</c> field.
+        /// </summary>
         public IEnumerable<AVRational> GetSupportedFramerates()
-        {
-            AVRational? p;
-            for (int i = 0; (p = supported_framerates_next_safe(this, i)) != null; i++)
-            {
-                if (p.Value.num != 0)
-                    yield return p.Value;
-                else
-                    yield break;
-            }
-        }
+            => GetSupportedConfig<AVRational>(AVCodecConfig.AV_CODEC_CONFIG_FRAME_RATE);
 
-        protected AVSampleFormat? sample_fmts_next_safe(MediaCodec codec, int i)
-        {
-            var ptr = codec.pCodec->sample_fmts + i;
-            return ptr != null ? *ptr : (AVSampleFormat?)null;
-        }
-
+        /// <summary>
+        /// List of supported sample formats. Replaces the deprecated <c>AVCodec.sample_fmts</c> field.
+        /// </summary>
         public IEnumerable<AVSampleFormat> GetSampelFmts()
-        {
-            AVSampleFormat? p;
-            for (int i = 0; (p = sample_fmts_next_safe(this, i)) != null; i++)
-            {
-                if (p == AVSampleFormat.AV_SAMPLE_FMT_NONE)
-                    yield break;
-                else
-                    yield return p.Value;
-            }
-        }
+            => GetSupportedConfig<AVSampleFormat>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_FORMAT);
 
-        protected int? supported_samplerates_next_safe(MediaCodec codec, int i)
-        {
-            var ptr = codec.pCodec->supported_samplerates + i;
-            return ptr != null ? *ptr : (int?)null;
-        }
-
+        /// <summary>
+        /// List of supported sample rates. Replaces the deprecated <c>AVCodec.supported_samplerates</c> field.
+        /// </summary>
         public IEnumerable<int> GetSupportedSamplerates()
-        {
-            int? p;
-            for (int i = 0; (p = supported_samplerates_next_safe(this, i)) != null; i++)
-            {
-                if (p == 0)
-                    yield break;
-                else
-                    yield return p.Value;
-            }
-        }
+            => GetSupportedConfig<int>(AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_RATE);
 
-        protected AVChannelLayout? ch_layouts_next_safe(MediaCodec codec, int i)
-        {
-            var ptr = codec.pCodec->ch_layouts + i;
-            return ptr != null ? *ptr : (AVChannelLayout?)null;
-        }
-
+        /// <summary>
+        /// List of supported channel layouts. Replaces the deprecated <c>AVCodec.ch_layouts</c> field.
+        /// </summary>
         public IEnumerable<AVChannelLayout> GetChLayouts()
-        {
-            AVChannelLayout? p;
-            for (int i = 0; (p = ch_layouts_next_safe(this, i)) != null; i++)
-            {
-                if (p.Value.Equals(default(AVChannelLayout)))
-                    yield break;
-                else
-                    yield return p.Value;
-            }
-        }
+            => GetSupportedConfig<AVChannelLayout>(AVCodecConfig.AV_CODEC_CONFIG_CHANNEL_LAYOUT);
 
         #endregion Supported
 

@@ -2,13 +2,10 @@
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1;</TargetFrameworks> 
-        <Nullable>disable</Nullable>
         <PackageId>FFmpeg4Sharp</PackageId>
         <Description>
-            A FFmpeg.AutoGen.Abstractions Warpper Library.
+            A FFmpeg.AutoGen Warpper Library.
         </Description>
-        <Nullable>disable</Nullable>
-        <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -18,16 +15,17 @@
         <PackageProjectUrl>https://github.com/IOL0ol1/EmguFFmpeg/tree/dev</PackageProjectUrl>
         <RepositoryUrl>https://github.com/IOL0ol1/EmguFFmpeg/tree/dev</RepositoryUrl>
         <PackageIcon>icon.png</PackageIcon>
-        <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet ffmpeg4sharp ffmpegsharp</PackageTags>
+        <PackageTags>ffmpeg media video audio capture encode decode encoding decoding codec ffmpegmanaged ffmpegcsharp ffmpegnet ffmpeg4sharp FFmpeg.Sharp</PackageTags>
         <RepositoryType>git</RepositoryType>
-        <Version>7.0.1</Version>
+        <Version>8.0.0</Version>
         <NoWarn>1701;1702;1591</NoWarn>
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
         <Platforms>AnyCPU;x64</Platforms>
     </PropertyGroup>
 
-    <ItemGroup> 
-        <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="7.1.1" />  
+    <ItemGroup>
+        <PackageReference Include="FFmpeg.AutoGen" Version="8.1.0" />
+        <PackageReference Include="System.Memory" Version="4.5.5" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,9 +1,9 @@
-﻿using FFmpeg.AutoGen.Abstractions;
+﻿using FFmpeg.AutoGen;
 
 using System;
 using System.Collections.Generic;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaFilter 
     {
@@ -22,14 +22,14 @@ namespace FFmpegSharp
         public static IEnumerable<MediaFilter> GetGetFilters()
         {
             IntPtr pFilter;
-            IntPtrPtr opaque = new IntPtrPtr();
+            IntPtrRef opaque = new IntPtrRef();
             while ((pFilter = av_filter_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new MediaFilter(pFilter);
             }
         }
 
-        protected static IntPtr av_filter_iterate_safe(IntPtrPtr opaque)
+        protected static IntPtr av_filter_iterate_safe(IntPtrRef opaque)
         {
             fixed (void** pp = &opaque.IntPtr)
             {

@@ -1,7 +1,7 @@
 ﻿using System;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp.Example.Other
+namespace FFmpeg.Sharp.Example.Other
 {
     internal class PrintList : ExampleBase
     {

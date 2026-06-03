@@ -345,3 +345,6 @@ healthchecksdb
 /ffmpeg/avfilter-7.dll
 /ffmpeg/avdevice-58.dll
 /ffmpeg/avcodec-58.dll
+
+# VS Code C# Dev Tools - Auto-generated runners
+.vscodecsdt/

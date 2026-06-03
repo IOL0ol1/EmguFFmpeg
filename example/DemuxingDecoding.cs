@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp.Example
+namespace FFmpeg.Sharp.Example
 {
     internal class DemuxingDecoding : ExampleBase
     {
@@ -82,13 +82,13 @@ namespace FFmpegSharp.Example
         private static unsafe void WriteVideoOut(MediaFrame f, MediaFrame of, Stream stream)
         {
             of.MakeWritable();
-            var dstData = new byte_ptr4();
+            var dstData = new byte_ptrArray4();
             dstData.UpdateFrom(of.Ref.data);
-            var dstLinesize = new int4();
+            var dstLinesize = new int_array4();
             dstLinesize.UpdateFrom(of.Ref.linesize);
-            var srcData = new byte_ptr4();
+            var srcData = new byte_ptrArray4();
             srcData.UpdateFrom(f.Ref.data);
-            var srcLinesize = new int4();
+            var srcLinesize = new int_array4();
             srcLinesize.UpdateFrom(f.Ref.linesize);
             ffmpeg.av_image_copy(ref dstData,  dstLinesize, srcData, srcLinesize, (AVPixelFormat)f.Ref.format, f.Ref.width, f.Ref.height);
             var videoDstBufferSize = ffmpeg.av_image_get_buffer_size((AVPixelFormat)of.Ref.format, of.Ref.width, of.Ref.height, 1);

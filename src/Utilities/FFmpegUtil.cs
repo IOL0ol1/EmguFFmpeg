@@ -1,7 +1,7 @@
 ﻿using System;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public unsafe static class FFmpegUtil
     {

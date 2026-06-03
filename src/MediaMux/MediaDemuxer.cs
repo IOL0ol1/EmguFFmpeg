@@ -2,10 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public unsafe class MediaDemuxer : MediaFormatContext, IReadOnlyList<MediaStream>
     {
@@ -19,7 +19,7 @@ namespace FFmpegSharp
         public string Url => ((IntPtr)pFormatContext->url).PtrToStringUTF8();
 
         /// <summary>
-        /// Load stream 
+        /// Load stream
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="iformat"></param>

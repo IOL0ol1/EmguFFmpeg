@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
 
     public static class AVRationalExtension
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static AVRational ToInvert(this AVRational rational)
         {
             return ffmpeg.av_inv_q(rational);
@@ -19,19 +17,16 @@ namespace FFmpegSharp
         /// <param name="value">`double` to convert</param>
         /// <param name="max">Maximum allowed numerator and denominator</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static AVRational ToRational(this double value, int max = 100000)
         {
             return ffmpeg.av_d2q(value, max);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static AVRational ToRational(this int value)
         {
             return new AVRational { den = 1, num = value };
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ToDouble(this AVRational rational)
         {
             return ffmpeg.av_q2d(rational);
@@ -40,7 +35,6 @@ namespace FFmpegSharp
 
     public static class AVChannelLayoutExtension
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe AVChannelLayout ToDefaultChLayout(this int nb_channels)
         {
             var chLayout = new AVChannelLayout();
@@ -48,7 +42,6 @@ namespace FFmpegSharp
             return chLayout;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe AVChannelLayout Copy(this AVChannelLayout channelLayout)
         {
             var chLayout = new AVChannelLayout();
@@ -56,7 +49,6 @@ namespace FFmpegSharp
             return chLayout;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsContentEqual(this AVChannelLayout value, AVChannelLayout layout)
         {
             return value.nb_channels == layout.nb_channels
@@ -67,7 +59,6 @@ namespace FFmpegSharp
 
     public static class AVSampleFormatExtension
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetName(this AVSampleFormat sampleFormat)
         {
             return ffmpeg.av_get_sample_fmt_name(sampleFormat);
@@ -76,7 +67,6 @@ namespace FFmpegSharp
 
     public static class AVPixelFormatExtension
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetName(this AVPixelFormat pixelFormat)
         {
             return ffmpeg.av_get_pix_fmt_name(pixelFormat);
@@ -85,14 +75,13 @@ namespace FFmpegSharp
 
     public static class IntPtrExtension
     {
-         
+
         /// <summary>
         /// Copies all characters up to the first null character from an unmanaged UTF8 string
         ///     to a managed <see langword="string"/>, and widens each UTF8 character to Unicode.
         /// </summary>
         /// <param name="ptr"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe string PtrToStringUTF8(this IntPtr ptr)
         {
 #if NETSTANDARD2_1_OR_GREATER
@@ -108,9 +97,13 @@ namespace FFmpegSharp
         }
     } 
 
-    public unsafe class IntPtrPtr
+    public unsafe class IntPtrRef
     { 
-        public void* IntPtr;  
+        public void* IntPtr; 
+
+        public static implicit operator void*(IntPtrRef @ref) => @ref.IntPtr;
+
+        public static implicit operator IntPtrRef(void* ptr) => new IntPtrRef { IntPtr = ptr };
     }
 
     public static class ExceptionExtension
@@ -121,7 +114,6 @@ namespace FFmpegSharp
         /// <param name="error"></param>
         /// <returns></returns>
         /// <exception cref="FFmpegException"></exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ThrowIfError(this int error)
         {
             return error < 0 ? throw new FFmpegException(error) : error;
@@ -133,7 +125,6 @@ namespace FFmpegSharp
         /// <param name="error"></param>
         /// <returns></returns>
         /// <exception cref="FFmpegException"></exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ThrowIfError(this long error)
         {
             return error < 0 ? throw new FFmpegException((int)error) : error;

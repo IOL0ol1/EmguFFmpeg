@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp.Example
+namespace FFmpeg.Sharp.Example
 {
     public class EncodeAudio : ExampleBase
     {

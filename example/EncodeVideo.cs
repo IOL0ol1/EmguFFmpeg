@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp.Example
+namespace FFmpeg.Sharp.Example
 {
     public class EncodeVideo : ExampleBase
     {
@@ -53,7 +53,7 @@ namespace FFmpegSharp.Example
                       unwritable.
                       av_frame_make_writable() checks that and allocates a new buffer
                       for the frame only if necessary.
-                      NOTE:FFmpegSharp do it in encoder.EncodeFrame finished
+                      NOTE:FFmpeg.Sharp do it in encoder.EncodeFrame finished
                     */
                     FillYuv420P(frame, i);
                     frame.Ref.pts = i;

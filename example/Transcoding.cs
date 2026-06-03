@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using FFmpeg.AutoGen.Abstractions;
 
-namespace FFmpegSharp.Example
+namespace FFmpeg.Sharp.Example
 {
     internal class Transcoding : ExampleBase
     {
@@ -21,7 +20,7 @@ namespace FFmpegSharp.Example
             using (var mw = MediaMuxer.Create(File.OpenWrite(output), MediaOutputFormat.GuessFormat(null, output, null)))
             {
                 MediaCodec a = null;
-                mr.FindBestStream(AVMediaType.AVMEDIA_TYPE_AUDIO, ref a);
+                mr.FindBestStream(FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_AUDIO, ref a);
                 var decodecs = mr.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef)).ToList();
                 var encodecs = new List<MediaCodecContext>();
 

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public unsafe class MediaCodecParserContext : IDisposable
     {
@@ -25,7 +25,7 @@ namespace FFmpegSharp
             : this((int)codecId)
         { }
 
-        protected static AVCodecParser? av_parser_iterate_safe(IntPtrPtr opaque)
+        protected static AVCodecParser? av_parser_iterate_safe(IntPtrRef opaque)
         {
             fixed (void** pp = &opaque.IntPtr)
             {
@@ -37,7 +37,7 @@ namespace FFmpegSharp
         public static IEnumerable<AVCodecParser> GetParsers()
         {
             AVCodecParser? output;
-            IntPtrPtr opaque = new IntPtrPtr();
+            IntPtrRef opaque = new IntPtrRef();
             while ((output = av_parser_iterate_safe(opaque)) != null)
             {
                 yield return output.Value;
@@ -56,7 +56,14 @@ namespace FFmpegSharp
             var bufSize = 20480 + 64; // buffer size + AV_INPUT_BUFFER_PADDING_SIZE
             var buf = new byte[bufSize];
             int outSize;
-            var pkt = packet ?? new MediaPacket();
+            var pkt = packet;
+            if (pkt == null)
+            {
+                pkt = new MediaPacket();
+                pkt.Ref.dts = ffmpeg.AV_NOPTS_VALUE;
+                pkt.Ref.pts = ffmpeg.AV_NOPTS_VALUE;
+                pkt.Ref.pos = 0;
+            }
             try
             {
                 while ((outSize = stream.Read(buf, 0, bufSize)) != 0)

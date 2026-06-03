@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+
+namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaFrame : IDisposable, ICloneable
     {
@@ -13,6 +14,7 @@ namespace FFmpegSharp
         {
             disposedValue = leaveOpen;
         }
+
 
         /// <summary>
         /// <see cref="ffmpeg.av_frame_alloc()"/>
@@ -43,20 +45,14 @@ namespace FFmpegSharp
 
         public static MediaFrame CreateAudioFrame(AVChannelLayout channelLayout, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
         {
-            var f = new MediaFrame();
-            f.pFrame->format = (int)format;
-            f.pFrame->ch_layout = channelLayout;
-            f.pFrame->nb_samples = nbSamples;
-            f.pFrame->sample_rate = sampleRate;
-            f.AllocateBuffer(align);
-            return f;
+            return CreateAudioFrame(channelLayout.nb_channels, nbSamples, format, sampleRate, align);
         }
 
         public void AllocateBuffer(int align = 0)
         {
             ffmpeg.av_frame_get_buffer(pFrame, align).ThrowIfError();
         }
-
+ 
         public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0;
         public bool IsVideoFrame => pFrame->width > 0 && pFrame->height > 0;
 
@@ -87,11 +83,158 @@ namespace FFmpegSharp
         /// <exception cref="FFmpegException"></exception>
         public byte[] GetBytes(bool padding = true)
         {
+            var size = GetBytesSize(padding);
+            var result = new byte[size];
+            GetBytes(result, padding);
+            return result;
+        }
+
+        /// <summary>
+        /// Compute the size in bytes that the Span <c>GetBytes</c> overload would write,
+        /// without allocating anything.
+        /// </summary>
+        /// <param name="padding"><see langword="false"/> assumes ffmpeg padding bytes are stripped</param>
+        /// <returns>byte count</returns>
+        /// <exception cref="FFmpegException"></exception>
+        public int GetBytesSize(bool padding = true)
+        {
             if (pFrame->width > 0 && pFrame->height > 0)
-                return GetVideoData(padding).SelectMany(_ => _).ToArray();
+                return ComputeVideoSize(padding);
             else if (pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0)
-                return GetAudioData(padding).SelectMany(_ => _).ToArray();
+                return ComputeAudioSize();
             throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
+        }
+
+        /// <summary>
+        /// Zero-allocation copy of <see cref="AVFrame.data"/> into the supplied buffer.
+        /// Use <see cref="GetBytesSize(bool)"/> to size the buffer.
+        /// <para>
+        /// Reference <see cref="ffmpeg.av_frame_copy(AVFrame*, AVFrame*)"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="dst">destination buffer; must be at least <see cref="GetBytesSize(bool)"/> bytes</param>
+        /// <param name="padding"><see langword="false"/> will strip ffmpeg padding bytes</param>
+        /// <returns>bytes written</returns>
+        /// <exception cref="FFmpegException"></exception>
+        /// <exception cref="ArgumentException">dst is too small</exception>
+        public int GetBytes(Span<byte> dst, bool padding = true)
+        {
+            if (pFrame->width > 0 && pFrame->height > 0)
+                return CopyVideoBytes(dst, padding);
+            else if (pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0)
+                return CopyAudioBytes(dst);
+            throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
+        }
+
+        private int ComputeVideoSize(bool padding)
+        {
+            AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)pFrame->format);
+            if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
+                throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
+
+            int total = 0;
+            if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0)
+            {
+                var srcLine = pFrame->linesize[0] * pFrame->height;
+                var byteWidth = pFrame->width * pFrame->height;
+                total += padding ? srcLine : byteWidth;
+                if (pFrame->data[1] != null) // AV_PIX_FMT_PAL8 palette
+                    total += 4 * 256;
+            }
+            else
+            {
+                int planes_nb = 0;
+                for (int i = 0; i < desc->nb_components; i++)
+                    planes_nb = Math.Max(planes_nb, desc->comp[(uint)i].plane + 1);
+                for (int i = 0; i < planes_nb; i++)
+                {
+                    int h = pFrame->height;
+                    int bwidth = ffmpeg.av_image_get_linesize((AVPixelFormat)pFrame->format, pFrame->width, i);
+                    if (i == 1 || i == 2)
+                        h = (int)Math.Ceiling((double)pFrame->height / (1 << desc->log2_chroma_h));
+                    int srcLine = pFrame->linesize[(uint)i];
+                    total += h * (padding ? srcLine : bwidth);
+                }
+            }
+            return total;
+        }
+
+        private int CopyVideoBytes(Span<byte> dst, bool padding)
+        {
+            AVPixFmtDescriptor* desc = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)pFrame->format);
+            if (desc == null || (desc->flags & ffmpeg.AV_PIX_FMT_FLAG_HWACCEL) != 0)
+                throw new FFmpegException(ffmpeg.AVERROR_INVALIDDATA);
+
+            int offset = 0;
+            fixed (byte* dstPtr = dst)
+            {
+                if ((desc->flags & ffmpeg.AV_PIX_FMT_FLAG_PAL) != 0)
+                {
+                    offset += CopyPlaneInto(dstPtr + offset, dst.Length - offset, (IntPtr)pFrame->data[0],
+                                            pFrame->linesize[0] * pFrame->height, pFrame->width * pFrame->height, 1, padding);
+                    if (pFrame->data[1] != null)
+                        offset += CopyPlaneInto(dstPtr + offset, dst.Length - offset, (IntPtr)pFrame->data[1],
+                                                4 * 256, 4 * 256, 1, padding);
+                }
+                else
+                {
+                    int planes_nb = 0;
+                    for (int i = 0; i < desc->nb_components; i++)
+                        planes_nb = Math.Max(planes_nb, desc->comp[(uint)i].plane + 1);
+                    for (int i = 0; i < planes_nb; i++)
+                    {
+                        int h = pFrame->height;
+                        int bwidth = ffmpeg.av_image_get_linesize((AVPixelFormat)pFrame->format, pFrame->width, i);
+                        if (i == 1 || i == 2)
+                            h = (int)Math.Ceiling((double)pFrame->height / (1 << desc->log2_chroma_h));
+                        offset += CopyPlaneInto(dstPtr + offset, dst.Length - offset, (IntPtr)pFrame->data[(uint)i],
+                                                pFrame->linesize[(uint)i], bwidth, h, padding);
+                    }
+                }
+            }
+            return offset;
+        }
+
+        private static int CopyPlaneInto(byte* dst, int dstCapacity, IntPtr src, int srcLineSize, int byteWidth, int height, bool padding)
+        {
+            int dstLine = padding ? srcLineSize : byteWidth;
+            int planeSize = height * dstLine;
+            if (planeSize > dstCapacity)
+                throw new ArgumentException("destination buffer too small");
+            FFmpegUtil.CopyPlane(src, srcLineSize, (IntPtr)dst, dstLine, byteWidth, height);
+            return planeSize;
+        }
+
+        private int ComputeAudioSize()
+        {
+            int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format);
+            int planes = planar != 0 ? pFrame->ch_layout.nb_channels : 1;
+            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format) * (planar != 0 ? 1 : pFrame->ch_layout.nb_channels);
+            int data_size = pFrame->nb_samples * block_align;
+            int total = 0;
+            for (uint i = 0; pFrame->extended_data[i] != null && i < planes; i++)
+                total += data_size;
+            return total;
+        }
+
+        private int CopyAudioBytes(Span<byte> dst)
+        {
+            int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format);
+            int planes = planar != 0 ? pFrame->ch_layout.nb_channels : 1;
+            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format) * (planar != 0 ? 1 : pFrame->ch_layout.nb_channels);
+            int data_size = pFrame->nb_samples * block_align;
+            int offset = 0;
+            fixed (byte* dstPtr = dst)
+            {
+                for (uint i = 0; pFrame->extended_data[i] != null && i < planes; i++)
+                {
+                    if (offset + data_size > dst.Length)
+                        throw new ArgumentException("destination buffer too small");
+                    FFmpegUtil.CopyPlane((IntPtr)pFrame->extended_data[i], data_size, (IntPtr)(dstPtr + offset), data_size, data_size, 1);
+                    offset += data_size;
+                }
+            }
+            return offset;
         }
 
         private List<byte[]> GetVideoData(bool padding)
@@ -169,7 +312,6 @@ namespace FFmpegSharp
                 return result.ToArray();
             }
         }
-
         object ICloneable.Clone()
         {
             return Clone();
@@ -200,6 +342,7 @@ namespace FFmpegSharp
         public bool IsWriteable() => ffmpeg.av_frame_is_writable(pFrame).ThrowIfError() != 0;
 
         public int MakeWritable() => ffmpeg.av_frame_make_writable(pFrame).ThrowIfError();
+
 
         #region IDisposable Support
 

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp.Example
+namespace FFmpeg.Sharp.Example
 {
     internal class DecodeAudio : ExampleBase
     {

@@ -1,13 +1,12 @@
-﻿using System;
-using FFmpeg.AutoGen.Abstractions;
+using System;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaCodecContext
     {
         /// <summary>
-        /// Pointer to the underlying FFmpeg structure.
-        /// WARNING: Be careful when accessing or modifying this field directly.
+        /// Be careful!!!
         /// </summary>
         protected AVCodecContext* pCodecContext = null;
 
@@ -30,9 +29,9 @@ namespace FFmpegSharp
         { }
 
         /// <summary>
-        /// WARNING: Be careful when modifying this field directly.
+        /// Direct access to the underlying struct fields.
+        /// WARNING: Be careful when modifying. Tracks AVCodecContext struct evolution upstream.
         /// </summary>
         public ref AVCodecContext Ref => ref *pCodecContext;
-
     }
 }

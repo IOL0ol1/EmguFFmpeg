@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public interface IConverter
     {

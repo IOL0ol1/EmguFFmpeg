@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     public unsafe class MediaDictionary : IDictionary<string, string>, IDisposable
     {
@@ -20,7 +20,7 @@ namespace FFmpegSharp
 
         public MediaDictionary(IEnumerable<KeyValuePair<string, string>> dictionary)
             : this()
-        { 
+        {
             foreach (var item in dictionary)
             {
                 Add(item, AVDictWriteFlags.MultiKey);

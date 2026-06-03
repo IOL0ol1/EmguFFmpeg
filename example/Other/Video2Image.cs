@@ -2,10 +2,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using FFmpeg.AutoGen.Abstractions;
 using OpenCvSharp;
 
-namespace FFmpegSharp.Example.Other
+namespace FFmpeg.Sharp.Example.Other
 {
     internal class Video2Image : ExampleBase
     {
@@ -31,9 +30,16 @@ namespace FFmpegSharp.Example.Other
                 foreach (var inPacket in mediaReader.ReadPackets())
                 {
                     var decoder = decoders[inPacket.Ref.stream_index];
-                    if (decoder != null && decoder.Ref.codec_type ==  AVMediaType.AVMEDIA_TYPE_VIDEO)
+                    if (decoder != null && decoder.Ref.codec_type == FFmpeg.AutoGen.AVMediaType.AVMEDIA_TYPE_VIDEO)
                     {
-                        convert.SetOpts(decoder.Ref.width, decoder.Ref.height,  AVPixelFormat.AV_PIX_FMT_BGR24);
+                        // pre-allocate dst frame once with target dims/format; Swscale.Convert auto-resets on first call from frame metadata.
+                        if (f.Ref.width == 0)
+                        {
+                            f.Ref.width = decoder.Ref.width;
+                            f.Ref.height = decoder.Ref.height;
+                            f.Ref.format = (int)FFmpeg.AutoGen.AVPixelFormat.AV_PIX_FMT_BGR24;
+                            f.AllocateBuffer();
+                        }
                         foreach (var inFrame in decoder.DecodePacket(inPacket))
                         {
                             foreach (var outFrame in convert.Convert(inFrame, f))

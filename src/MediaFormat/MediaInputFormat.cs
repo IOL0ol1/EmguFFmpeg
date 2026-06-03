@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen;
 
-namespace FFmpegSharp
+namespace FFmpeg.Sharp
 {
     /// <summary>
     /// <see cref="AVInputFormat"/> wapper
@@ -26,14 +26,14 @@ namespace FFmpegSharp
         public static IEnumerable<MediaInputFormat> GetFormats()
         {
             IntPtr iformat;
-            IntPtrPtr opaque = new IntPtrPtr();
+            IntPtrRef opaque = new IntPtrRef();
             while ((iformat = av_demuxer_iterate_safe(opaque)) != IntPtr.Zero)
             {
                 yield return new MediaInputFormat(iformat);
             }
         }
 
-        protected static IntPtr av_demuxer_iterate_safe(IntPtrPtr opaque)
+        protected static IntPtr av_demuxer_iterate_safe(IntPtrRef opaque)
         {
             fixed (void** pp = &opaque.IntPtr)
                 return (IntPtr)ffmpeg.av_demuxer_iterate(pp);
