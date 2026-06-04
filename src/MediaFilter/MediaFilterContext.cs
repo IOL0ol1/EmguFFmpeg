@@ -7,8 +7,18 @@ namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaFilterContext  
     {
- 
-        public MediaFilter Filter => new MediaFilter(pFilterContext->filter);
+        #region BufferSrc flags (av_buffersrc.h macros not exposed by AutoGen)
+        /// <summary>Do not check for format changes. Only relevant for buffersrc.</summary>
+        public const int BufferSrcFlagNoCheckFormat = 1;
+        /// <summary>Immediately push the frame to the output (default for buffersrc). Only relevant for buffersrc.</summary>
+        public const int BufferSrcFlagPush          = 2;
+        /// <summary>
+        /// Keep a reference to the frame. Without this flag the source takes ownership of the frame.
+        /// Equivalent to the C macro <c>AV_BUFFERSRC_FLAG_KEEP_REF (= 8)</c>.
+        /// </summary>
+        public const int BufferSrcFlagKeepRef       = 8;
+        #endregion
+
 
         public void Init(string options)
         {
@@ -46,6 +56,13 @@ namespace FFmpeg.Sharp
             else
                 ffmpeg.av_buffersrc_add_frame_flags(pFilterContext, frame, flags).ThrowIfError();
         }
+
+        /// <summary>
+        /// Signal end-of-stream to this buffersrc filter. Equivalent to <c>WriteFrame(null, 0)</c>
+        /// but communicates intent clearly. Call once after the last <see cref="WriteFrame"/> to let
+        /// downstream filters drain their remaining output.
+        /// </summary>
+        public void FlushSrc() => ffmpeg.av_buffersrc_add_frame_flags(pFilterContext, null, 0).ThrowIfError();
 
         public void ParametersSet(Action<AVBufferSrcParameters> set)
         {

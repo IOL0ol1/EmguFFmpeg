@@ -57,7 +57,18 @@ namespace FFmpeg.Sharp
 
         public static MediaFrame CreateAudioFrame(AVChannelLayout channelLayout, int nbSamples, AVSampleFormat format, int sampleRate = 0, int align = 0)
         {
-            return CreateAudioFrame(channelLayout.nb_channels, nbSamples, format, sampleRate, align);
+            if (nbSamples <= 0) throw new ArgumentOutOfRangeException(nameof(nbSamples));
+            var f = new MediaFrame();
+            f.pFrame->format = (int)format;
+            // Preserve the exact channel layout (order, mask, nb_channels) rather than deriving a
+            // default layout from only nb_channels, which would silently corrupt custom layouts.
+            // Copy to a local so we can take its address (value-type parameter cannot be pinned directly).
+            var layoutCopy = channelLayout;
+            ffmpeg.av_channel_layout_copy(&f.pFrame->ch_layout, &layoutCopy).ThrowIfError();
+            f.pFrame->nb_samples = nbSamples;
+            f.pFrame->sample_rate = sampleRate;
+            f.AllocateBuffer(align);
+            return f;
         }
 
         /// <summary>
@@ -176,9 +187,15 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
-        /// Get managed bytes of <see cref="AVFrame.data"/>
+        /// Get managed bytes of <see cref="AVFrame.data"/>.
+        /// <para>
+        /// When <paramref name="padding"/> is <see langword="false"/>, the output is equivalent to
+        /// <c>av_image_copy_to_buffer(..., align: 1)</c> — padding bytes are stripped and planes are
+        /// tightly packed. Use this overload as a drop-in replacement for
+        /// <c>av_image_copy_to_buffer</c> + <c>av_image_get_buffer_size</c> in example code.
+        /// </para>
         /// </summary>
-        /// <param name="padding"><see langword="false"/> will remove ffmpeg padding bytes</param>
+        /// <param name="padding"><see langword="false"/> removes ffmpeg padding bytes (equivalent to <c>av_image_copy_to_buffer</c> with align=1).</param>
         /// <returns></returns>
         /// <exception cref="FFmpegException"></exception>
         public byte[] GetBytes(bool padding = true)

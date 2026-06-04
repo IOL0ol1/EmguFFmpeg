@@ -1,57 +1,75 @@
-﻿using System;
+using System;
 using System.IO;
 using FFmpeg.AutoGen;
 
 namespace FFmpeg.Sharp.Example
 {
-    internal class DecodeAudio : ExampleBase
+    /// <summary>
+    /// Maps to FFmpeg example: decode_audio.c
+    /// Decode data from an MP2 elementary stream and write raw interleaved PCM to a file.
+    /// </summary>
+    public unsafe class DecodeAudio : ExampleBase
     {
-        public DecodeAudio() : this($"EncodeAudio-output.mp2", $"{nameof(DecodeAudio)}-output.raw")
-        { }
-
-        public DecodeAudio(params string[] args) : base(args)
-        {
-            Index = 13;
-        }
+        public DecodeAudio() { Index = 3; Enable = false; }
 
         public override void Execute()
         {
-            var input = args[0];
-            var output = args[1];
+            var inFile  = args.Length > 0 ? args[0] : "test.mp2";
+            var outFile = args.Length > 1 ? args[1] : "test.pcm";
 
             var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_MP2);
-            using (var decoder = MediaDecoder.Create(codec))
-            using (var parser = new MediaCodecParserContext(codec.Ref.id))
-            using (var decoded_frame = new MediaFrame())
-            using (var inStream = File.OpenRead(input))
-            using (var outStream = File.OpenWrite(output))
+            if (codec == null) throw new Exception("MP2 decoder not found");
+
+            using var parser  = new MediaCodecParserContext(AVCodecID.AV_CODEC_ID_MP2);
+            using var decoder = MediaDecoder.Create(codec);
+            using var frame   = new MediaFrame();
+
+            using var outStream = File.OpenWrite(outFile);
+            using var inStream  = File.OpenRead(inFile);
+
+            // Parse the raw MP2 stream into packets and decode each one.
+            foreach (var packet in parser.ParsePackets(decoder, inStream))
             {
-                // ParsePackets owns its own MediaPacket internally — the yielded packet's data is
-                // valid only until the next MoveNext, which is fine since we consume it inline.
-                foreach (var packet in parser.ParsePackets(decoder, inStream))
-                {
-                    foreach (var frame in decoder.DecodePacket(packet, decoded_frame))
-                    {
-                        WriteToOutput(frame, decoder.Ref.ch_layout.nb_channels, outStream);
-                    }
-                }
-                // flush the decoder
-                foreach (var frame in decoder.DecodePacket(null, decoded_frame))
-                {
-                    WriteToOutput(frame, decoder.Ref.ch_layout.nb_channels, outStream);
-                }
+                using (packet)
+                    WriteDecodedFrames(decoder, frame, packet, outStream);
             }
+
+            // Flush decoder.
+            WriteDecodedFrames(decoder, frame, null, outStream);
+
+            // Print ffplay playback hint.
+            var sfmt = decoder.Ref.sample_fmt;
+            if (ffmpeg.av_sample_fmt_is_planar(sfmt) != 0)
+            {
+                Console.WriteLine($"Warning: planar format detected. Only first channel written.");
+                sfmt = ffmpeg.av_get_packed_sample_fmt(sfmt);
+            }
+
+            string fmtStr = sfmt switch
+            {
+                AVSampleFormat.AV_SAMPLE_FMT_U8  => "u8",
+                AVSampleFormat.AV_SAMPLE_FMT_S16 => "s16le",
+                AVSampleFormat.AV_SAMPLE_FMT_S32 => "s32le",
+                AVSampleFormat.AV_SAMPLE_FMT_FLT => "f32le",
+                AVSampleFormat.AV_SAMPLE_FMT_DBL => "f64le",
+                _ => "unknown"
+            };
+
+            Console.WriteLine("Play the output audio file with the command:");
+            Console.WriteLine($"ffplay -f {fmtStr} -ac {decoder.Ref.ch_layout.nb_channels} -ar {decoder.Ref.sample_rate} {outFile}");
         }
 
-        private unsafe static void WriteToOutput(MediaFrame frame, int NbChannels, Stream stream)
+        private static void WriteDecodedFrames(MediaDecoder decoder, MediaFrame frame, MediaPacket packet, Stream outStream)
         {
-            for (int i = 0; i < frame.Ref.nb_samples; i++)
+            foreach (var decodedFrame in decoder.DecodePacket(packet, frame))
             {
-                for (int ch = 0; ch < NbChannels; ch++)
-                {
-                    var buffer = new Span<byte>(frame.Ref.data[(uint)ch], frame.Ref.linesize[0]);
-                    stream.Write(buffer);
-                }
+                int dataSize = ffmpeg.av_get_bytes_per_sample(decoder.Ref.sample_fmt);
+                for (int i = 0; i < decodedFrame.Ref.nb_samples; i++)
+                    for (int ch = 0; ch < decoder.Ref.ch_layout.nb_channels; ch++)
+                    {
+                        var span = new ReadOnlySpan<byte>(decodedFrame.Ref.data[(uint)ch] + dataSize * i, dataSize);
+                        outStream.Write(span);
+                    }
             }
         }
     }

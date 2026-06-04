@@ -1,110 +1,85 @@
-﻿using System;
+using System;
 using System.IO;
-using System.Linq;
 using FFmpeg.AutoGen;
+using FFmpeg.Sharp;
 
 namespace FFmpeg.Sharp.Example
 {
-    public class EncodeAudio : ExampleBase
+    /// <summary>
+    /// Maps to FFmpeg example: encode_audio.c
+    /// Generate a synthetic 440 Hz sine wave and encode it to an MP2 file.
+    /// </summary>
+    public unsafe class EncodeAudio : ExampleBase
     {
-        public EncodeAudio() : this($"EncodeAudio-output.mp2")
-        { }
+        public EncodeAudio() { Index = 5; Enable = false; }
 
-        public EncodeAudio(params string[] args) : base(args)
+        public override void Execute()
         {
-            Index = 10;
-        }
+            var outFile = args.Length > 0 ? args[0] : "out.mp2";
 
-        public unsafe override void Execute()
-        {
-            var outputFile = args[0];
+            var codec = MediaCodec.FindEncoder(AVCodecID.AV_CODEC_ID_MP2);
+            if (codec == null) throw new Exception("MP2 encoder not found");
 
-            using (FileStream os = File.Create(outputFile))
-            using (MediaPacket pkt = new MediaPacket())
+            // Pick the best sample rate (closest to 44100).
+            int sampleRate = 44100;
+            var supportedRates = codec.GetSupportedSamplerates();
+            foreach (var r in supportedRates)
             {
-                var codec = MediaCodec.FindEncoder(AVCodecID.AV_CODEC_ID_MP2);
-                var bitrate = 64000;
-                var sampleRate = select_sample_rate(codec);
-                var chLayout = select_channel_layout(codec);
-                var sampleFmt = AVSampleFormat.AV_SAMPLE_FMT_S16;
-                if (!codec.GetSampleFormats().Any(_1 => _1 == AVSampleFormat.AV_SAMPLE_FMT_S16))
-                    Console.WriteLine($"Encoder does not support sample format {AVSampleFormat.AV_SAMPLE_FMT_S16.GetName()}");
-                using (var encoder = MediaEncoder.CreateAudioEncoder(codec, sampleRate, chLayout, sampleFmt, bitrate))
-                using (var frame = MediaFrame.CreateAudioFrame(encoder.Ref.ch_layout, encoder.Ref.frame_size, encoder.Ref.sample_fmt))
+                if (Math.Abs(44100 - r) < Math.Abs(44100 - sampleRate))
+                    sampleRate = r;
+            }
+
+            // Pick the channel layout with the most channels.
+            AVChannelLayout chLayout = 2.ToDefaultChLayout();
+            var layouts = codec.GetChLayouts();
+            int bestNb = 0;
+            foreach (var cl in layouts)
+            {
+                var c = cl;
+                if (c.nb_channels > bestNb) { bestNb = c.nb_channels; chLayout = c; }
+            }
+
+            using var encoder = MediaEncoder.CreateAudioEncoder(
+                codec, sampleRate, chLayout,
+                AVSampleFormat.AV_SAMPLE_FMT_S16, 64000);
+
+            int frameSize = encoder.Ref.frame_size;
+            using var frame = MediaFrame.CreateAudioFrame(chLayout, frameSize,
+                AVSampleFormat.AV_SAMPLE_FMT_S16, sampleRate);
+
+            using var packet = new MediaPacket();
+            using var outStream = File.OpenWrite(outFile);
+
+            float t = 0f;
+            float tincr = 2f * MathF.PI * 440f / sampleRate;
+
+            for (int i = 0; i < 200; i++)
+            {
+                frame.MakeWritable();
+                var samples = (short*)frame.Ref.data[0];
+
+                for (int j = 0; j < frameSize; j++)
                 {
-                    double t, tincr;
-                    for (int i = 0; i < 25; i++)
-                    {
-                        AVFrame* pframe = frame;
-                        AVCodecContext* c = encoder;
-                        /* encode a single tone sound */
-                        t = 0;
-                        tincr = 2 * Math.PI * 440.0 / c->sample_rate;
-                        for (i = 0; i < 200; i++)
-                        {
-                            ushort* samples = (ushort*)(void*)pframe->data[0];
-                            for (var j = 0; j < c->frame_size; j++)
-                            {
-                                samples[2 * j] = (ushort)(Math.Sin(t) * 10000);
-                                for (var k = 1; k < c->ch_layout.nb_channels; k++)
-                                    samples[2 * j + k] = samples[2 * j];
-                                t += tincr;
-                            }
-                            foreach (var item in encoder.EncodeFrame(frame, pkt))
-                            {
-                                os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
-                            }
-                        }
-                    }
-                    foreach (var item in encoder.EncodeFrame(null, pkt))
-                    {
-                        os.Write(new ReadOnlySpan<byte>(item.Ref.data, item.Ref.size));
-                    }
+                    short s = (short)(MathF.Sin(t) * 10000f);
+                    for (int ch = 0; ch < encoder.Ref.ch_layout.nb_channels; ch++)
+                        samples[encoder.Ref.ch_layout.nb_channels * j + ch] = s;
+                    t += tincr;
                 }
+
+                frame.Ref.pts = (long)i * frameSize;
+                WriteEncodedPackets(encoder, frame, packet, outStream);
             }
+
+            // Flush.
+            WriteEncodedPackets(encoder, null, packet, outStream);
         }
 
-        /* just pick the highest supported samplerate */
-        static int select_sample_rate(MediaCodec codec)
+        private static void WriteEncodedPackets(MediaEncoder encoder, MediaFrame frame, MediaPacket packet, Stream outStream)
         {
-            int best_samplerate = 0;
-
-            var srs = codec.GetSupportedSamplerates();
-            if (!srs.Any())
-                return 44100;
-
-            foreach (var p in srs)
+            foreach (var pkt in encoder.EncodeFrame(frame, packet))
             {
-                if (best_samplerate == 0 || Math.Abs(44100 - p) < Math.Abs(44100 - best_samplerate))
-                    best_samplerate = p;
+                outStream.Write(new ReadOnlySpan<byte>(pkt.Ref.data, pkt.Ref.size));
             }
-            return best_samplerate;
-        }
-
-        /* select layout with the highest channel count */
-        static AVChannelLayout select_channel_layout(MediaCodec codec)
-        {
-
-            if (!codec.GetChLayouts().Any())
-            {
-                var a = new AVChannelLayout { nb_channels = 2, order = AVChannelOrder.AV_CHANNEL_ORDER_NATIVE };
-                a.u.mask = ffmpeg.AV_CH_LAYOUT_STEREO;
-                return a;
-            }
-
-            int best_nb_channels = 0;
-            AVChannelLayout best_ch_layout = default;
-            foreach (var p in codec.GetChLayouts())
-            {
-                int nb_channels = p.nb_channels;
-
-                if (nb_channels > best_nb_channels)
-                {
-                    best_ch_layout = p;
-                    best_nb_channels = nb_channels;
-                }
-            }
-            return best_ch_layout;
         }
     }
 }

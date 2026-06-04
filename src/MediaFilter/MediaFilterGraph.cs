@@ -84,18 +84,33 @@ namespace FFmpeg.Sharp
         }
 
         public MediaFilterContext AddAudioSrcFilter(MediaFilter filter, AVChannelLayout channelLayout, int samplerate, AVSampleFormat format, string contextName = null)
+            => AddAudioSrcFilter(filter, channelLayout, new AVRational { num = 1, den = samplerate }, samplerate, format, contextName);
+
+        /// <summary>
+        /// Add an abuffer source filter with an explicit <paramref name="timeBase"/> (use when the stream
+        /// time_base is not <c>1/samplerate</c>, e.g. <c>1/90000</c> container timestamps).
+        /// The <paramref name="channelLayout"/> is normalised from <c>AV_CHANNEL_ORDER_UNSPEC</c> automatically.
+        /// </summary>
+        public MediaFilterContext AddAudioSrcFilter(MediaFilter filter, AVChannelLayout channelLayout, AVRational timeBase, int samplerate, AVSampleFormat format, string contextName = null)
         {
+            // Normalise unspecified order so av_channel_layout_describe produces a valid string.
+            if (channelLayout.order == AVChannelOrder.AV_CHANNEL_ORDER_UNSPEC)
+                ffmpeg.av_channel_layout_default(&channelLayout, channelLayout.nb_channels);
+            // Pre-compute the layout string before the lambda so we never take the address of a
+            // captured local (which the C# compiler forbids — CS1686).
+            string chLayoutStr;
+            fixed (byte* p = new byte[64])
+            {
+                ffmpeg.av_channel_layout_describe(&channelLayout, p, 64);
+                chLayoutStr = ((IntPtr)p).PtrToStringUTF8();
+            }
+            string sampleFmtStr = ffmpeg.av_get_sample_fmt_name(format);
             MediaFilterContext filterContext = AddFilter(filter, _ =>
             {
-                var c = channelLayout;
-                fixed (byte* p = new byte[64])
-                {
-                    ffmpeg.av_channel_layout_describe(&c, p, 64);
-                    ffmpeg.av_opt_set(_, "channel_layout", ((IntPtr)p).PtrToStringUTF8(), ffmpeg.AV_OPT_SEARCH_CHILDREN);
-                    ffmpeg.av_opt_set(_, "sample_fmt", ffmpeg.av_get_sample_fmt_name(format), ffmpeg.AV_OPT_SEARCH_CHILDREN);
-                    ffmpeg.av_opt_set_q(_, "time_base", new AVRational() { num = 1, den = samplerate }, ffmpeg.AV_OPT_SEARCH_CHILDREN);
-                    ffmpeg.av_opt_set_int(_, "sample_rate", samplerate, ffmpeg.AV_OPT_SEARCH_CHILDREN);
-                }
+                ffmpeg.av_opt_set(_, "channel_layout", chLayoutStr, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                ffmpeg.av_opt_set(_, "sample_fmt", sampleFmtStr, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                ffmpeg.av_opt_set_q(_, "time_base", timeBase, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                ffmpeg.av_opt_set_int(_, "sample_rate", samplerate, ffmpeg.AV_OPT_SEARCH_CHILDREN);
             }, contextName);
             if (filterContext.Ref.nb_inputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
@@ -128,6 +143,49 @@ namespace FFmpeg.Sharp
                     ffmpeg.av_opt_set_bin(_, "channel_layouts", (byte*)pChLayouts, sizeof(ulong) * channelLayouts.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                     ffmpeg.av_opt_set_bin(_, "channel_counts", (byte*)pChCounts, sizeof(int) * channelCounts.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                     ffmpeg.av_opt_set_int(_, "all_channel_counts", allChannelCounts, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                }
+            }, contextName);
+            if (filterContext.Ref.nb_outputs > 0)
+                throw new FFmpegException("FFmpegException.NotSinksFilter");
+            if (ffmpeg.avfilter_pad_get_type(filterContext.Ref.input_pads, 0) != AVMediaType.AVMEDIA_TYPE_AUDIO)
+                throw new FFmpegException("FFmpegException.FilterTypeError");
+            return filterContext;
+        }
+
+        /// <summary>
+        /// Add an abuffersink filter constrained to the given formats. Uses string-based option setting
+        /// compatible with FFmpeg 5+ (where <c>ch_layouts</c> is a string, not a binary mask array).
+        /// Pass <see langword="null"/> for any parameter to leave that constraint unconstrained.
+        /// </summary>
+        public MediaFilterContext AddAudioSinkFilter(MediaFilter filter, AVSampleFormat[] formats, int[] sampleRates, AVChannelLayout[] channelLayouts, string contextName = null)
+        {
+            MediaFilterContext filterContext = AddFilter(filter, _ =>
+            {
+                if (formats != null)
+                {
+                    fixed (AVSampleFormat* p = formats)
+                        ffmpeg.av_opt_set_bin(_, "sample_fmts", (byte*)p, sizeof(AVSampleFormat) * formats.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                }
+                if (sampleRates != null)
+                {
+                    fixed (int* p = sampleRates)
+                        ffmpeg.av_opt_set_bin(_, "sample_rates", (byte*)p, sizeof(int) * sampleRates.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                }
+                if (channelLayouts != null)
+                {
+                    // Build a pipe-separated layout string: "stereo|mono|5.1" etc.
+                    var sb = new System.Text.StringBuilder();
+                    for (int li = 0; li < channelLayouts.Length; li++)
+                    {
+                        if (li > 0) sb.Append('|');
+                        var cl = channelLayouts[li];
+                        fixed (byte* p = new byte[64])
+                        {
+                            ffmpeg.av_channel_layout_describe(&cl, p, 64);
+                            sb.Append(((IntPtr)p).PtrToStringUTF8());
+                        }
+                    }
+                    ffmpeg.av_opt_set(_, "ch_layouts", sb.ToString(), ffmpeg.AV_OPT_SEARCH_CHILDREN);
                 }
             }, contextName);
             if (filterContext.Ref.nb_outputs > 0)
@@ -188,6 +246,43 @@ namespace FFmpeg.Sharp
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        /// <summary>
+        /// Parse a filtergraph description and connect it between <paramref name="srcCtx"/> (named "in")
+        /// and <paramref name="sinkCtx"/> (named "out"). Call <see cref="Initialize"/> afterwards.
+        /// </summary>
+        public void ParseGraph(string filterSpec, MediaFilterContext srcCtx, MediaFilterContext sinkCtx)
+            => ParseGraph(filterSpec, srcCtx, "in", sinkCtx, "out");
+
+        /// <summary>
+        /// Parse a filtergraph description with custom endpoint names.
+        /// Useful for complex graphs with non-default pad labels (e.g. <c>"[src]..."</c>).
+        /// Call <see cref="Initialize"/> afterwards.
+        /// </summary>
+        public void ParseGraph(string filterSpec, MediaFilterContext srcCtx, string srcPadName, MediaFilterContext sinkCtx, string sinkPadName)
+        {
+            AVFilterInOut* outputs = ffmpeg.avfilter_inout_alloc();
+            AVFilterInOut* inputs  = ffmpeg.avfilter_inout_alloc();
+            try
+            {
+                outputs->name       = ffmpeg.av_strdup(srcPadName);
+                outputs->filter_ctx = srcCtx;
+                outputs->pad_idx    = 0;
+                outputs->next       = null;
+
+                inputs->name        = ffmpeg.av_strdup(sinkPadName);
+                inputs->filter_ctx  = sinkCtx;
+                inputs->pad_idx     = 0;
+                inputs->next        = null;
+
+                ffmpeg.avfilter_graph_parse_ptr(pFilterGraph, filterSpec, &inputs, &outputs, null).ThrowIfError();
+            }
+            finally
+            {
+                ffmpeg.avfilter_inout_free(&inputs);
+                ffmpeg.avfilter_inout_free(&outputs);
+            }
         }
 
         public void Initialize()

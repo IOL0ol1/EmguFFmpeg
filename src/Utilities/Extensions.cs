@@ -55,6 +55,20 @@ namespace FFmpeg.Sharp
                 && value.order == layout.order
                 && value.u.mask == layout.u.mask;
         }
+
+        /// <summary>
+        /// Return a human-readable description of this channel layout (e.g. <c>"stereo"</c>, <c>"5.1"</c>).
+        /// Wraps <c>av_channel_layout_describe</c>. Returns an empty string when the layout is
+        /// <c>AV_CHANNEL_ORDER_UNSPEC</c>; consider calling <see cref="ToDefaultChLayout"/> first.
+        /// </summary>
+        public static unsafe string Describe(this AVChannelLayout channelLayout)
+        {
+            fixed (byte* p = new byte[64])
+            {
+                ffmpeg.av_channel_layout_describe(&channelLayout, p, 64);
+                return ((IntPtr)p).PtrToStringUTF8();
+            }
+        }
     }
 
     public static class AVSampleFormatExtension

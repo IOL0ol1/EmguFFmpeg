@@ -1,102 +1,98 @@
 using System;
 using System.IO;
 using FFmpeg.AutoGen;
-using OpenCvSharp;
 
 namespace FFmpeg.Sharp.Example
 {
-    internal unsafe class HWDecode : ExampleBase
+    /// <summary>
+    /// Maps to FFmpeg example: hw_decode.c
+    /// Decode a video file using a hardware accelerator (default: d3d11va on Windows).
+    /// Decoded frames are transferred from GPU memory to CPU memory and written raw to disk.
+    /// </summary>
+    public unsafe class HwDecode : ExampleBase
     {
-        public HWDecode() : base("d3d11va", "video-input.mp4", "HWDecode-output.bin")
-        {
-
-        }
+        public HwDecode() { Index = 11; Enable = false; }
 
         public override void Execute()
         {
-            var deviceType = args[0];
-            var inputFile = args[1];
-            var outputFile = args[2];
+            var hwTypeName = args.Length > 0 ? args[0] : "d3d11va";
+            var inFile     = args.Length > 1 ? args[1] : "input.mp4";
+            var outFile    = args.Length > 2 ? args[2] : "out_hw.raw";
 
-            using (var demuxer = MediaDemuxer.Open(File.OpenRead(inputFile)))
-            using (var output_file = File.OpenWrite(outputFile))
-            using (var packet = new MediaPacket())
-            using (var frame = new MediaFrame())
-            using (var sw_frame = new MediaFrame())
-            using (var convert = new Swscale())
-            using (var convertDst = new MediaFrame())
+            // Resolve device type name.
+            var hwType = ffmpeg.av_hwdevice_find_type_by_name(hwTypeName);
+            if (hwType == AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
             {
-                MediaCodec decoder = null;
-                var video_stream = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref decoder);
-                using (var vDecoder = MediaDecoder.CreateDecoder(demuxer[video_stream].CodecparRef, _ =>
-                {
-                    _.Ref.thread_count = 10;
-                    _.InitHWDeviceContext(deviceType);
-                }))
-                {
-                    // pre-allocate dst frame; Swscale.Convert auto-Resets on first call from frame metadata.
-                    convertDst.Ref.width = vDecoder.Ref.width;
-                    convertDst.Ref.height = vDecoder.Ref.height;
-                    convertDst.Ref.format = (int)AVPixelFormat.AV_PIX_FMT_BGR24;
-                    convertDst.AllocateBuffer();
+                Console.Error.WriteLine($"Device type '{hwTypeName}' not found. Available types:");
+                for (var t = ffmpeg.av_hwdevice_iterate_types(AVHWDeviceType.AV_HWDEVICE_TYPE_NONE);
+                     t != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE;
+                     t = ffmpeg.av_hwdevice_iterate_types(t))
+                    Console.Error.Write($" {ffmpeg.av_hwdevice_get_type_name(t)}");
+                Console.Error.WriteLine();
+                return;
+            }
 
-                    foreach (var p in demuxer.ReadPackets(packet))
-                    {
-                        if (p.Ref.stream_index == video_stream)
-                        {
-                            foreach (var inFrame in vDecoder.DecodePacket(p, frame, sw_frame))
-                            {
-                                Write(output_file, inFrame);
-                                convert.Convert(inFrame, convertDst);
-                                using (var mat = new Mat(convertDst.Ref.height, convertDst.Ref.width, MatType.CV_8UC3))
-                                {
-                                    var srcLineSize = convertDst.Ref.linesize[0];
-                                    var dstLineSize = (int)mat.Step();
-                                    FFmpegUtil.CopyPlane((IntPtr)convertDst.Ref.data[0], srcLineSize,
-                                        mat.Data, dstLineSize, Math.Min(srcLineSize, dstLineSize), mat.Height);
-                                    if (inFrame.Ref.pkt_dts >= 0)
-                                    {
-                                        var outputFolder = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(inputFile), "HWDecode")).FullName;
-                                        mat.SaveImage(Path.Combine(outputFolder, $"{demuxer[video_stream].ToTimeSpan(inFrame.Ref.pkt_dts).TotalMilliseconds}ms.jpg"));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    /* flush the decoder */
-                    foreach (var f in vDecoder.DecodePacket(null, frame, sw_frame))
-                    {
-                        Write(output_file, f);
-                    }
+            // Open input.
+            using var demuxer = MediaDemuxer.Open(inFile);
+            demuxer.DumpFormat();
+
+            MediaCodec videoCodec = null;
+            int videoStreamIdx = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref videoCodec);
+            if (videoStreamIdx < 0) throw new Exception("No video stream found");
+
+            // InitHWDeviceContext automatically:
+            //   - walks the codec's HW configs for the requested device type
+            //   - creates the AVBufferRef hw_device_ctx
+            //   - wires the get_format callback to return the correct HW pixel format
+            using var decoder = MediaDecoder.CreateDecoder(
+                *demuxer.Ref.streams[videoStreamIdx]->codecpar,
+                ctx =>
+                {
+                    int method = ctx.InitHWDeviceContext(hwType);
+                    if (method == 0)
+                        throw new Exception($"Codec {videoCodec.Name} does not support HW device '{hwTypeName}'");
+                    Console.WriteLine($"HW acceleration: {hwTypeName} (method flags: 0x{method:x})");
+                });
+
+            Console.WriteLine($"Writing raw video to '{outFile}'");
+            using var outStream = File.OpenWrite(outFile);
+            using var frame   = new MediaFrame();
+            using var swFrame = new MediaFrame();  // receives GPU→CPU transfer
+            using var packet  = new MediaPacket();
+            int frameCount = 0;
+
+            // DecodePacket(pkt, frame, swFrame) automatically transfers HW frames to swFrame.
+            foreach (var pkt in demuxer.ReadPackets(packet))
+            {
+                if (pkt.Ref.stream_index != videoStreamIdx) continue;
+                foreach (var decoded in decoder.DecodePacket(pkt, frame, swFrame))
+                {
+                    WriteFrame(decoded, outStream);
+                    frameCount++;
                 }
             }
+            // Flush decoder.
+            foreach (var decoded in decoder.DecodePacket(null, frame, swFrame))
+            {
+                WriteFrame(decoded, outStream);
+                frameCount++;
+            }
+
+            Console.WriteLine($"Decoded {frameCount} frames.");
         }
 
-        // Write a raw image plane using the zero-allocation Span overload on MediaFrame.
-        private static unsafe void Write(Stream stream, MediaFrame f)
+        private static void WriteFrame(MediaFrame frame, Stream outStream)
         {
-            int size = f.GetBytesSize(padding: false);
-            // For modest image sizes stackalloc is fine; for HD+ rent from ArrayPool.
-            const int stackBudget = 256 * 1024;
-            if (size <= stackBudget)
-            {
-                Span<byte> buf = stackalloc byte[size];
-                int written = f.GetBytes(buf, padding: false);
-                stream.Write(buf.Slice(0, written));
-            }
-            else
-            {
-                var rented = System.Buffers.ArrayPool<byte>.Shared.Rent(size);
-                try
-                {
-                    int written = f.GetBytes(rented.AsSpan(0, size), padding: false);
-                    stream.Write(rented, 0, written);
-                }
-                finally
-                {
-                    System.Buffers.ArrayPool<byte>.Shared.Return(rented);
-                }
-            }
+            int bufSize = ffmpeg.av_image_get_buffer_size(
+                (AVPixelFormat)frame.Ref.format, frame.Ref.width, frame.Ref.height, 1);
+            var buf   = new byte[bufSize];
+            var data4 = new byte_ptrArray4(); data4.UpdateFrom(frame.Ref.data);
+            var line4 = new int_array4();     line4.UpdateFrom(frame.Ref.linesize);
+            fixed (byte* pBuf = buf)
+                ffmpeg.av_image_copy_to_buffer(pBuf, bufSize, data4, line4,
+                    (AVPixelFormat)frame.Ref.format, frame.Ref.width, frame.Ref.height, 1).ThrowIfError();
+            outStream.Write(buf);
         }
     }
 }
+

@@ -1,63 +1,62 @@
-﻿using System;
+using System;
 using System.IO;
 using FFmpeg.AutoGen;
 
 namespace FFmpeg.Sharp.Example
 {
-    internal class DecodeVideo : ExampleBase
+    /// <summary>
+    /// Maps to FFmpeg example: decode_video.c
+    /// Decode an MPEG-1 video elementary stream and save each frame as a PGM (grayscale) file.
+    /// </summary>
+    public unsafe class DecodeVideo : ExampleBase
     {
-        public DecodeVideo() : this($"EncodeVideo-output.h264", $"{nameof(DecodeVideo)}-output.mp4")
-        { }
-
-        public DecodeVideo(params string[] args) : base(args)
-        {
-            Index = 12; 
-        }
+        public DecodeVideo() { Index = 4; Enable = false; }
 
         public override void Execute()
         {
-            var filename = args[0];
-            var outfilename = args[1];
+            var inFile      = args.Length > 0 ? args[0] : "test.mpg";
+            var outFileStem = args.Length > 1 ? args[1] : "frame";
 
-            var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_H264);
-            using (var f = File.OpenRead(filename))
-            using (var of = File.Create(outfilename))
-            using (var parser = new MediaCodecParserContext(codec.Ref.id))
-            using (var c = MediaDecoder.Create(codec, _ =>
-             {
-                 /* For some codecs, such as msmpeg4 and mpeg4, width and height
-                    MUST be initialized there because this information is not
-                    available in the bitstream. */
-                 _.Ref.height = 288;
-                 _.Ref.width = 352;
-             }))
-            using (var frame = new MediaFrame())
+            var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_MPEG1VIDEO);
+            if (codec == null) throw new Exception("MPEG-1 decoder not found");
+
+            using var parser  = new MediaCodecParserContext(AVCodecID.AV_CODEC_ID_MPEG1VIDEO);
+            using var decoder = MediaDecoder.Create(codec);
+            using var frame   = new MediaFrame();
+
+            using var inStream = File.OpenRead(inFile);
+
+            foreach (var packet in parser.ParsePackets(decoder, inStream))
             {
-                foreach (var oPacket in parser.ParsePackets(c, f))
-                {
-                    foreach (var oFrame in c.DecodePacket(oPacket, frame))
-                    {
-                        PgmSave(oFrame, of);
-                    }
-                }
+                using (packet)
+                    SaveFrames(decoder, frame, packet, outFileStem);
+            }
 
-                /* flush the decoder */
-                foreach (var oFrame in c.DecodePacket(null, frame))
-                {
-                    PgmSave(oFrame, of);
-                }
+            // Flush.
+            SaveFrames(decoder, frame, null, outFileStem);
+        }
+
+        private static void SaveFrames(MediaDecoder decoder, MediaFrame frame, MediaPacket packet, string stem)
+        {
+            foreach (var decoded in decoder.DecodePacket(packet, frame))
+            {
+                Console.WriteLine($"saving frame {decoder.Ref.frame_num}");
+                var filename = $"{stem}-{decoder.Ref.frame_num}";
+                PgmSave(decoded.Ref.data[0], decoded.Ref.linesize[0],
+                        decoded.Ref.width, decoded.Ref.height, filename);
             }
         }
 
-        private unsafe static void PgmSave(MediaFrame frame, Stream stream)
+        private static void PgmSave(byte* buf, int wrap, int xsize, int ysize, string filename)
         {
-            var wrap = frame.Ref.linesize[0];
-            var xsize = frame.Ref.width;
-            var ysize = frame.Ref.height;
+            using var f = File.OpenWrite(filename);
+            using var w = new StreamWriter(f);
+            w.WriteLine($"P5");
+            w.WriteLine($"{xsize} {ysize}");
+            w.WriteLine("255");
+            w.Flush();
             for (int i = 0; i < ysize; i++)
-            {
-                stream.Write(new ReadOnlySpan<byte>(frame.Ref.data[0] + i * wrap, xsize));
-            }
+                f.Write(new ReadOnlySpan<byte>(buf + i * wrap, xsize));
         }
     }
 }
