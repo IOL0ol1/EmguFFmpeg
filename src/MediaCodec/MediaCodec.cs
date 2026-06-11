@@ -56,6 +56,7 @@ namespace FFmpeg.Sharp
         }
 
 
+        public AVCodecID Id => pCodec->id;
         public string Name => ((IntPtr)pCodec->name).PtrToStringUTF8();
         public string LongName => ((IntPtr)pCodec->long_name).PtrToStringUTF8();
         public string WrapperName => ((IntPtr)pCodec->wrapper_name).PtrToStringUTF8();

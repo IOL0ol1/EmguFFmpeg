@@ -9,7 +9,7 @@ namespace FFmpeg.Sharp.Example
     /// Decode a video file using a hardware accelerator (default: d3d11va on Windows).
     /// Decoded frames are transferred from GPU memory to CPU memory and written raw to disk.
     /// </summary>
-    public unsafe class HwDecode : ExampleBase
+    public class HwDecode : ExampleBase
     {
         public HwDecode() { Index = 11; Enable = false; }
 
@@ -20,14 +20,12 @@ namespace FFmpeg.Sharp.Example
             var outFile    = args.Length > 2 ? args[2] : "out_hw.raw";
 
             // Resolve device type name.
-            var hwType = ffmpeg.av_hwdevice_find_type_by_name(hwTypeName);
+            var hwType = MediaHWDevice.FindTypeByName(hwTypeName);
             if (hwType == AVHWDeviceType.AV_HWDEVICE_TYPE_NONE)
             {
                 Console.Error.WriteLine($"Device type '{hwTypeName}' not found. Available types:");
-                for (var t = ffmpeg.av_hwdevice_iterate_types(AVHWDeviceType.AV_HWDEVICE_TYPE_NONE);
-                     t != AVHWDeviceType.AV_HWDEVICE_TYPE_NONE;
-                     t = ffmpeg.av_hwdevice_iterate_types(t))
-                    Console.Error.Write($" {ffmpeg.av_hwdevice_get_type_name(t)}");
+                foreach (var t in MediaHWDevice.GetTypes())
+                    Console.Error.Write($" {t.GetName()}");
                 Console.Error.WriteLine();
                 return;
             }
@@ -45,7 +43,7 @@ namespace FFmpeg.Sharp.Example
             //   - creates the AVBufferRef hw_device_ctx
             //   - wires the get_format callback to return the correct HW pixel format
             using var decoder = MediaDecoder.CreateDecoder(
-                *demuxer.Ref.streams[videoStreamIdx]->codecpar,
+                demuxer[videoStreamIdx].CodecparRef,
                 ctx =>
                 {
                     int method = ctx.InitHWDeviceContext(hwType);
@@ -83,14 +81,8 @@ namespace FFmpeg.Sharp.Example
 
         private static void WriteFrame(MediaFrame frame, Stream outStream)
         {
-            int bufSize = ffmpeg.av_image_get_buffer_size(
-                (AVPixelFormat)frame.Ref.format, frame.Ref.width, frame.Ref.height, 1);
-            var buf   = new byte[bufSize];
-            var data4 = new byte_ptrArray4(); data4.UpdateFrom(frame.Ref.data);
-            var line4 = new int_array4();     line4.UpdateFrom(frame.Ref.linesize);
-            fixed (byte* pBuf = buf)
-                ffmpeg.av_image_copy_to_buffer(pBuf, bufSize, data4, line4,
-                    (AVPixelFormat)frame.Ref.format, frame.Ref.width, frame.Ref.height, 1).ThrowIfError();
+            var buf = new byte[frame.GetBytesSize(padding: false)];
+            frame.GetBytes(buf, padding: false);
             outStream.Write(buf);
         }
     }

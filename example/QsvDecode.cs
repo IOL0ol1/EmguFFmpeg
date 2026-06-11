@@ -10,7 +10,7 @@ namespace FFmpeg.Sharp.Example
     /// then transferred to system memory and written raw to an output file.
     /// Usage: args[0] = input.h264/mp4, args[1] = output.raw
     /// </summary>
-    public unsafe class QsvDecode : ExampleBase
+    public class QsvDecode : ExampleBase
     {
         public QsvDecode() { Index = 21; Enable = false; }
 
@@ -26,48 +26,28 @@ namespace FFmpeg.Sharp.Example
             int videoStreamIdx = -1;
             for (int i = 0; i < (int)demuxer.Ref.nb_streams; i++)
             {
-                var st = demuxer.Ref.streams[i];
-                if (st->codecpar->codec_id == AVCodecID.AV_CODEC_ID_H264 && videoStreamIdx < 0)
+                if (demuxer[i].CodecparRef.codec_id == AVCodecID.AV_CODEC_ID_H264 && videoStreamIdx < 0)
                     videoStreamIdx = i;
                 else
-                    st->discard = AVDiscard.AVDISCARD_ALL;
+                    demuxer[i].Ref.discard = AVDiscard.AVDISCARD_ALL;
             }
             if (videoStreamIdx < 0)
                 throw new Exception("No H.264 video stream found in the input file");
-
-            // ── QSV device ────────────────────────────────────────────────────
-            AVBufferRef* deviceRef = null;
-            ffmpeg.av_hwdevice_ctx_create(&deviceRef, AVHWDeviceType.AV_HWDEVICE_TYPE_QSV,
-                                          "auto", null, 0).ThrowIfError();
-            var deviceRefPtr = (IntPtr)deviceRef;
 
             // ── Decoder ───────────────────────────────────────────────────────
             var qsvDecoder = MediaCodec.FindDecoder("h264_qsv")
                              ?? throw new Exception("The QSV decoder (h264_qsv) is not present in libavcodec");
 
-            // get_format callback: always pick AV_PIX_FMT_QSV.
-            AVCodecContext_get_format getFormatFn = (_, pix_fmts) =>
+            // InitHWDeviceContext creates the QSV device (an "auto" session) and wires the
+            // get_format callback that always picks AV_PIX_FMT_QSV.
+            using var decoder = MediaDecoder.CreateDecoder(demuxer[videoStreamIdx].CodecparRef, qsvDecoder, ctx =>
             {
-                for (var p = pix_fmts; *p != AVPixelFormat.AV_PIX_FMT_NONE; p++)
-                    if (*p == AVPixelFormat.AV_PIX_FMT_QSV)
-                        return AVPixelFormat.AV_PIX_FMT_QSV;
-                Console.Error.WriteLine("The QSV pixel format not offered in get_format()");
-                return AVPixelFormat.AV_PIX_FMT_NONE;
-            };
-
-            var videoSt     = demuxer.Ref.streams[videoStreamIdx];
-            var codecparPtr = (IntPtr)videoSt->codecpar;
-
-            using var decoder = MediaDecoder.Create(qsvDecoder, ctx =>
-            {
-                ffmpeg.avcodec_parameters_to_context(ctx, (AVCodecParameters*)codecparPtr).ThrowIfError();
-                ctx.Ref.hw_device_ctx = ffmpeg.av_buffer_ref((AVBufferRef*)deviceRefPtr);
-                ctx.Ref.get_format    = getFormatFn;
+                if (ctx.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_QSV, "auto") == 0)
+                    throw new Exception("The QSV pixel format not offered by the decoder's HW configs");
             });
 
             // ── Output ────────────────────────────────────────────────────────
-            AVIOContext* outputCtx = null;
-            ffmpeg.avio_open(&outputCtx, outFile, ffmpeg.AVIO_FLAG_WRITE).ThrowIfError();
+            using var output = MediaIOContext.Open(outFile, ffmpeg.AVIO_FLAG_WRITE);
 
             using var frame   = new MediaFrame();
             using var swFrame = new MediaFrame();
@@ -78,18 +58,15 @@ namespace FFmpeg.Sharp.Example
             foreach (var pkt in demuxer.ReadPackets(packet))
             {
                 if (pkt.Ref.stream_index != videoStreamIdx) continue;
-                ret = DecodePacket(decoder, frame, swFrame, pkt, outputCtx);
+                ret = DecodePacket(decoder, frame, swFrame, pkt, output);
                 if (ret < 0) break;
             }
             // Flush decoder.
-            DecodePacket(decoder, frame, swFrame, null, outputCtx);
-
-            ffmpeg.av_buffer_unref(&deviceRef);
-            ffmpeg.avio_close(outputCtx);
+            DecodePacket(decoder, frame, swFrame, null, output);
         }
 
         private static int DecodePacket(MediaDecoder decoder, MediaFrame frame, MediaFrame swFrame,
-                                         MediaPacket pkt, AVIOContext* outputCtx)
+                                         MediaPacket pkt, MediaIOContext output)
         {
             int ret = decoder.SendPacket(pkt);
             if (ret < 0)
@@ -109,29 +86,24 @@ namespace FFmpeg.Sharp.Example
                     return ret;
                 }
 
-                // Transfer GPU frame → system memory.
+                // Transfer GPU frame → system memory, then write the raw frame
+                // (planes tightly packed, padding stripped) to the output file.
                 swFrame.Unref();
-                ret = ffmpeg.av_hwframe_transfer_data(swFrame, frame, 0);
-                if (ret < 0)
+                try
+                {
+                    MediaCodecContext.HWFrameTransferData(swFrame, frame);
+                    output.Write(swFrame.GetBytes(padding: false));
+                }
+                catch (FFmpegException e)
                 {
                     Console.Error.WriteLine("Error transferring the data to system memory");
-                    goto fail;
+                    ret = e.ErrorCode;
                 }
-
-                // Write each plane to the output file.
-                AVFrame* sw = swFrame;
-                for (uint i = 0; i < 8 && sw->data[i] != null; i++)
+                finally
                 {
-                    int h        = sw->height >> (i > 0 ? 1 : 0);
-                    int linesize = ffmpeg.av_image_get_linesize((AVPixelFormat)sw->format, sw->width, (int)i);
-                    if (linesize < 0) { ret = linesize; goto fail; }
-                    for (int j = 0; j < h; j++)
-                        ffmpeg.avio_write(outputCtx, sw->data[i] + j * sw->linesize[i], linesize);
+                    swFrame.Unref();
+                    frame.Unref();
                 }
-
-            fail:
-                swFrame.Unref();
-                frame.Unref();
                 if (ret < 0) return ret;
             }
             return 0;

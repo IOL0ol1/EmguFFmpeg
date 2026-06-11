@@ -31,8 +31,8 @@ namespace FFmpeg.Sharp.Example
                 ctx.Ref.max_b_frames = 1;
                 ctx.Ref.pix_fmt   = AVPixelFormat.AV_PIX_FMT_YUV420P;
 
-                if (codec.Ref.id == AVCodecID.AV_CODEC_ID_H264)
-                    ffmpeg.av_opt_set(ctx.Ref.priv_data, "preset", "slow", 0);
+                if (codec.Id == AVCodecID.AV_CODEC_ID_H264)
+                    MediaOptions.Set(ctx.Ref.priv_data, "preset", "slow", 0);
             });
 
             using var frame  = MediaFrame.CreateVideoFrame(encoder.Ref.width, encoder.Ref.height, encoder.Ref.pix_fmt);
@@ -69,7 +69,7 @@ namespace FFmpeg.Sharp.Example
             WriteEncodedPackets(encoder, null, packet, outStream);
 
             // For raw MPEG streams, append the sequence end code.
-            var id = codec.Ref.id;
+            var id = codec.Id;
             if (id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO || id == AVCodecID.AV_CODEC_ID_MPEG2VIDEO)
                 outStream.Write(new byte[] { 0x00, 0x00, 0x01, 0xB7 });
         }

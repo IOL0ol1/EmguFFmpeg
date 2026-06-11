@@ -39,10 +39,10 @@ namespace FFmpeg.Sharp.Example
 
             // Print ffplay playback hint.
             var sfmt = decoder.Ref.sample_fmt;
-            if (ffmpeg.av_sample_fmt_is_planar(sfmt) != 0)
+            if (sfmt.IsPlanar())
             {
                 Console.WriteLine($"Warning: planar format detected. Only first channel written.");
-                sfmt = ffmpeg.av_get_packed_sample_fmt(sfmt);
+                sfmt = sfmt.ToPacked();
             }
 
             string fmtStr = sfmt switch
@@ -63,7 +63,7 @@ namespace FFmpeg.Sharp.Example
         {
             foreach (var decodedFrame in decoder.DecodePacket(packet, frame))
             {
-                int dataSize = ffmpeg.av_get_bytes_per_sample(decoder.Ref.sample_fmt);
+                int dataSize = decoder.Ref.sample_fmt.GetBytesPerSample();
                 for (int i = 0; i < decodedFrame.Ref.nb_samples; i++)
                     for (int ch = 0; ch < decoder.Ref.ch_layout.nb_channels; ch++)
                     {

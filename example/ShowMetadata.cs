@@ -1,5 +1,4 @@
 using System;
-using FFmpeg.AutoGen;
 
 namespace FFmpeg.Sharp.Example
 {
@@ -7,7 +6,7 @@ namespace FFmpeg.Sharp.Example
     /// Maps to FFmpeg example: show_metadata.c
     /// Open an input file and print all metadata key=value pairs.
     /// </summary>
-    public unsafe class ShowMetadata : ExampleBase
+    public class ShowMetadata : ExampleBase
     {
         public ShowMetadata() { Index = 1; Enable = false; }
 
@@ -18,10 +17,11 @@ namespace FFmpeg.Sharp.Example
             using var demuxer = MediaDemuxer.Open(inFile);
             demuxer.DumpFormat();
 
-            // Wrap the native dictionary in a managed view (leaveOpen: true — demuxer owns the pointer).
-            using var meta = new MediaDictionary(demuxer.Ref.metadata, leaveOpen: true);
-            foreach (var kv in meta)
-                Console.WriteLine($"{kv.Key}={kv.Value}");
+            // Borrowed managed view over the native dictionary (demuxer owns the pointer).
+            var meta = demuxer.Metadata;
+            if (meta != null)
+                foreach (var kv in meta)
+                    Console.WriteLine($"{kv.Key}={kv.Value}");
         }
     }
 }

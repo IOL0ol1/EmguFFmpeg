@@ -28,12 +28,7 @@ namespace FFmpeg.Sharp.Example
             if (nbFrames <= 0) throw new ArgumentException("Invalid duration");
 
             // 5.0 surround: FL+FR+FC+SL+SR (AV_CH_LAYOUT_5POINT0 = SURROUND|SIDE_LEFT|SIDE_RIGHT)
-            var inputChLayout = new AVChannelLayout
-            {
-                order       = AVChannelOrder.AV_CHANNEL_ORDER_NATIVE,
-                nb_channels = 5,
-                u           = new AVChannelLayout_u { mask = ffmpeg.AV_CH_LAYOUT_SURROUND | ffmpeg.AV_CH_SIDE_LEFT | ffmpeg.AV_CH_SIDE_RIGHT }
-            };
+            var inputChLayout = (ffmpeg.AV_CH_LAYOUT_SURROUND | ffmpeg.AV_CH_SIDE_LEFT | ffmpeg.AV_CH_SIDE_RIGHT).ToChLayout();
 
             // ── Build filter graph using MediaFilterGraph wrapper ─────────────
             using var graph = new MediaFilterGraph();
@@ -52,7 +47,7 @@ namespace FFmpeg.Sharp.Example
 
             var aformatCtx = graph.AddFilter(
                 new MediaFilter("aformat"),
-                $"sample_fmts={ffmpeg.av_get_sample_fmt_name(AVSampleFormat.AV_SAMPLE_FMT_S16)}:sample_rates=44100:channel_layouts=stereo",
+                $"sample_fmts={AVSampleFormat.AV_SAMPLE_FMT_S16.GetName()}:sample_rates=44100:channel_layouts=stereo",
                 "aformat");
 
             var abuffersinkCtx = graph.AddFilter(new MediaFilter("abuffersink"), (string)null, "sink");
@@ -86,10 +81,10 @@ namespace FFmpeg.Sharp.Example
 
         private static void ProcessOutput(MediaFrame frame)
         {
-            bool planar    = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)frame.Ref.format) != 0;
+            bool planar    = ((AVSampleFormat)frame.Ref.format).IsPlanar();
             int  channels  = frame.Ref.ch_layout.nb_channels;
             int  planes    = planar ? channels : 1;
-            int  bps       = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)frame.Ref.format);
+            int  bps       = ((AVSampleFormat)frame.Ref.format).GetBytesPerSample();
             int  planeSize = bps * frame.Ref.nb_samples * (planar ? 1 : channels);
 
             for (int i = 0; i < planes; i++)

@@ -47,15 +47,30 @@ namespace FFmpeg.Sharp
         public static MediaDecoder CreateDecoder(AVCodecParameters codecParameters, Action<MediaCodecContext> action = null, MediaDictionary opts = null)
         {
             var codec = MediaCodec.FindDecoder(codecParameters.codec_id);
-            AVCodecParameters* pCodecParameters = &codecParameters;
             // If codec_id is AV_CODEC_ID_NONE return null
-            return codec == null
-                ? null
-                : Create(codec, _ =>
-                {
-                    ffmpeg.avcodec_parameters_to_context(_, pCodecParameters).ThrowIfError();
-                    action?.Invoke(_);
-                }, opts);
+            return codec == null ? null : CreateDecoder(codecParameters, codec, action, opts);
+        }
+
+        /// <summary>
+        /// Create <see cref="MediaDecoder"/> for an explicit <paramref name="codec"/> (e.g. "h264_qsv")
+        /// and fill its context from <paramref name="codecParameters"/> before opening.
+        /// <para>
+        /// <seealso cref="ffmpeg.avcodec_parameters_to_context(AVCodecContext*, AVCodecParameters*)"/>
+        /// </para>
+        /// </summary>
+        /// <param name="codecParameters"></param>
+        /// <param name="codec">The explicit decoder to open.</param>
+        /// <param name="beforeOpenSetting">Invoked after the codec parameters are applied, before open.</param>
+        /// <param name="opts"></param>
+        /// <returns></returns>
+        public static MediaDecoder CreateDecoder(AVCodecParameters codecParameters, MediaCodec codec, Action<MediaCodecContext> beforeOpenSetting = null, MediaDictionary opts = null)
+        {
+            if (codec == null) throw new ArgumentNullException(nameof(codec));
+            return Create(codec, _ =>
+            {
+                _.SetCodecParameters(ref codecParameters);
+                beforeOpenSetting?.Invoke(_);
+            }, opts);
         }
 
         #endregion

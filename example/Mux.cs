@@ -74,12 +74,12 @@ namespace FFmpeg.Sharp.Example
             while (encodeMoreVideo || encodeMoreAudio)
             {
                 bool videoTime = encodeMoreVideo &&
-                    (!encodeMoreAudio || ffmpeg.av_compare_ts(videoNextPts, videoEncoder.Ref.time_base,
+                    (!encodeMoreAudio || FFmpegUtil.CompareTs(videoNextPts, videoEncoder.Ref.time_base,
                         audioNextPts, audioEncoder.Ref.time_base) <= 0);
 
                 if (videoTime)
                 {
-                    if (ffmpeg.av_compare_ts(videoNextPts, videoEncoder.Ref.time_base,
+                    if (FFmpegUtil.CompareTs(videoNextPts, videoEncoder.Ref.time_base,
                             (long)(StreamDuration * ffmpeg.AV_TIME_BASE), new AVRational { num = 1, den = ffmpeg.AV_TIME_BASE }) > 0)
                     {
                         // Flush video.
@@ -97,14 +97,13 @@ namespace FFmpeg.Sharp.Example
                         foreach (var p in videoEncoder.EncodeFrame(videoFrame, tmpPacket))
                         {
                             p.Ref.stream_index = 0;
-                            ffmpeg.av_packet_rescale_ts(p, videoEncoder.Ref.time_base, muxer.Ref.streams[0]->time_base);
-                            muxer.WritePacket(p);
+                            muxer.WritePacket(p, videoEncoder);
                         }
                     }
                 }
                 else
                 {
-                    if (ffmpeg.av_compare_ts(audioNextPts, audioEncoder.Ref.time_base,
+                    if (FFmpegUtil.CompareTs(audioNextPts, audioEncoder.Ref.time_base,
                             (long)(StreamDuration * ffmpeg.AV_TIME_BASE), new AVRational { num = 1, den = ffmpeg.AV_TIME_BASE }) > 0)
                     {
                         foreach (var p in audioEncoder.EncodeFrame(null, tmpPacket))
@@ -122,8 +121,7 @@ namespace FFmpeg.Sharp.Example
                         foreach (var p in audioEncoder.EncodeFrame(audioFrame, tmpPacket))
                         {
                             p.Ref.stream_index = 1;
-                            ffmpeg.av_packet_rescale_ts(p, audioEncoder.Ref.time_base, muxer.Ref.streams[1]->time_base);
-                            muxer.WritePacket(p);
+                            muxer.WritePacket(p, audioEncoder);
                         }
                     }
                 }

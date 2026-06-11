@@ -37,17 +37,14 @@ namespace FFmpeg.Sharp.Example
                 scaler.Convert(srcFrame, dstFrame);
 
                 // Flatten (possibly padded) frame to a tightly-packed buffer for file output.
-                int dstBufSize = ffmpeg.av_image_get_buffer_size(dstFmt, dstW, dstH, 1);
-                var buf   = new byte[dstBufSize];
-                var data4 = new byte_ptrArray4(); data4.UpdateFrom(dstFrame.Ref.data);
-                var line4 = new int_array4();     line4.UpdateFrom(dstFrame.Ref.linesize);
-                fixed (byte* pBuf = buf)
-                    ffmpeg.av_image_copy_to_buffer(pBuf, dstBufSize, data4, line4, dstFmt, dstW, dstH, 1).ThrowIfError();
+                int dstBufSize = dstFrame.GetBytesSize(padding: false);
+                var buf = new byte[dstBufSize];
+                dstFrame.GetBytes(buf, padding: false);
                 outStream.Write(buf);
             }
 
             Console.Error.WriteLine($"Scaling succeeded. Play with:");
-            Console.Error.WriteLine($"ffplay -f rawvideo -pix_fmt {ffmpeg.av_get_pix_fmt_name(dstFmt)} -video_size {dstW}x{dstH} {outFile}");
+            Console.Error.WriteLine($"ffplay -f rawvideo -pix_fmt {dstFmt.GetName()} -video_size {dstW}x{dstH} {outFile}");
         }
 
         private static void FillYuvImage(MediaFrame frame, int width, int height, int frameIndex)

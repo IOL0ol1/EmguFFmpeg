@@ -29,14 +29,14 @@ namespace FFmpeg.Sharp.Example
             var decoders = new MediaDecoder[nb];
             for (int i = 0; i < nb; i++)
             {
-                var par = demuxer.Ref.streams[i]->codecpar;
-                if (par->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO ||
-                    par->codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO)
+                var inStream = demuxer[i];
+                if (inStream.CodecparRef.codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO ||
+                    inStream.CodecparRef.codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO)
                 {
-                    decoders[i] = MediaDecoder.CreateDecoder(*par, ctx =>
+                    decoders[i] = MediaDecoder.CreateDecoder(inStream.CodecparRef, ctx =>
                     {
-                        if (par->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
-                            ctx.Ref.framerate = ffmpeg.av_guess_frame_rate(demuxer, demuxer.Ref.streams[i], null);
+                        if (inStream.CodecparRef.codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
+                            ctx.Ref.framerate = demuxer.GuessFrameRate(inStream);
                     });
                 }
             }
@@ -47,14 +47,13 @@ namespace FFmpeg.Sharp.Example
 
             for (int i = 0; i < nb; i++)
             {
-                var inStream = demuxer.Ref.streams[i];
+                var inStream = demuxer[i];
                 var dec      = decoders[i];
-                var par      = inStream->codecpar;
 
                 if (dec == null)
                 {
                     // Remux subtitle/data streams unchanged.
-                    muxer.AddStream(*par);
+                    muxer.AddStream(inStream.CodecparRef);
                     continue;
                 }
 
@@ -69,7 +68,7 @@ namespace FFmpeg.Sharp.Example
                         ctx.Ref.width               = dec.Ref.width;
                         ctx.Ref.sample_aspect_ratio = dec.Ref.sample_aspect_ratio;
                         ctx.Ref.pix_fmt             = dec.Ref.pix_fmt;
-                        ctx.Ref.time_base           = ffmpeg.av_inv_q(dec.Ref.framerate);
+                        ctx.Ref.time_base           = dec.Ref.framerate.ToInvert();
                     }
                     else
                     {
@@ -101,7 +100,7 @@ namespace FFmpeg.Sharp.Example
 
                 var graph      = new MediaFilterGraph();
                 filtGraphs[i]  = graph;
-                var inStream   = demuxer.Ref.streams[i];
+                var inStream   = demuxer[i];
                 string filterSpec;
 
                 if (dec.Ref.codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
@@ -112,7 +111,7 @@ namespace FFmpeg.Sharp.Example
                         new MediaFilter("buffer"),
                         dec.Ref.width, dec.Ref.height,
                         dec.Ref.pix_fmt,
-                        inStream->time_base,
+                        inStream.Ref.time_base,
                         dec.Ref.sample_aspect_ratio,
                         contextName: "in");
 
@@ -129,7 +128,7 @@ namespace FFmpeg.Sharp.Example
                     filtSrcCtxs[i] = graph.AddAudioSrcFilter(
                         new MediaFilter("abuffer"),
                         dec.Ref.ch_layout,
-                        inStream->time_base,
+                        inStream.Ref.time_base,
                         dec.Ref.sample_rate,
                         dec.Ref.sample_fmt,
                         "in");
@@ -148,7 +147,7 @@ namespace FFmpeg.Sharp.Example
 
                 // Set encoder frame size on sink (must be done after Initialize).
                 if (dec.Ref.codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO && enc.Ref.frame_size > 0)
-                    ffmpeg.av_buffersink_set_frame_size(filtSinkCtxs[i], (uint)enc.Ref.frame_size);
+                    filtSinkCtxs[i].BufferSinkSetFrameSize((uint)enc.Ref.frame_size);
             }
 
             // ── Main transcode loop ───────────────────────────────────────────
@@ -183,8 +182,7 @@ namespace FFmpeg.Sharp.Example
                 foreach (var ep in encoders[i].EncodeFrame(null, encPkt))
                 {
                     ep.Ref.stream_index = i;
-                    ffmpeg.av_packet_rescale_ts(ep, encoders[i].Ref.time_base, demuxer.Ref.streams[i]->time_base);
-                    muxer.WritePacket(ep);
+                    muxer.WritePacket(ep, encoders[i]); // auto-rescales encoder.time_base → stream time_base
                 }
             }
 

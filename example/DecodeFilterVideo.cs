@@ -27,10 +27,9 @@ namespace FFmpeg.Sharp.Example
             int videoStreamIdx = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref videoCodec);
             if (videoStreamIdx < 0) throw new Exception("No video stream found");
 
-            var codecPar = *demuxer.Ref.streams[videoStreamIdx]->codecpar;
-            using var decoder = MediaDecoder.CreateDecoder(codecPar);
+            using var decoder = MediaDecoder.CreateDecoder(demuxer[videoStreamIdx].CodecparRef);
 
-            var timeBase = demuxer.Ref.streams[videoStreamIdx]->time_base;
+            var timeBase = demuxer[videoStreamIdx].Ref.time_base;
 
             // ── Build filter graph using MediaFilterGraph wrapper ─────────────
             using var graph = new MediaFilterGraph();
@@ -54,7 +53,7 @@ namespace FFmpeg.Sharp.Example
             graph.ParseGraph(FilterDescr, srcCtx, sinkCtx);
             graph.Initialize();
 
-            var sinkTimeBase = sinkCtx.Ref.inputs[0]->time_base;
+            var sinkTimeBase = sinkCtx.BufferSinkGetTimeBase();
 
             // ── Decode + filter loop ──────────────────────────────────────────
             using var frame     = new MediaFrame();
@@ -85,7 +84,7 @@ namespace FFmpeg.Sharp.Example
             {
                 if (lastPts != ffmpeg.AV_NOPTS_VALUE)
                 {
-                    long delayUs = ffmpeg.av_rescale_q(frame.Ref.pts - lastPts,
+                    long delayUs = (frame.Ref.pts - lastPts).Rescale(
                         sinkTimeBase, new AVRational { num = 1, den = 1_000_000 });
                     if (delayUs > 0 && delayUs < 1_000_000)
                         Thread.Sleep((int)(delayUs / 1000));

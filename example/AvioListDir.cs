@@ -7,6 +7,8 @@ namespace FFmpeg.Sharp.Example
     /// Maps to FFmpeg example: avio_list_dir.c
     /// List directory entries of a given URL using the AVIODirContext API.
     /// Works with local paths or network protocols that support directory listing (e.g. FTP, SMB).
+    /// Implemented directly on the raw avio_*_dir API: C# offers <see cref="System.IO.Directory"/>
+    /// for local paths, so this niche protocol-level API is not wrapped by the library.
     /// </summary>
     public unsafe class AvioListDir : ExampleBase
     {
@@ -16,14 +18,14 @@ namespace FFmpeg.Sharp.Example
         {
             var inputDir = args.Length > 0 ? args[0] : ".";
 
-            ffmpeg.avformat_network_init();
+            FFmpegUtil.NetworkInit();
 
             AVIODirContext* ctx = null;
             int ret = ffmpeg.avio_open_dir(&ctx, inputDir, null);
             if (ret < 0)
             {
                 Console.Error.WriteLine($"Cannot open directory '{inputDir}': {FFmpegException.GetErrorString(ret)}");
-                ffmpeg.avformat_network_deinit();
+                FFmpegUtil.NetworkDeinit();
                 return;
             }
 
@@ -46,7 +48,7 @@ namespace FFmpeg.Sharp.Example
                 string uidGid   = $"{entry->user_id}({entry->group_id})";
                 string name     = ((IntPtr)entry->name).PtrToStringUTF8() ?? "";
                 Console.WriteLine(
-                    $"{TypeString(entry->type),-9} {entry->size,12} {name,30} {uidGid,10} {filemode,3} " +
+                    $"{TypeString((AVIODirEntryType)entry->type),-9} {entry->size,12} {name,30} {uidGid,10} {filemode,3} " +
                     $"{entry->modification_timestamp,16} {entry->access_timestamp,16} {entry->status_change_timestamp,16}");
 
                 ffmpeg.avio_free_directory_entry(&entry);
@@ -54,22 +56,22 @@ namespace FFmpeg.Sharp.Example
             }
 
             ffmpeg.avio_close_dir(&ctx);
-            ffmpeg.avformat_network_deinit();
+            FFmpegUtil.NetworkDeinit();
         }
 
-        private static string TypeString(int type) => type switch
+        private static string TypeString(AVIODirEntryType type) => type switch
         {
-            3  => "<DIR>",
-            7  => "<FILE>",
-            1  => "<BLOCK DEVICE>",
-            2  => "<CHARACTER DEVICE>",
-            4  => "<PIPE>",
-            5  => "<LINK>",
-            6  => "<SOCKET>",
-            8  => "<SERVER>",
-            9  => "<SHARE>",
-            10 => "<WORKGROUP>",
-            _  => "<UNKNOWN>",
+            AVIODirEntryType.AVIO_ENTRY_DIRECTORY        => "<DIR>",
+            AVIODirEntryType.AVIO_ENTRY_FILE             => "<FILE>",
+            AVIODirEntryType.AVIO_ENTRY_BLOCK_DEVICE     => "<BLOCK DEVICE>",
+            AVIODirEntryType.AVIO_ENTRY_CHARACTER_DEVICE => "<CHARACTER DEVICE>",
+            AVIODirEntryType.AVIO_ENTRY_NAMED_PIPE       => "<PIPE>",
+            AVIODirEntryType.AVIO_ENTRY_SYMBOLIC_LINK    => "<LINK>",
+            AVIODirEntryType.AVIO_ENTRY_SOCKET           => "<SOCKET>",
+            AVIODirEntryType.AVIO_ENTRY_SERVER           => "<SERVER>",
+            AVIODirEntryType.AVIO_ENTRY_SHARE            => "<SHARE>",
+            AVIODirEntryType.AVIO_ENTRY_WORKGROUP        => "<WORKGROUP>",
+            _                                            => "<UNKNOWN>",
         };
     }
 }

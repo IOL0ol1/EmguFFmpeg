@@ -31,6 +31,11 @@ namespace FFmpeg.Sharp
         {
             return ffmpeg.av_q2d(rational);
         }
+
+        /// <summary>
+        /// Rescale a 64-bit integer from <paramref name="srcTimeBase"/> to <paramref name="dstTimeBase"/>. Wraps <c>av_rescale_q</c>.
+        /// </summary>
+        public static long Rescale(this long a, AVRational srcTimeBase, AVRational dstTimeBase) => ffmpeg.av_rescale_q(a, srcTimeBase, dstTimeBase);
     }
 
     public static class AVChannelLayoutExtension
@@ -57,6 +62,16 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
+        /// Initialize a channel layout from the given channel mask. Wraps <c>av_channel_layout_from_mask</c>.
+        /// </summary>
+        public static unsafe AVChannelLayout ToChLayout(this ulong mask)
+        {
+            var chLayout = new AVChannelLayout();
+            ffmpeg.av_channel_layout_from_mask(&chLayout, mask).ThrowIfError();
+            return chLayout;
+        }
+
+        /// <summary>
         /// Return a human-readable description of this channel layout (e.g. <c>"stereo"</c>, <c>"5.1"</c>).
         /// Wraps <c>av_channel_layout_describe</c>. Returns an empty string when the layout is
         /// <c>AV_CHANNEL_ORDER_UNSPEC</c>; consider calling <see cref="ToDefaultChLayout"/> first.
@@ -77,6 +92,21 @@ namespace FFmpeg.Sharp
         {
             return ffmpeg.av_get_sample_fmt_name(sampleFormat);
         }
+
+        /// <summary>
+        /// Check if the sample format is planar. Wraps <c>av_sample_fmt_is_planar</c>.
+        /// </summary>
+        public static bool IsPlanar(this AVSampleFormat sampleFormat) => ffmpeg.av_sample_fmt_is_planar(sampleFormat) != 0;
+
+        /// <summary>
+        /// Get the packed alternative form of the sample format. Wraps <c>av_get_packed_sample_fmt</c>.
+        /// </summary>
+        public static AVSampleFormat ToPacked(this AVSampleFormat sampleFormat) => ffmpeg.av_get_packed_sample_fmt(sampleFormat);
+
+        /// <summary>
+        /// Get the number of bytes per sample. Wraps <c>av_get_bytes_per_sample</c>.
+        /// </summary>
+        public static int GetBytesPerSample(this AVSampleFormat sampleFormat) => ffmpeg.av_get_bytes_per_sample(sampleFormat);
     }
 
     public static class AVPixelFormatExtension
@@ -84,6 +114,17 @@ namespace FFmpeg.Sharp
         public static string GetName(this AVPixelFormat pixelFormat)
         {
             return ffmpeg.av_get_pix_fmt_name(pixelFormat);
+        }
+    }
+
+    public static class AVHWDeviceTypeExtension
+    {
+        /// <summary>
+        /// Get the string name of the hardware device type. Wraps <c>av_hwdevice_get_type_name</c>.
+        /// </summary>
+        public static string GetName(this AVHWDeviceType type)
+        {
+            return ffmpeg.av_hwdevice_get_type_name(type);
         }
     }
 

@@ -108,7 +108,7 @@ namespace FFmpeg.Sharp
         public int Seek(long timestamp, int streamIndex = -1)
         {
             if (streamIndex >= 0)
-                timestamp = ffmpeg.av_rescale_q(timestamp, ffmpeg.av_get_time_base_q(), pFormatContext->streams[streamIndex]->time_base);
+                timestamp = timestamp.Rescale(ffmpeg.av_get_time_base_q(), pFormatContext->streams[streamIndex]->time_base);
             return ffmpeg.avformat_seek_file(pFormatContext, streamIndex, long.MinValue, timestamp, timestamp, 0).ThrowIfError();
         }
 

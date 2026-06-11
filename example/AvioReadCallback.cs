@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using FFmpeg.AutoGen;
 
 namespace FFmpeg.Sharp.Example
 {
@@ -10,7 +9,7 @@ namespace FFmpeg.Sharp.Example
     /// The entire input file is read into a managed byte array, then an AVIOContext is created
     /// with a read callback that serves bytes from that buffer — no disk access after the initial read.
     /// </summary>
-    public unsafe class AvioReadCallback : ExampleBase
+    public class AvioReadCallback : ExampleBase
     {
         public AvioReadCallback() { Index = 2; Enable = false; }
 
@@ -28,11 +27,11 @@ namespace FFmpeg.Sharp.Example
 
             demuxer.DumpFormat();
 
-            Console.WriteLine($"Number of streams: {demuxer.Ref.nb_streams}");
-            for (int i = 0; i < (int)demuxer.Ref.nb_streams; i++)
+            Console.WriteLine($"Number of streams: {demuxer.Count}");
+            for (int i = 0; i < demuxer.Count; i++)
             {
-                var st = demuxer.Ref.streams[i];
-                Console.WriteLine($"  Stream #{i}: codec_type={st->codecpar->codec_type}, codec_id={st->codecpar->codec_id}");
+                var st = demuxer[i];
+                Console.WriteLine($"  Stream #{i}: codec_type={st.CodecparRef.codec_type}, codec_id={st.CodecparRef.codec_id}");
             }
         }
     }

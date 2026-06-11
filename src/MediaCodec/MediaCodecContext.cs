@@ -75,6 +75,46 @@ namespace FFmpeg.Sharp
         public bool IsOpen => ffmpeg.avcodec_is_open(pCodecContext) != 0;
 
         /// <summary>
+        /// Fill this codec context based on the values from the supplied codec parameters.
+        /// <para>
+        /// <seealso cref="ffmpeg.avcodec_parameters_to_context(AVCodecContext*, AVCodecParameters*)"/>
+        /// </para>
+        /// </summary>
+        /// <param name="codecpar">Source codec parameters.</param>
+        public void SetCodecParameters(ref AVCodecParameters codecpar)
+        {
+            fixed (AVCodecParameters* p = &codecpar)
+                ffmpeg.avcodec_parameters_to_context(pCodecContext, p).ThrowIfError();
+        }
+
+        /// <summary>
+        /// Apply <paramref name="opts"/> to this codec context via <see cref="ffmpeg.av_opt_set_dict(void*, AVDictionary**)"/>,
+        /// and, when <paramref name="includePrivate"/> is <see langword="true"/> and the context has codec private data,
+        /// to <c>priv_data</c> as well.
+        /// <para>
+        /// Consumed keys are removed from <paramref name="opts"/> (av_opt_set_dict semantics); unrecognised keys remain.
+        /// </para>
+        /// </summary>
+        /// <param name="opts">Options to apply. Entries that are consumed are removed.</param>
+        /// <param name="includePrivate">Also apply the options to the codec's private context.</param>
+        /// <returns>The first negative error code, or 0 on success.</returns>
+        public int SetOptions(MediaDictionary opts, bool includePrivate = true)
+        {
+            if (opts == null) throw new ArgumentNullException(nameof(opts));
+            fixed (AVDictionary** pOpts = &opts.pDictionary)
+            {
+                int ret = ffmpeg.av_opt_set_dict(pCodecContext, pOpts);
+                if (ret < 0) return ret;
+                if (includePrivate && pCodecContext->priv_data != null)
+                {
+                    ret = ffmpeg.av_opt_set_dict(pCodecContext->priv_data, pOpts);
+                    if (ret < 0) return ret;
+                }
+                return 0;
+            }
+        }
+
+        /// <summary>
         /// Number of worker threads for parallel codec processing. 0 = auto.
         /// Set BEFORE <c>avcodec_open2</c> (i.e. inside the <c>beforeOpenSetting</c> callback).
         /// </summary>

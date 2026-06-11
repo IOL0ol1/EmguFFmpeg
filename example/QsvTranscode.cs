@@ -24,7 +24,7 @@ namespace FFmpeg.Sharp.Example
         private DynamicSetting[] _settings;
         private int              _currentSetting;
         private int              _frameNumber;
-        private AVCodecContext*  _encoderCtx;
+        private MediaEncoder     _encoder;
 
         public QsvTranscode() { Index = 22; Enable = false; }
 
@@ -53,12 +53,6 @@ namespace FFmpeg.Sharp.Example
             var outFile     = args[2];
             var initOptStr  = args[3];
 
-            // ── QSV hardware device ───────────────────────────────────────────
-            AVBufferRef* hwDeviceCtx = null;
-            ffmpeg.av_hwdevice_ctx_create(&hwDeviceCtx, AVHWDeviceType.AV_HWDEVICE_TYPE_QSV,
-                                          null, null, 0).ThrowIfError();
-            var hwDeviceCtxPtr = (IntPtr)hwDeviceCtx;
-
             // ── Decoder ───────────────────────────────────────────────────────
             using var demuxer = MediaDemuxer.Open(inFile);
 
@@ -66,10 +60,10 @@ namespace FFmpeg.Sharp.Example
             MediaCodec qsvDecoder = null;
             for (int i = 0; i < (int)demuxer.Ref.nb_streams && videoStream < 0; i++)
             {
-                var st = demuxer.Ref.streams[i];
-                if (st->codecpar->codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO) continue;
+                var st = demuxer[i];
+                if (st.CodecparRef.codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO) continue;
 
-                string decoderName = st->codecpar->codec_id switch
+                string decoderName = st.CodecparRef.codec_id switch
                 {
                     AVCodecID.AV_CODEC_ID_H264       => "h264_qsv",
                     AVCodecID.AV_CODEC_ID_HEVC        => "hevc_qsv",
@@ -92,39 +86,24 @@ namespace FFmpeg.Sharp.Example
             if (videoStream < 0 || qsvDecoder == null)
                 throw new Exception("Cannot find a QSV-capable video stream in the input");
 
-            var videoSt     = demuxer.Ref.streams[videoStream];
-            var codecparPtr = (IntPtr)videoSt->codecpar;
+            var videoSt = demuxer[videoStream];
 
-            AVCodecContext_get_format getFormatFn = (_, pix_fmts) =>
+            // InitHWDeviceContext creates the QSV device and wires the get_format
+            // callback that always picks AV_PIX_FMT_QSV.
+            using var decoder = MediaDecoder.CreateDecoder(videoSt.CodecparRef, qsvDecoder, ctx =>
             {
-                for (var p = pix_fmts; *p != AVPixelFormat.AV_PIX_FMT_NONE; p++)
-                    if (*p == AVPixelFormat.AV_PIX_FMT_QSV)
-                        return AVPixelFormat.AV_PIX_FMT_QSV;
-                Console.Error.WriteLine("The QSV pixel format not offered in get_format()");
-                return AVPixelFormat.AV_PIX_FMT_NONE;
-            };
-
-            using var decoder = MediaDecoder.Create(qsvDecoder, ctx =>
-            {
-                ffmpeg.avcodec_parameters_to_context(ctx, (AVCodecParameters*)codecparPtr).ThrowIfError();
-                ctx.Ref.framerate    = ffmpeg.av_guess_frame_rate(demuxer, videoSt, null);
-                ctx.Ref.hw_device_ctx = ffmpeg.av_buffer_ref((AVBufferRef*)hwDeviceCtxPtr);
-                ctx.Ref.pkt_timebase = videoSt->time_base;
-                ctx.Ref.get_format   = getFormatFn;
+                ctx.Ref.framerate = demuxer.GuessFrameRate(videoSt);
+                if (ctx.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_QSV) == 0)
+                    throw new Exception("The QSV pixel format not offered in get_format()");
+                ctx.Ref.pkt_timebase = videoSt.Ref.time_base;
             });
 
             // ── Encoder (opened lazily after the first decoded frame) ─────────
             var encCodec = MediaCodec.FindEncoder(encoderName)
                            ?? throw new Exception($"Could not find encoder '{encoderName}'");
 
-            _encoderCtx = ffmpeg.avcodec_alloc_context3(encCodec);
-            if (_encoderCtx == null) throw new Exception("Failed to allocate encoder context");
-
             // ── Output muxer ──────────────────────────────────────────────────
-            AVFormatContext* ofmtCtx = null;
-            ffmpeg.avformat_alloc_output_context2(&ofmtCtx, null, null, outFile).ThrowIfError();
-
-            ffmpeg.avio_open(&ofmtCtx->pb, outFile, ffmpeg.AVIO_FLAG_WRITE).ThrowIfError();
+            using var muxer = MediaMuxer.Create(outFile);
 
             using var encPkt = new MediaPacket();
             using var frame  = new MediaFrame();
@@ -137,35 +116,29 @@ namespace FFmpeg.Sharp.Example
             foreach (var pkt in demuxer.ReadPackets(decPkt))
             {
                 if (pkt.Ref.stream_index != videoStream) continue;
-                ret = DecodeEncode(decoder, frame, encPkt, encCodec, ofmtCtx,
-                                   initOptStr, pkt, ref headerWritten, hwDeviceCtxPtr);
+                ret = DecodeEncode(decoder, frame, encPkt, encCodec, muxer,
+                                   initOptStr, pkt, ref headerWritten);
                 if (ret < 0) break;
             }
 
             // Flush decoder.
-            DecodeEncode(decoder, frame, encPkt, encCodec, ofmtCtx,
-                         initOptStr, null, ref headerWritten, hwDeviceCtxPtr);
+            DecodeEncode(decoder, frame, encPkt, encCodec, muxer,
+                         initOptStr, null, ref headerWritten);
 
             // Flush encoder.
-            EncodeWrite(encPkt, null, ofmtCtx);
+            EncodeWrite(encPkt, null, muxer);
 
             if (headerWritten)
-                ffmpeg.av_write_trailer(ofmtCtx);
+                muxer.WriteTrailer();
 
             // ── Cleanup ───────────────────────────────────────────────────────
-            var tmpEncoderCtx = _encoderCtx;
-            ffmpeg.avcodec_free_context(&tmpEncoderCtx);
-
-            if (ofmtCtx != null && (ofmtCtx->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
-                ffmpeg.avio_closep(&ofmtCtx->pb);
-            ffmpeg.avformat_free_context(ofmtCtx);
-
-            ffmpeg.av_buffer_unref(&hwDeviceCtx);
+            _encoder?.Dispose();
+            _encoder = null;
         }
 
         private int DecodeEncode(MediaDecoder decoder, MediaFrame frame, MediaPacket encPkt,
-                                  MediaCodec encCodec, AVFormatContext* ofmtCtx, string initOptStr,
-                                  MediaPacket pkt, ref bool headerWritten, IntPtr hwDeviceCtxPtr)
+                                  MediaCodec encCodec, MediaMuxer muxer, string initOptStr,
+                                  MediaPacket pkt, ref bool headerWritten)
         {
             int ret = decoder.SendPacket(pkt);
             if (ret < 0)
@@ -187,60 +160,53 @@ namespace FFmpeg.Sharp.Example
                 }
 
                 // Lazily open encoder on first decoded frame (once hw_frames_ctx is available).
-                if (_encoderCtx->hw_frames_ctx == null)
+                if (_encoder == null)
                 {
-                    _encoderCtx->hw_frames_ctx = ffmpeg.av_buffer_ref(decoder.Ref.hw_frames_ctx);
-                    if (_encoderCtx->hw_frames_ctx == null)
-                        return ffmpeg.AVERROR(12 /*ENOMEM*/);
-
-                    _encoderCtx->time_base = ffmpeg.av_inv_q(decoder.Ref.framerate);
-                    _encoderCtx->pix_fmt   = AVPixelFormat.AV_PIX_FMT_QSV;
-                    _encoderCtx->width     = decoder.Ref.width;
-                    _encoderCtx->height    = decoder.Ref.height;
-
-                    AVDictionary* opts = null;
-                    StrToDict(initOptStr, &opts);
+                    using var opts = StrToDict(initOptStr);
 
                     // Check for "r" (framerate) option.
-                    var rEntry = ffmpeg.av_dict_get(opts, "r", null, 0);
-                    if (rEntry != null)
+                    var fpsOpt = opts["r"];
+
+                    _encoder = MediaEncoder.Create(encCodec, c =>
                     {
-                        double fps = double.Parse(((IntPtr)rEntry->value).PtrToStringUTF8() ?? "25");
-                        _encoderCtx->framerate = ffmpeg.av_d2q(fps, int.MaxValue);
-                        _encoderCtx->time_base = ffmpeg.av_inv_q(_encoderCtx->framerate);
-                    }
+                        c.AttachHWFramesContext(decoder.GetHWFramesRef());
+                        c.Ref.time_base = decoder.Ref.framerate.ToInvert();
+                        c.Ref.pix_fmt   = AVPixelFormat.AV_PIX_FMT_QSV;
+                        c.Ref.width     = decoder.Ref.width;
+                        c.Ref.height    = decoder.Ref.height;
 
-                    ffmpeg.avcodec_open2(_encoderCtx, encCodec, &opts).ThrowIfError();
-                    ffmpeg.av_dict_free(&opts);
+                        if (fpsOpt != null)
+                        {
+                            c.Ref.framerate = double.Parse(fpsOpt).ToRational(int.MaxValue);
+                            c.Ref.time_base = c.Ref.framerate.ToInvert();
+                        }
+                    }, opts);
 
-                    var ost = ffmpeg.avformat_new_stream(ofmtCtx, encCodec);
-                    if (ost == null) return ffmpeg.AVERROR(12);
-                    ost->time_base = _encoderCtx->time_base;
-                    ffmpeg.avcodec_parameters_from_context(ost->codecpar, _encoderCtx).ThrowIfError();
-
-                    ffmpeg.avformat_write_header(ofmtCtx, null).ThrowIfError();
+                    muxer.AddStream(_encoder);
+                    muxer.WriteHeader();
                     headerWritten = true;
                 }
 
                 // Rescale pts.
-                AVFrame* f = frame;
-                f->pts = ffmpeg.av_rescale_q(f->pts, decoder.Ref.pkt_timebase, _encoderCtx->time_base);
+                frame.Ref.pts = frame.Ref.pts.Rescale(decoder.Ref.pkt_timebase, _encoder.Ref.time_base);
 
-                ret = EncodeWrite(encPkt, frame, ofmtCtx);
+                ret = EncodeWrite(encPkt, frame, muxer);
                 if (ret < 0)
                     Console.Error.WriteLine($"Error during encoding and writing.");
             }
             return ret;
         }
 
-        private int EncodeWrite(MediaPacket encPkt, MediaFrame frame, AVFormatContext* ofmtCtx)
+        private int EncodeWrite(MediaPacket encPkt, MediaFrame frame, MediaMuxer muxer)
         {
+            if (_encoder == null) return 0; // no frame ever reached the encoder
+
             encPkt.Unref();
 
             // Apply any pending dynamic encoder settings.
             DynamicSetParameter();
 
-            int ret = ffmpeg.avcodec_send_frame(_encoderCtx, frame);
+            int ret = _encoder.SendFrame(frame);
             if (ret < 0)
             {
                 Console.Error.WriteLine($"Error during encoding. Error code: {FFmpegException.GetErrorString(ret)}");
@@ -249,13 +215,12 @@ namespace FFmpeg.Sharp.Example
 
             while (true)
             {
-                ret = ffmpeg.avcodec_receive_packet(_encoderCtx, encPkt);
+                ret = _encoder.ReceivePacket(encPkt);
                 if (ret != 0) break;
 
                 encPkt.Ref.stream_index = 0;
-                ffmpeg.av_packet_rescale_ts(encPkt, _encoderCtx->time_base,
-                                            ofmtCtx->streams[0]->time_base);
-                ret = ffmpeg.av_interleaved_write_frame(ofmtCtx, encPkt);
+                // Rescale from the encoder timebase to the output stream timebase and write.
+                ret = muxer.WritePacket(encPkt, _encoder);
                 if (ret < 0)
                 {
                     Console.Error.WriteLine($"Error during writing data to output file. Error code: {FFmpegException.GetErrorString(ret)}");
@@ -275,28 +240,28 @@ namespace FFmpeg.Sharp.Example
             if (_frameNumber != _settings[_currentSetting].FrameNumber) return;
 
             var optStr = _settings[_currentSetting++].OptStr;
-            AVDictionary* opts = null;
-            StrToDict(optStr, &opts);
+            using var opts = StrToDict(optStr);
 
-            ffmpeg.av_opt_set_dict(_encoderCtx, &opts);
-            ffmpeg.av_opt_set_dict(_encoderCtx->priv_data, &opts);
-
-            var rEntry = ffmpeg.av_dict_get(opts, "r", null, 0);
-            if (rEntry != null)
+            // Check for "r" (framerate) option.
+            var fpsOpt = opts["r"];
+            if (fpsOpt != null)
             {
-                double fps = double.Parse(((IntPtr)rEntry->value).PtrToStringUTF8() ?? "25");
-                _encoderCtx->framerate = ffmpeg.av_d2q(fps, int.MaxValue);
-                _encoderCtx->time_base = ffmpeg.av_inv_q(_encoderCtx->framerate);
+                _encoder.Ref.framerate = double.Parse(fpsOpt).ToRational(int.MaxValue);
+                _encoder.Ref.time_base = _encoder.Ref.framerate.ToInvert();
             }
-            ffmpeg.av_dict_free(&opts);
+
+            // Apply the options to the encoder context and its codec private data.
+            _encoder.SetOptions(opts);
         }
 
-        private static void StrToDict(string optStr, AVDictionary** dict)
+        private static MediaDictionary StrToDict(string optStr)
         {
-            if (string.IsNullOrEmpty(optStr)) return;
+            var dict = new MediaDictionary();
+            if (string.IsNullOrEmpty(optStr)) return dict;
             var parts = optStr.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i + 1 < parts.Length; i += 2)
-                ffmpeg.av_dict_set(dict, parts[i], parts[i + 1], 0);
+                dict[parts[i]] = parts[i + 1];
+            return dict;
         }
     }
 }

@@ -32,7 +32,8 @@ namespace CodeGenerator
             {
                 var g = CodeGenerator(type);
                 var f = Path.Combine(folder, $"{g.OutTypeName}.cs");
-                File.WriteAllText(f, g.SourceCode, System.Text.Encoding.UTF8);
+                // No BOM: matches the checked-in src/Internal files byte-for-byte.
+                File.WriteAllText(f, g.SourceCode, new System.Text.UTF8Encoding(false));
             }
 
         }
@@ -58,6 +59,8 @@ namespace CodeGenerator
             var dstTypeName = info.Name;
             //var isDisposable = info.IsDisposable;
             using var sw = new StringWriter();
+            // LF endings: matches the checked-in src/Internal files byte-for-byte.
+            sw.NewLine = "\n";
             var srcTypeName = type.Name.Replace("FFmpeg.AutoGen.", "");
             dstTypeName ??= $"{Regex.Replace(srcTypeName, @"^AV", "Media")}";
             var pTypeName = $"{Regex.Replace(srcTypeName, @"^AV", "p")}";
@@ -97,7 +100,6 @@ namespace CodeGenerator
             sw.WriteLine($"        /// WARNING: Be careful when modifying. Tracks {srcTypeName} struct evolution upstream.");
             sw.WriteLine(@"        /// </summary>");
             sw.WriteLine($"        public ref {srcTypeName} Ref => ref *{pTypeName};");
-            sw.WriteLine(@"");
             sw.WriteLine(@"    }");
             sw.WriteLine(@"}");
             return new GeneratorOutput { SourceCode = sw.ToString(), OutTypeName = dstTypeName };

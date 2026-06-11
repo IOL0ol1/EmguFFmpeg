@@ -31,14 +31,14 @@ namespace FFmpeg.Sharp.Example
             if (videoStreamIdx >= 0 && videoCodec != null)
             {
                 videoDecoder = MediaDecoder.CreateDecoder(
-                    *demuxer.Ref.streams[videoStreamIdx]->codecpar);
+                    demuxer[videoStreamIdx].CodecparRef);
                 Console.WriteLine($"Demuxing video from '{inFile}' into '{videoOutFile}'");
             }
 
             if (audioStreamIdx >= 0 && audioCodec != null)
             {
                 audioDecoder = MediaDecoder.CreateDecoder(
-                    *demuxer.Ref.streams[audioStreamIdx]->codecpar);
+                    demuxer[audioStreamIdx].CodecparRef);
                 Console.WriteLine($"Demuxing audio from '{inFile}' into '{audioOutFile}'");
             }
 
@@ -57,8 +57,7 @@ namespace FFmpeg.Sharp.Example
             // Allocate raw video buffer once we know the format.
             int videoW = 0, videoH = 0;
             AVPixelFormat pixFmt = AVPixelFormat.AV_PIX_FMT_NONE;
-            var videoData = new byte_ptrArray4();
-            var videoLinesize = new int_array4();
+            byte[] videoBuf = null;
             int videoBufSize = 0;
 
             foreach (var pkt in demuxer.ReadPackets(packet))
@@ -74,16 +73,14 @@ namespace FFmpeg.Sharp.Example
                                 videoW = decoded.Ref.width;
                                 videoH = decoded.Ref.height;
                                 pixFmt = (AVPixelFormat)decoded.Ref.format;
-                                videoBufSize = ffmpeg.av_image_alloc(ref videoData, ref videoLinesize, videoW, videoH, pixFmt, 1)
-                                                   .ThrowIfError();
+                                videoBufSize = decoded.GetBytesSize(padding: false);
+                                videoBuf = new byte[videoBufSize];
                             }
 
                             Console.WriteLine($"video_frame n:{videoFrameCount++}");
-                            var srcData4 = new byte_ptrArray4(); srcData4.UpdateFrom(decoded.Ref.data);
-                            var srcLine4 = new int_array4(); srcLine4.UpdateFrom(decoded.Ref.linesize);
-                            ffmpeg.av_image_copy2(ref videoData, ref videoLinesize, ref srcData4, ref srcLine4, pixFmt, videoW, videoH);
+                            decoded.GetBytes(videoBuf, padding: false);
 
-                            videoOut.Write(new ReadOnlySpan<byte>(videoData[0u], videoBufSize));
+                            videoOut.Write(videoBuf, 0, videoBufSize);
                         });
                 }
                 else if (pkt.Ref.stream_index == audioStreamIdx && audioDecoder != null)
@@ -92,7 +89,7 @@ namespace FFmpeg.Sharp.Example
                         decoded =>
                         {
                             int unpadded = decoded.Ref.nb_samples *
-                                ffmpeg.av_get_bytes_per_sample((AVSampleFormat)decoded.Ref.format);
+                                ((AVSampleFormat)decoded.Ref.format).GetBytesPerSample();
                             Console.WriteLine($"audio_frame n:{audioFrameCount++} nb_samples:{decoded.Ref.nb_samples}");
                             audioOut.Write(new ReadOnlySpan<byte>(decoded.Ref.extended_data[0], unpadded));
                         });
@@ -104,27 +101,27 @@ namespace FFmpeg.Sharp.Example
                 DecodeAndWrite(videoDecoder, null, frame, decoded =>
                 {
                     Console.WriteLine($"video_frame n:{videoFrameCount++}");
-                    videoOut.Write(new ReadOnlySpan<byte>(videoData[0], videoBufSize));
+                    videoOut.Write(videoBuf, 0, videoBufSize);
                 });
 
             if (audioDecoder != null)
                 DecodeAndWrite(audioDecoder, null, frame, decoded =>
                 {
                     int unpadded = decoded.Ref.nb_samples *
-                        ffmpeg.av_get_bytes_per_sample((AVSampleFormat)decoded.Ref.format);
+                        ((AVSampleFormat)decoded.Ref.format).GetBytesPerSample();
                     audioOut.Write(new ReadOnlySpan<byte>(decoded.Ref.extended_data[0], unpadded));
                 });
 
             Console.WriteLine("Demuxing succeeded.");
 
             if (videoDecoder != null)
-                Console.WriteLine($"Play video: ffplay -f rawvideo -pixel_format {ffmpeg.av_get_pix_fmt_name(pixFmt)} -video_size {videoW}x{videoH} {videoOutFile}");
+                Console.WriteLine($"Play video: ffplay -f rawvideo -pixel_format {pixFmt.GetName()} -video_size {videoW}x{videoH} {videoOutFile}");
 
             if (audioDecoder != null)
             {
                 var sfmt = audioDecoder.Ref.sample_fmt;
-                if (ffmpeg.av_sample_fmt_is_planar(sfmt) != 0)
-                    sfmt = ffmpeg.av_get_packed_sample_fmt(sfmt);
+                if (sfmt.IsPlanar())
+                    sfmt = sfmt.ToPacked();
                 string fmtStr = sfmt switch
                 {
                     AVSampleFormat.AV_SAMPLE_FMT_U8  => "u8",
@@ -135,19 +132,7 @@ namespace FFmpeg.Sharp.Example
                     _ => "unknown"
                 };
 
-                var chLayout = audioDecoder.Ref.ch_layout;
-                fixed (byte* buf = new byte[64])
-                {
-                    ffmpeg.av_channel_layout_describe(&chLayout, buf, 64);
-                    Console.WriteLine($"Play audio: ffplay -f {fmtStr} -ch_layout {((IntPtr)buf).PtrToStringUTF8()} -sample_rate {audioDecoder.Ref.sample_rate} {audioOutFile}");
-                }
-            }
-
-            // Cleanup.
-            if (videoBufSize > 0)
-            {
-                var ptr = videoData[0u];
-                ffmpeg.av_free(ptr);
+                Console.WriteLine($"Play audio: ffplay -f {fmtStr} -ch_layout {audioDecoder.Ref.ch_layout.Describe()} -sample_rate {audioDecoder.Ref.sample_rate} {audioOutFile}");
             }
 
             videoDecoder?.Dispose();

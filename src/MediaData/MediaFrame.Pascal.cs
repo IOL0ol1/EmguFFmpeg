@@ -75,6 +75,9 @@ namespace FFmpeg.Sharp
         /// <summary>Per-plane line size (linesize[0]) — common shortcut.</summary>
         public int LineSize0 => pFrame->linesize[0];
 
+        /// <summary>Per-plane line size, <c>linesize[plane]</c>. Valid plane indices are 0..7.</summary>
+        public int GetLineSize(int plane) => pFrame->linesize[(uint)plane];
+
         /// <summary>Time base associated with this frame (set by the producer; not always present).</summary>
         public AVRational TimeBase
         {

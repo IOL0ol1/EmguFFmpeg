@@ -7,7 +7,7 @@ namespace FFmpeg.Sharp.Example
     /// Maps to FFmpeg example: remux.c
     /// Copy all audio/video/subtitle streams from one container to another without transcoding.
     /// </summary>
-    public unsafe class Remux : ExampleBase
+    public class Remux : ExampleBase
     {
         public Remux() { Index = 12; Enable = false; }
 
@@ -24,12 +24,12 @@ namespace FFmpeg.Sharp.Example
             // Build stream mapping (skip non-A/V/subtitle).
             int nbStreams = (int)demuxer.Ref.nb_streams;
             var streamMapping = new int[nbStreams];
+            var outStreams = new MediaStream[nbStreams];
             int outStreamIdx = 0;
 
             for (int i = 0; i < nbStreams; i++)
             {
-                var par = demuxer.Ref.streams[i]->codecpar;
-                var t   = par->codec_type;
+                var t = demuxer[i].CodecparRef.codec_type;
                 if (t != AVMediaType.AVMEDIA_TYPE_AUDIO &&
                     t != AVMediaType.AVMEDIA_TYPE_VIDEO &&
                     t != AVMediaType.AVMEDIA_TYPE_SUBTITLE)
@@ -39,9 +39,9 @@ namespace FFmpeg.Sharp.Example
                 }
 
                 streamMapping[i] = outStreamIdx++;
-                var codecpar = *par;
-                var outStream = muxer.AddStream(codecpar);
-                outStream.Ref.codecpar->codec_tag = 0;
+                var outStream = muxer.AddStream(demuxer[i].CodecparRef);
+                outStream.CodecparRef.codec_tag = 0;
+                outStreams[streamMapping[i]] = outStream;
             }
 
             muxer.DumpFormat();
@@ -54,13 +54,13 @@ namespace FFmpeg.Sharp.Example
                 if (si >= nbStreams || streamMapping[si] < 0)
                     continue;
 
-                var inStream  = demuxer.Ref.streams[si];
-                var newSi     = streamMapping[si];
+                var inTb   = demuxer[si].Ref.time_base;
+                var newSi  = streamMapping[si];
                 pkt.Ref.stream_index = newSi;
 
-                var outStream = muxer.Ref.streams[newSi];
+                var outTb = outStreams[newSi].Ref.time_base;
                 Console.WriteLine($"in: pts={pkt.Ref.pts} stream_index={si}");
-                ffmpeg.av_packet_rescale_ts(pkt, inStream->time_base, outStream->time_base);
+                pkt.RescaleTs(inTb, outTb);
                 pkt.Ref.pos = -1;
                 Console.WriteLine($"out: pts={pkt.Ref.pts} stream_index={newSi}");
 

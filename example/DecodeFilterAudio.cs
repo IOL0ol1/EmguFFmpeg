@@ -29,11 +29,10 @@ namespace FFmpeg.Sharp.Example
             int audioStreamIdx = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_AUDIO, ref audioCodec);
             if (audioStreamIdx < 0) throw new Exception("No audio stream found");
 
-            var codecPar = *demuxer.Ref.streams[audioStreamIdx]->codecpar;
-            using var decoder = MediaDecoder.CreateDecoder(codecPar);
+            using var decoder = MediaDecoder.CreateDecoder(demuxer[audioStreamIdx].CodecparRef);
             // Note: AddAudioSrcFilter automatically normalises AV_CHANNEL_ORDER_UNSPEC.
 
-            var timeBase = demuxer.Ref.streams[audioStreamIdx]->time_base;
+            var timeBase = demuxer[audioStreamIdx].Ref.time_base;
 
             // ── Build filter graph using MediaFilterGraph wrapper ─────────────
             using var graph = new MediaFilterGraph();

@@ -44,7 +44,7 @@ namespace FFmpeg.Sharp.Example
             // Open decoder with flags2=+export_mvs.
             using var exportMvsOpts = new MediaDictionary { ["flags2"] = "+export_mvs" };
             using var decoder = MediaDecoder.CreateDecoder(
-                *demuxer.Ref.streams[videoStreamIdx]->codecpar,
+                demuxer[videoStreamIdx].CodecparRef,
                 null,
                 exportMvsOpts);
 
@@ -71,7 +71,7 @@ namespace FFmpeg.Sharp.Example
             while ((ret = decoder.ReceiveFrame(frame)) >= 0)
             {
                 frameCount++;
-                var sd = ffmpeg.av_frame_get_side_data(frame, AVFrameSideDataType.AV_FRAME_DATA_MOTION_VECTORS);
+                var sd = frame.GetSideData(AVFrameSideDataType.AV_FRAME_DATA_MOTION_VECTORS);
                 if (sd != null)
                 {
                     var mvs = (AVMotionVector*)sd->data;

@@ -37,15 +37,15 @@ namespace FFmpeg.Sharp
         {
             MediaFilterContext filterContext = AddFilter(filter, _ =>
              {
-                 ffmpeg.av_opt_set_int(_, "width", width, ffmpeg.AV_OPT_SEARCH_CHILDREN);
-                 ffmpeg.av_opt_set_int(_, "height", height, ffmpeg.AV_OPT_SEARCH_CHILDREN);
-                 ffmpeg.av_opt_set(_, "pix_fmt", ffmpeg.av_get_pix_fmt_name(format), ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                 MediaOptions.SetInt(_, "width", width, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                 MediaOptions.SetInt(_, "height", height, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                 MediaOptions.Set(_, "pix_fmt", ffmpeg.av_get_pix_fmt_name(format), ffmpeg.AV_OPT_SEARCH_CHILDREN);
                  ffmpeg.av_opt_set_q(_, "pixel_aspect", aspect, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                  ffmpeg.av_opt_set_q(_, "time_base", timebase, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                  if (framerate.den != 0) // if is default value(0/0), not set frame_rate.
                      ffmpeg.av_opt_set_q(_, "frame_rate", framerate, ffmpeg.AV_OPT_SEARCH_CHILDREN); // not set is 0/1
                  if (swsparam != null)
-                     ffmpeg.av_opt_set(_, "sws_param", swsparam, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                     MediaOptions.Set(_, "sws_param", swsparam, ffmpeg.AV_OPT_SEARCH_CHILDREN);
              }, contextName);
             if (filterContext.Ref.nb_inputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
@@ -107,10 +107,10 @@ namespace FFmpeg.Sharp
             string sampleFmtStr = ffmpeg.av_get_sample_fmt_name(format);
             MediaFilterContext filterContext = AddFilter(filter, _ =>
             {
-                ffmpeg.av_opt_set(_, "channel_layout", chLayoutStr, ffmpeg.AV_OPT_SEARCH_CHILDREN);
-                ffmpeg.av_opt_set(_, "sample_fmt", sampleFmtStr, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                MediaOptions.Set(_, "channel_layout", chLayoutStr, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                MediaOptions.Set(_, "sample_fmt", sampleFmtStr, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                 ffmpeg.av_opt_set_q(_, "time_base", timeBase, ffmpeg.AV_OPT_SEARCH_CHILDREN);
-                ffmpeg.av_opt_set_int(_, "sample_rate", samplerate, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                MediaOptions.SetInt(_, "sample_rate", samplerate, ffmpeg.AV_OPT_SEARCH_CHILDREN);
             }, contextName);
             if (filterContext.Ref.nb_inputs > 0)
                 throw new FFmpegException("FFmpegException.NotSourcesFilter");
@@ -142,7 +142,7 @@ namespace FFmpeg.Sharp
                     ffmpeg.av_opt_set_bin(_, "sample_rates", (byte*)pSampleRates, sizeof(int) * sampleRates.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                     ffmpeg.av_opt_set_bin(_, "channel_layouts", (byte*)pChLayouts, sizeof(ulong) * channelLayouts.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                     ffmpeg.av_opt_set_bin(_, "channel_counts", (byte*)pChCounts, sizeof(int) * channelCounts.Length, ffmpeg.AV_OPT_SEARCH_CHILDREN);
-                    ffmpeg.av_opt_set_int(_, "all_channel_counts", allChannelCounts, ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    MediaOptions.SetInt(_, "all_channel_counts", allChannelCounts, ffmpeg.AV_OPT_SEARCH_CHILDREN);
                 }
             }, contextName);
             if (filterContext.Ref.nb_outputs > 0)
@@ -185,7 +185,7 @@ namespace FFmpeg.Sharp
                             sb.Append(((IntPtr)p).PtrToStringUTF8());
                         }
                     }
-                    ffmpeg.av_opt_set(_, "ch_layouts", sb.ToString(), ffmpeg.AV_OPT_SEARCH_CHILDREN);
+                    MediaOptions.Set(_, "ch_layouts", sb.ToString(), ffmpeg.AV_OPT_SEARCH_CHILDREN);
                 }
             }, contextName);
             if (filterContext.Ref.nb_outputs > 0)

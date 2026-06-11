@@ -62,5 +62,22 @@ namespace FFmpeg.Sharp
             }
             return ret;
         }
+
+        /// <summary>
+        /// Compare two timestamps, each in its own time base, via <see cref="ffmpeg.av_compare_ts(long, AVRational, long, AVRational)"/>.
+        /// </summary>
+        /// <returns>-1 if <paramref name="tsA"/> is before <paramref name="tsB"/>, 1 if after, 0 if at the same position.</returns>
+        public static int CompareTs(long tsA, AVRational tbA, long tsB, AVRational tbB)
+            => ffmpeg.av_compare_ts(tsA, tbA, tsB, tbB);
+
+        /// <summary>
+        /// Do global initialization of network libraries via <see cref="ffmpeg.avformat_network_init"/>.
+        /// </summary>
+        public static void NetworkInit() => ffmpeg.avformat_network_init().ThrowIfError();
+
+        /// <summary>
+        /// Undo the initialization done by <see cref="NetworkInit"/> via <see cref="ffmpeg.avformat_network_deinit"/>.
+        /// </summary>
+        public static void NetworkDeinit() => ffmpeg.avformat_network_deinit().ThrowIfError();
     }
 }

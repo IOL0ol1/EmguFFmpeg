@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using FFmpeg.AutoGen;
 
 namespace FFmpeg.Sharp
@@ -6,8 +6,7 @@ namespace FFmpeg.Sharp
     public unsafe partial class MediaOutputFormat
     {
         /// <summary>
-        /// Pointer to the underlying FFmpeg structure.
-        /// WARNING: Be careful when accessing or modifying this field directly.
+        /// Be careful!!!
         /// </summary>
         protected AVOutputFormat* pOutputFormat = null;
 
@@ -30,9 +29,9 @@ namespace FFmpeg.Sharp
         { }
 
         /// <summary>
-        /// WARNING: Be careful when modifying this field directly.
+        /// Direct access to the underlying struct fields.
+        /// WARNING: Be careful when modifying. Tracks AVOutputFormat struct evolution upstream.
         /// </summary>
         public ref AVOutputFormat Ref => ref *pOutputFormat;
-
     }
 }

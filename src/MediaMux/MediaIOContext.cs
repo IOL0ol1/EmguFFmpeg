@@ -210,6 +210,35 @@ namespace FFmpeg.Sharp
             return new MediaIOContext(pIOContext, false);
         }
 
+        /// <summary>
+        /// Accept and allocate a client context on a server context. Wraps <c>avio_accept</c>.
+        /// </summary>
+        /// <param name="client">
+        /// On success (ret &gt;= 0) the accepted client context, OWNED by the caller — disposing it closes the
+        /// client connection. On failure (ret &lt; 0) set to <see langword="null"/>.
+        /// </param>
+        /// <returns>The raw FFmpeg return code: &gt;= 0 on success, a negative AVERROR on failure. Callers loop and break on error.</returns>
+        public int Accept(out MediaIOContext client)
+        {
+            AVIOContext* pClient = null;
+            var ret = ffmpeg.avio_accept(_pIOContext, &pClient);
+            client = ret >= 0 ? new MediaIOContext(pClient, false) : null;
+            return ret;
+        }
+
+        /// <summary>
+        /// Perform one step of the protocol handshake to accept a new client (on a context returned by
+        /// <see cref="Accept"/>). Wraps <c>avio_handshake</c>.
+        /// </summary>
+        /// <returns>
+        /// The raw FFmpeg return code: &gt; 0 means the handshake is in progress and this method must be called
+        /// again, 0 means the handshake completed successfully, a negative AVERROR means it failed.
+        /// </returns>
+        public int Handshake()
+        {
+            return ffmpeg.avio_handshake(_pIOContext);
+        }
+
         public override bool CanRead => _pIOContext->read_packet.Pointer != IntPtr.Zero;
 
         public override bool CanSeek => _pIOContext->seekable != 0;

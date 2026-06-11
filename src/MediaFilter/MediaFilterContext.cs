@@ -117,6 +117,12 @@ namespace FFmpeg.Sharp
         }
         public int BufferSinkGetSampleRate() => ffmpeg.av_buffersink_get_sample_rate(pFilterContext);
         public AVBufferRef* BufferSinkGetHwFramesCtx() => ffmpeg.av_buffersink_get_hw_frames_ctx(pFilterContext);
+
+        /// <summary>
+        /// Set the frame size of this buffersink (<c>av_buffersink_set_frame_size</c>).
+        /// Call only on buffersink/abuffersink contexts and only AFTER the graph is configured.
+        /// </summary>
+        public void BufferSinkSetFrameSize(uint frameSize) => ffmpeg.av_buffersink_set_frame_size(pFilterContext, frameSize);
         #endregion
     }
 }

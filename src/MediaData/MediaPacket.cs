@@ -67,6 +67,16 @@ namespace FFmpeg.Sharp
         }
 
         /// <summary>
+        /// Convert the packet's pts/dts/duration from one time base to another via
+        /// <see cref="ffmpeg.av_packet_rescale_ts(AVPacket*, AVRational, AVRational)"/>
+        /// (AV_NOPTS_VALUE timestamps are left untouched).
+        /// </summary>
+        public void RescaleTs(AVRational srcTimeBase, AVRational dstTimeBase)
+        {
+            ffmpeg.av_packet_rescale_ts(pPacket, srcTimeBase, dstTimeBase);
+        }
+
+        /// <summary>
         /// Deep copy via <see cref="ffmpeg.av_packet_clone(AVPacket*)"/>. The returned packet is owned by the caller and must be disposed.
         /// </summary>
         /// <exception cref="FFmpegException"/>

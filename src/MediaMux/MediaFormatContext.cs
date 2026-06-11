@@ -15,6 +15,23 @@ namespace FFmpeg.Sharp
             : this(ffmpeg.avformat_alloc_context(),false)
         { }
 
+        /// <summary>Metadata dictionary (borrowed — do not Dispose).</summary>
+        public MediaDictionary Metadata => pFormatContext->metadata == null
+            ? null
+            : new MediaDictionary(pFormatContext->metadata, leaveOpen: true);
+
+        /// <summary>
+        /// Guess the frame rate of a stream, based on both the container and codec information.
+        /// Wraps <c>av_guess_frame_rate</c>.
+        /// </summary>
+        /// <param name="stream">Stream which the frame is part of.</param>
+        /// <param name="frame">Frame currently being decoded; <see langword="null"/> if unavailable.</param>
+        /// <returns>The guessed (valid) frame rate, 0/1 if no idea.</returns>
+        public AVRational GuessFrameRate(MediaStream stream, MediaFrame frame = null)
+        {
+            return ffmpeg.av_guess_frame_rate(pFormatContext, stream, frame);
+        }
+
         #region IDisposable
         // Default `false` (owned). The (ptr, leaveOpen) ctor flips to `true` for borrowed pointers.
         private bool disposedValue;

@@ -108,7 +108,7 @@ namespace FFmpeg.Sharp
         /// <summary>Look up the first side-data entry of the given type, or null when absent.</summary>
         public AVFrameSideData* GetSideData(AVFrameSideDataType type)
             => ffmpeg.av_frame_get_side_data(pFrame, type);
- 
+
         public bool IsAudioFrame => pFrame->nb_samples > 0 && pFrame->ch_layout.nb_channels > 0;
         public bool IsVideoFrame => pFrame->width > 0 && pFrame->height > 0;
 
@@ -324,9 +324,9 @@ namespace FFmpeg.Sharp
 
         private int ComputeAudioSize()
         {
-            int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format);
-            int planes = planar != 0 ? pFrame->ch_layout.nb_channels : 1;
-            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format) * (planar != 0 ? 1 : pFrame->ch_layout.nb_channels);
+            bool planar = ((AVSampleFormat)pFrame->format).IsPlanar();
+            int planes = planar ? pFrame->ch_layout.nb_channels : 1;
+            int block_align = ((AVSampleFormat)pFrame->format).GetBytesPerSample() * (planar ? 1 : pFrame->ch_layout.nb_channels);
             int data_size = pFrame->nb_samples * block_align;
             int total = 0;
             for (uint i = 0; pFrame->extended_data[i] != null && i < planes; i++)
@@ -336,9 +336,9 @@ namespace FFmpeg.Sharp
 
         private int CopyAudioBytes(Span<byte> dst)
         {
-            int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format);
-            int planes = planar != 0 ? pFrame->ch_layout.nb_channels : 1;
-            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format) * (planar != 0 ? 1 : pFrame->ch_layout.nb_channels);
+            bool planar = ((AVSampleFormat)pFrame->format).IsPlanar();
+            int planes = planar ? pFrame->ch_layout.nb_channels : 1;
+            int block_align = ((AVSampleFormat)pFrame->format).GetBytesPerSample() * (planar ? 1 : pFrame->ch_layout.nb_channels);
             int data_size = pFrame->nb_samples * block_align;
             int offset = 0;
             fixed (byte* dstPtr = dst)
@@ -393,9 +393,9 @@ namespace FFmpeg.Sharp
         private List<byte[]> GetAudioData(bool padding)
         {
             List<byte[]> result = new List<byte[]>();
-            int planar = ffmpeg.av_sample_fmt_is_planar((AVSampleFormat)pFrame->format);
-            int planes = planar != 0 ? pFrame->ch_layout.nb_channels : 1;
-            int block_align = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)pFrame->format) * (planar != 0 ? 1 : pFrame->ch_layout.nb_channels);
+            bool planar = ((AVSampleFormat)pFrame->format).IsPlanar();
+            int planes = planar ? pFrame->ch_layout.nb_channels : 1;
+            int block_align = ((AVSampleFormat)pFrame->format).GetBytesPerSample() * (planar ? 1 : pFrame->ch_layout.nb_channels);
             int data_size = pFrame->nb_samples * block_align;
             IntPtr intPtr;
             for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)
