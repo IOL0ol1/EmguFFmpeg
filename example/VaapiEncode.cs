@@ -45,6 +45,7 @@ namespace FFmpeg.Sharp.Example
             {
                 using var swFrame = new MediaFrame();
                 using var hwFrame = new MediaFrame();
+                using var hwFramesCtx = encoder.GetHWFrames(); // surface pool created by UseHardware
 
                 int err;
                 while (true)
@@ -68,7 +69,7 @@ namespace FFmpeg.Sharp.Example
                         Buffer.MemoryCopy(pUV, swFrame.Ref.data[1u], size / 2, size / 2);
 
                     // Allocate a HW frame and transfer SW → HW.
-                    hwFrame.AllocateOnHWFrames(encoder.GetHWFramesRef());
+                    hwFrame.AllocateOnHWFrames(hwFramesCtx);
                     MediaCodecContext.HWFrameTransferData(hwFrame, swFrame);
 
                     err = EncodeWrite(encoder, hwFrame, fout);

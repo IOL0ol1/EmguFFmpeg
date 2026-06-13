@@ -21,6 +21,7 @@ namespace FFmpeg.Sharp
         {
             pDictionary = ptr;
             disposedValue = leaveOpen;
+            _borrowed = leaveOpen;
         }
 
         /// <summary>
@@ -180,8 +181,15 @@ namespace FFmpeg.Sharp
         /// <summary>
         /// remove all
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The wrapper is borrowed (e.g. format/stream <c>Metadata</c>) — freeing the native dictionary
+        /// would leave its owner with a dangling pointer.
+        /// </exception>
         public void Clear()
         {
+            if (_borrowed)
+                throw new InvalidOperationException(
+                    "Cannot Clear a borrowed AVDictionary (e.g. format/stream metadata): freeing it would leave the native owner with a dangling pointer. Remove entries individually instead.");
             fixed (AVDictionary** pp = &pDictionary)
             {
                 ffmpeg.av_dict_free(pp);
@@ -232,6 +240,8 @@ namespace FFmpeg.Sharp
         }
 
         private bool disposedValue;
+        // True when this wrapper does not own the native dictionary (a borrowed view such as Metadata).
+        private readonly bool _borrowed;
 
         protected virtual void Dispose(bool disposing)
         {
@@ -325,20 +335,6 @@ namespace FFmpeg.Sharp
         /// case insensitive and overwrite.
         /// </summary>
         None = 0,
-
-        /// <summary>
-        /// Take ownership of a key that's been
-        /// allocated with av_malloc() or another memory allocation function.
-        /// </summary>
-        [Obsolete("Not suppord in managed code", true)]
-        DnotStrDupKey = ffmpeg.AV_DICT_DONT_STRDUP_KEY,
-
-        /// <summary>
-        /// Take ownership of a value that's been
-        /// allocated with av_malloc() or another memory allocation function.
-        /// </summary>
-        [Obsolete("Not suppord in managed code", true)]
-        DontStrDupVal = ffmpeg.AV_DICT_DONT_STRDUP_VAL,
 
         /// <summary>
         /// Don't overwrite existing key.

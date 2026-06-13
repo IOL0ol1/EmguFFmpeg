@@ -20,22 +20,7 @@ namespace FFmpeg.Sharp
         /// Iterate every registered FFmpeg filter.
         /// </summary>
         public static IEnumerable<MediaFilter> GetFilters()
-        {
-            IntPtr pFilter;
-            IntPtrRef opaque = new IntPtrRef();
-            while ((pFilter = av_filter_iterate_safe(opaque)) != IntPtr.Zero)
-            {
-                yield return new MediaFilter(pFilter);
-            }
-        }
-
-        protected static IntPtr av_filter_iterate_safe(IntPtrRef opaque)
-        {
-            fixed (void** pp = &opaque.IntPtr)
-            {
-                return (IntPtr)ffmpeg.av_filter_iterate(pp);
-            }
-        }
+            => NativeIterate.Cursor(o => (IntPtr)ffmpeg.av_filter_iterate(o), p => new MediaFilter(p));
 
         public static class VideoSources
         {

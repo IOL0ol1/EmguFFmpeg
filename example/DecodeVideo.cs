@@ -21,7 +21,7 @@ namespace FFmpeg.Sharp.Example
             if (codec == null) throw new Exception("MPEG-1 decoder not found");
 
             using var parser  = new MediaCodecParserContext(AVCodecID.AV_CODEC_ID_MPEG1VIDEO);
-            using var decoder = MediaDecoder.Create(codec);
+            using var decoder = new MediaDecoder(codec).Open();
             using var frame   = new MediaFrame();
 
             using var inStream = File.OpenRead(inFile);

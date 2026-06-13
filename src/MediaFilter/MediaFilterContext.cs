@@ -116,7 +116,17 @@ namespace FFmpeg.Sharp
             return layout;
         }
         public int BufferSinkGetSampleRate() => ffmpeg.av_buffersink_get_sample_rate(pFilterContext);
-        public AVBufferRef* BufferSinkGetHwFramesCtx() => ffmpeg.av_buffersink_get_hw_frames_ctx(pFilterContext);
+
+        /// <summary>
+        /// The hw_frames_ctx negotiated on a buffersink (the output of a HW filter chain) as an owning
+        /// wrapper, or null when the sink is SW. Feed it to
+        /// <see cref="VideoEncoderBuilder.UseHardwareFrames(HWFramesContext)"/> for filter→encoder pipelines.
+        /// </summary>
+        public HWFramesContext GetHWFramesContext()
+        {
+            var r = ffmpeg.av_buffersink_get_hw_frames_ctx(pFilterContext);
+            return r == null ? null : new HWFramesContext(r, takeRef: true);
+        }
 
         /// <summary>
         /// Set the frame size of this buffersink (<c>av_buffersink_set_frame_size</c>).

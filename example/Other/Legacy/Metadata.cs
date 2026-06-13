@@ -1,31 +1,26 @@
-﻿using System;
+using System;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Legacy
 {
     internal class Metadata : ExampleBase
     {
         public Metadata() : this($"video-input.mp4")
-        {
-
-        }
+        { Index = 47; Enable = false; }
 
         public Metadata(params string[] args) : base(args)
         { }
 
-        public unsafe override void Execute()
+        public override void Execute()
         {
             var input = args[0];
-            var fmt = MediaDemuxer.Open(input);
 
-            var a = fmt.Ref.metadata;
-            var m = new MediaDictionary(a, false);
-            foreach (var item in m)
-            {
-                Console.WriteLine($"{item.Key}={item.Value}");
-            }
+            using var fmt = MediaDemuxer.Open(input);
 
-            fmt.Dispose();
-
+            // Borrowed managed view over the native dictionary (demuxer owns the pointer).
+            var meta = fmt.Metadata;
+            if (meta != null)
+                foreach (var item in meta)
+                    Console.WriteLine($"{item.Key}={item.Value}");
         }
     }
 }

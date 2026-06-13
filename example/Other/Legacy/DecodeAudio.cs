@@ -1,18 +1,16 @@
-﻿using System;
+using System;
 using System.IO;
 using FFmpeg.AutoGen;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Legacy
 {
     internal class DecodeAudio : ExampleBase
     {
         public DecodeAudio() : this($"EncodeAudio-output.mp2", $"{nameof(DecodeAudio)}-output.raw")
-        { }
+        { Index = 41; Enable = false; }
 
         public DecodeAudio(params string[] args) : base(args)
-        {
-            Index = 13;
-        }
+        { }
 
         public override void Execute()
         {
@@ -20,7 +18,7 @@ namespace FFmpeg.Sharp.Example
             var output = args[1];
 
             var codec = MediaCodec.FindDecoder(AVCodecID.AV_CODEC_ID_MP2);
-            using (var decoder = MediaDecoder.Create(codec))
+            using (var decoder = new MediaDecoder(codec).Open())
             using (var parser = new MediaCodecParserContext(codec.Ref.id))
             using (var decoded_frame = new MediaFrame())
             using (var inStream = File.OpenRead(input))
@@ -43,14 +41,15 @@ namespace FFmpeg.Sharp.Example
             }
         }
 
-        private unsafe static void WriteToOutput(MediaFrame frame, int NbChannels, Stream stream)
+        private unsafe static void WriteToOutput(MediaFrame frame, int nbChannels, Stream stream)
         {
+            // Interleave the channels sample by sample, writing bytes-per-sample at a time (mirrors decode_audio.c).
+            int dataSize = ffmpeg.av_get_bytes_per_sample((AVSampleFormat)frame.Ref.format);
             for (int i = 0; i < frame.Ref.nb_samples; i++)
             {
-                for (int ch = 0; ch < NbChannels; ch++)
+                for (int ch = 0; ch < nbChannels; ch++)
                 {
-                    var buffer = new Span<byte>(frame.Ref.data[(uint)ch], frame.Ref.linesize[0]);
-                    stream.Write(buffer);
+                    stream.Write(new ReadOnlySpan<byte>(frame.Ref.data[(uint)ch] + i * dataSize, dataSize));
                 }
             }
         }

@@ -5,8 +5,8 @@ namespace FFmpeg.Sharp
 {
     public unsafe partial class MediaFormatContext : IDisposable
     {
-        public MediaFormatContext(AVFormatContext* pAVCodecContext, bool leaveOpen)
-            : this(pAVCodecContext)
+        public MediaFormatContext(AVFormatContext* pAVFormatContext, bool leaveOpen)
+            : this(pAVFormatContext)
         {
             disposedValue = leaveOpen;
         }
@@ -48,7 +48,10 @@ namespace FFmpeg.Sharp
                     }
                     else
                     {
-                        if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
+                        // oformat may still be null when the context was allocated but never configured.
+                        // avio_close handles a null pb. Custom pb wrappers (MediaIOContext) are disposed and
+                        // detached by MediaMuxer before this runs.
+                        if (pFormatContext->oformat != null && (pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                             ffmpeg.avio_close(pFormatContext->pb);
                         ffmpeg.avformat_free_context(pFormatContext);
                     }

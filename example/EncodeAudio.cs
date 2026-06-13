@@ -39,9 +39,13 @@ namespace FFmpeg.Sharp.Example
                 if (c.nb_channels > bestNb) { bestNb = c.nb_channels; chLayout = c; }
             }
 
-            using var encoder = MediaEncoder.CreateAudioEncoder(
-                codec, sampleRate, chLayout,
-                AVSampleFormat.AV_SAMPLE_FMT_S16, 64000);
+            using var encoder = MediaEncoder.Audio()
+                .Codec(codec)
+                .SampleRate(sampleRate)
+                .ChannelLayout(chLayout)
+                .SampleFormat(AVSampleFormat.AV_SAMPLE_FMT_S16)
+                .Bitrate(64000)
+                .Build();
 
             int frameSize = encoder.Ref.frame_size;
             using var frame = MediaFrame.CreateAudioFrame(chLayout, frameSize,

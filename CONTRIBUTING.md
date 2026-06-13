@@ -27,12 +27,12 @@ src/
 │                              Each public wrapper class has a sibling here — keeps the unsafe
 │                              guts isolated and lets the public partial focus on API surface.
 ├── MediaCodec/                Codec, codec context, decoder, encoder, parser, encoder builder.
-├── MediaData/                 MediaFrame, MediaPacket — both have `.Ref.snake_case` raw access
-│                              plus PascalCase shortcuts in `*.Pascal.cs`.
+├── MediaData/                 MediaFrame, MediaPacket — raw field access via `.Ref.snake_case`
+│                              (no typed property mirrors; see docs/architecture.md).
 ├── MediaFilter/               Filter, filter context, filter graph (with HW helpers).
 ├── MediaFormat/               AVInputFormat / AVOutputFormat wrappers.
 ├── MediaFrameConverter/       Swscale, Swresample, AudioFifo, AudioResampler, IConverter.
-├── MediaMux/                  Demuxer, Muxer, MediaIOContext, MediaSink (one-stop API).
+├── MediaMux/                  Demuxer, Muxer, MediaStream, MediaIOContext.
 ├── Utilities/                 FFmpegLog, FFmpegUtil (image plane / buffer helpers), extensions.
 ├── FFmpegException.cs         Typed FFmpegException + FFmpegErrorCode enum.
 └── MediaDictionary.cs         AVDictionary wrapper (IDictionary<string,string>).

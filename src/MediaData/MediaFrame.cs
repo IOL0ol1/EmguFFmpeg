@@ -161,7 +161,7 @@ namespace FFmpeg.Sharp
         /// <summary>
         /// Allocate this frame's storage on a hardware frames context (the canonical way to feed HW encoders).
         /// </summary>
-        public void AllocateOnHWFrames(AVBufferRef* hwFramesCtx)
+        public void AllocateOnHWFrames(HWFramesContext hwFramesCtx)
         {
             if (hwFramesCtx == null) throw new ArgumentNullException(nameof(hwFramesCtx));
             ffmpeg.av_hwframe_get_buffer(hwFramesCtx, pFrame, 0).ThrowIfError();
@@ -329,7 +329,9 @@ namespace FFmpeg.Sharp
             int block_align = ((AVSampleFormat)pFrame->format).GetBytesPerSample() * (planar ? 1 : pFrame->ch_layout.nb_channels);
             int data_size = pFrame->nb_samples * block_align;
             int total = 0;
-            for (uint i = 0; pFrame->extended_data[i] != null && i < planes; i++)
+            // Bounds check FIRST: for >8ch planar audio, extended_data has exactly `planes` entries
+            // and is NOT null-terminated — reading extended_data[planes] would be out of bounds.
+            for (uint i = 0; i < planes && pFrame->extended_data[i] != null; i++)
                 total += data_size;
             return total;
         }
@@ -343,7 +345,7 @@ namespace FFmpeg.Sharp
             int offset = 0;
             fixed (byte* dstPtr = dst)
             {
-                for (uint i = 0; pFrame->extended_data[i] != null && i < planes; i++)
+                for (uint i = 0; i < planes && pFrame->extended_data[i] != null; i++)
                 {
                     if (offset + data_size > dst.Length)
                         throw new ArgumentException("destination buffer too small");
@@ -398,7 +400,7 @@ namespace FFmpeg.Sharp
             int block_align = ((AVSampleFormat)pFrame->format).GetBytesPerSample() * (planar ? 1 : pFrame->ch_layout.nb_channels);
             int data_size = pFrame->nb_samples * block_align;
             IntPtr intPtr;
-            for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero && i < planes; i++)
+            for (uint i = 0; i < planes && (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero; i++)
             {
                 result.Add(GetPlane(intPtr, data_size, data_size, 1, padding));
             }
@@ -422,9 +424,14 @@ namespace FFmpeg.Sharp
         {
             get
             {
+                // When extended_data points at the inline data[] array it has 8 null-terminated slots;
+                // for >8ch planar audio it is a separate, NON-null-terminated array of exactly nb_channels entries.
+                long limit = pFrame->extended_data == (byte**)&pFrame->data
+                    ? 8
+                    : pFrame->ch_layout.nb_channels;
                 List<IntPtr> result = new List<IntPtr>();
                 IntPtr intPtr;
-                for (uint i = 0; (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero; i++)
+                for (uint i = 0; i < limit && (intPtr = (IntPtr)pFrame->extended_data[i]) != IntPtr.Zero; i++)
                     result.Add(intPtr);
                 return result.ToArray();
             }

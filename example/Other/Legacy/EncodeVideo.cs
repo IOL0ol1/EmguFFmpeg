@@ -2,17 +2,15 @@
 using System.IO;
 using FFmpeg.AutoGen;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Legacy
 {
     public class EncodeVideo : ExampleBase
     {
         public EncodeVideo() : this($"EncodeVideo-output.h264", "libx264")
-        { }
+        { Index = 45; Enable = false; }
 
         public EncodeVideo(params string[] args) : base(args)
-        {
-            Index = 11;
-        }
+        { }
 
         public unsafe override void Execute()
         {
@@ -28,19 +26,26 @@ namespace FFmpeg.Sharp.Example
             using (FileStream os = File.Create(outputFile))
             using (MediaFrame frame = MediaFrame.CreateVideoFrame(width, height, pixelFormat))
             using (MediaPacket pkt = new MediaPacket())
-            using (MediaEncoder encoder = MediaEncoder.CreateVideoEncoder(codeName, width, height, fps, pixelFormat, bitrate, otherSettings: _ =>
-            {
-                /* emit one intra frame every ten frames
-                 * check frame pict_type before passing frame
-                 * to encoder, if frame->pict_type is AV_PICTURE_TYPE_I
-                 * then gop_size is ignored and the output of encoder
-                 * will always be I frame irrespective to gop_size
-                 */
-                _.Ref.gop_size = 10;
-                _.Ref.max_b_frames = 1;
-                if (_.Ref.codec_id == AVCodecID.AV_CODEC_ID_H264)
-                    ffmpeg.av_opt_set(((AVCodecContext*)_)->priv_data, "preset", "slow", 0);
-            }))
+            using (MediaEncoder encoder = MediaEncoder.Video()
+                .Codec(codeName)
+                .Size(width, height)
+                .Fps(fps)
+                .PixelFormat(pixelFormat)
+                .Bitrate(bitrate)
+                .Configure(_ =>
+                {
+                    /* emit one intra frame every ten frames
+                     * check frame pict_type before passing frame
+                     * to encoder, if frame->pict_type is AV_PICTURE_TYPE_I
+                     * then gop_size is ignored and the output of encoder
+                     * will always be I frame irrespective to gop_size
+                     */
+                    _.Ref.gop_size = 10;
+                    _.Ref.max_b_frames = 1;
+                    if (_.Ref.codec_id == AVCodecID.AV_CODEC_ID_H264)
+                        ffmpeg.av_opt_set(((AVCodecContext*)_)->priv_data, "preset", "slow", 0);
+                })
+                .Build())
             {
                 for (int i = 0; i < 25; i++)
                 {
@@ -53,8 +58,9 @@ namespace FFmpeg.Sharp.Example
                       unwritable.
                       av_frame_make_writable() checks that and allocates a new buffer
                       for the frame only if necessary.
-                      NOTE:FFmpeg.Sharp do it in encoder.EncodeFrame finished
+                      NOTE: since 8.1.0 EncodeFrame no longer does this for you.
                     */
+                    frame.MakeWritable();
                     FillYuv420P(frame, i);
                     frame.Ref.pts = i;
                     /* encode the image */

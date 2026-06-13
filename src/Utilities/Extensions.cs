@@ -152,15 +152,6 @@ namespace FFmpeg.Sharp
         }
     } 
 
-    public unsafe class IntPtrRef
-    { 
-        public void* IntPtr; 
-
-        public static implicit operator void*(IntPtrRef @ref) => @ref.IntPtr;
-
-        public static implicit operator IntPtrRef(void* ptr) => new IntPtrRef { IntPtr = ptr };
-    }
-
     public static class ExceptionExtension
     {
         /// <summary>

@@ -19,11 +19,18 @@ namespace FFmpeg.Sharp
         private AVChannelLayout _outLayout;
         private int _outRate;
 
-        public Swresample(SwrContext* pSwrContext, bool isDisposeByOwner = true)
+        /// <summary>
+        /// Wrap an existing <see cref="SwrContext"/> pointer.
+        /// </summary>
+        /// <param name="pSwrContext">Native context (must be non-null).</param>
+        /// <param name="leaveOpen">
+        /// When <see langword="true"/>, the wrapper does NOT free the context on dispose; the caller retains ownership.
+        /// </param>
+        public Swresample(SwrContext* pSwrContext, bool leaveOpen)
         {
             if (pSwrContext == null) throw new ArgumentNullException(nameof(pSwrContext));
             this.pSwrContext = pSwrContext;
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
 
         /// <summary>

@@ -20,20 +20,20 @@ namespace FFmpeg.Sharp.Example
             var codec = MediaCodec.FindEncoder(codecName);
             if (codec == null) throw new Exception($"Codec '{codecName}' not found");
 
-            using var encoder = MediaEncoder.Create(codec, ctx =>
-            {
-                ctx.Ref.bit_rate  = 400_000;
-                ctx.Ref.width     = 352;
-                ctx.Ref.height    = 288;
-                ctx.Ref.time_base = new AVRational { num = 1, den = 25 };
-                ctx.Ref.framerate = new AVRational { num = 25, den = 1 };
-                ctx.Ref.gop_size  = 10;
-                ctx.Ref.max_b_frames = 1;
-                ctx.Ref.pix_fmt   = AVPixelFormat.AV_PIX_FMT_YUV420P;
+            using var encoder = new MediaEncoder(codec);
+            encoder.Ref.bit_rate  = 400_000;
+            encoder.Ref.width     = 352;
+            encoder.Ref.height    = 288;
+            encoder.Ref.time_base = new AVRational { num = 1, den = 25 };
+            encoder.Ref.framerate = new AVRational { num = 25, den = 1 };
+            encoder.Ref.gop_size  = 10;
+            encoder.Ref.max_b_frames = 1;
+            encoder.Ref.pix_fmt   = AVPixelFormat.AV_PIX_FMT_YUV420P;
 
-                if (codec.Id == AVCodecID.AV_CODEC_ID_H264)
-                    MediaOptions.Set(ctx.Ref.priv_data, "preset", "slow", 0);
-            });
+            if (codec.Id == AVCodecID.AV_CODEC_ID_H264)
+                MediaOptions.Set(encoder.Ref.priv_data, "preset", "slow", 0);
+
+            encoder.Open();
 
             using var frame  = MediaFrame.CreateVideoFrame(encoder.Ref.width, encoder.Ref.height, encoder.Ref.pix_fmt);
             using var packet = new MediaPacket();

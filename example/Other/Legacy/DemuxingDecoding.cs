@@ -3,12 +3,12 @@ using System.IO;
 using System.Linq;
 using FFmpeg.AutoGen;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Legacy
 {
     internal class DemuxingDecoding : ExampleBase
     {
         public DemuxingDecoding() : this($"video-input.mp4", $"{nameof(DemuxingDecoding)}-output.v", $"{nameof(DemuxingDecoding)}-output.a")
-        { }
+        { Index = 43; Enable = false; }
 
         public DemuxingDecoding(params string[] args) : base(args)
         { }

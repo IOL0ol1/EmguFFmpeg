@@ -33,26 +33,34 @@ using FFmpeg.Sharp;
 ## Quick start
 
 ### Encode and mux
-The shortest possible path uses the new `MediaSink` one-stop API — it owns the muxer + encoder(s), auto-assigns pts, flushes encoders, and writes the trailer on dispose.
+Create a muxer, build an encoder with the fluent builder, then feed frames to `EncodeFrame` and write the resulting packets.
 
 ```csharp
 const string output = "out.mp4";
-using var sink = MediaSink.Create(output);
-int v = sink.AddVideo(MediaEncoder.Video()
-    .OutputFormat(sink.Muxer.Format)
+using var muxer = MediaMuxer.Create(output);
+using var encoder = MediaEncoder.Video()
+    .OutputFormat(muxer.Format)
     .Size(800, 600)
     .Fps(29.97)
-    .Configure(c => c.Ref.thread_count = 10)
-    .Build());
-sink.Start();
+    .Configure(c => c.Ref.thread_count = 0) // 0 = auto (one per core)
+    .Build();
+var stream = muxer.AddStream(encoder);
+muxer.WriteHeader();
 
-using var frame = MediaFrame.CreateVideoFrame(800, 600, AVPixelFormat.AV_PIX_FMT_YUV420P);
+using var frame = MediaFrame.CreateVideoFrame(800, 600, encoder.Ref.pix_fmt);
 for (int i = 0; i < 300; i++)
 {
+    frame.MakeWritable();          // the encoder may still hold a reference to the frame
     // ... fill frame.Ref.data[plane] ...
-    sink.WriteVideoFrame(v, frame); // pts auto-assigned
+    frame.Ref.pts = i;             // pts in encoder time_base (1/fps)
+    foreach (var packet in encoder.EncodeFrame(frame))
+    {
+        packet.Ref.stream_index = stream.Ref.index;
+        muxer.WritePacket(packet, encoder.Ref.time_base); // rescales encoder time_base → stream time_base
+    }
 }
-// sink.Dispose() flushes the encoder and writes the trailer.
+muxer.FlushCodecs(new[] { encoder });      // drain the encoder
+muxer.WriteTrailer();
 ```
 
 ### Demux and decode
@@ -92,11 +100,11 @@ using var demuxer = MediaDemuxer.Open("input.mp4");
 MediaCodec dec = null;
 var vi = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref dec);
 
-using var hwDecoder = MediaDecoder.CreateDecoder(demuxer[vi].CodecparRef, ctx =>
-{
-    ctx.Ref.thread_count = 10;
-    ctx.InitHWDeviceContext("d3d11va"); // or "cuda", "qsv", "vaapi", ...
-});
+using var hwDecoder = new MediaDecoder(dec);
+hwDecoder.SetCodecParameters(ref demuxer[vi].CodecparRef);
+hwDecoder.Ref.thread_count = 0; // 0 = auto
+hwDecoder.InitHWDeviceContext("d3d11va"); // or "cuda", "qsv", "vaapi", ...
+hwDecoder.Open();
 
 using var pkt = new MediaPacket();
 using var recv = new MediaFrame();
@@ -104,7 +112,7 @@ using var sw   = new MediaFrame(); // optional — omit to keep zero-copy GPU su
 
 foreach (var p in demuxer.ReadPackets(pkt))
 {
-    if (p.StreamIndex != vi) continue;
+    if (p.Ref.stream_index != vi) continue;
     foreach (var frame in hwDecoder.DecodePacket(p, recv, sw))
     {
         // `frame` is the SW download. Pass null for swFrame above to receive the raw HW surface instead.
@@ -118,16 +126,19 @@ using var demuxer = MediaDemuxer.Open("input.mp4");
 MediaCodec dec = null;
 int vi = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref dec);
 
-using var hwDecoder = MediaDecoder.CreateDecoder(demuxer[vi].CodecparRef,
-    ctx => ctx.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA));
+// One device, shared explicitly across decoder and encoder.
+using var cuda = HWDeviceContext.Create(AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA);
+
+using var hwDecoder = new MediaDecoder(dec);
+hwDecoder.SetCodecParameters(ref demuxer[vi].CodecparRef);
+hwDecoder.InitHWDeviceContext(cuda);
+hwDecoder.Open();
 
 using var hwEncoder = MediaEncoder.Video()
     .Codec("h264_nvenc")
     .Size(demuxer[vi].CodecparRef.width, demuxer[vi].CodecparRef.height)
     .Fps(30)
-    .UseHardware(AVPixelFormat.AV_PIX_FMT_CUDA, AVPixelFormat.AV_PIX_FMT_NV12,
-                 AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA)
-    .UseHardwareDevice(hwDecoder.GetHWDeviceRef()) // share the same CUDA context
+    .UseHardware(AVPixelFormat.AV_PIX_FMT_CUDA, AVPixelFormat.AV_PIX_FMT_NV12, cuda)
     .Bitrate(4_000_000)
     .Build();
 ```
@@ -138,20 +149,33 @@ using var resampler = AudioResampler.For(audioDecoder, audioEncoder);
 
 foreach (var (_, decoded) in demuxer.ReadFrames(audioDecoders, AVMediaType.AVMEDIA_TYPE_AUDIO))
 {
-    foreach (var fixedFrame in resampler.Convert(decoded))
-    {
-        sink.WriteAudioFrame(audioTrack, fixedFrame);
-        fixedFrame.Dispose();
-    }
+    foreach (var sized in resampler.Convert(decoded))
+        using (sized)
+        {
+            foreach (var pkt in audioEncoder.EncodeFrame(sized))
+                muxer.WritePacket(pkt, audioEncoder.Ref.time_base);
+        }
 }
 foreach (var tail in resampler.Flush()) // drain
-{
-    sink.WriteAudioFrame(audioTrack, tail);
-    tail.Dispose();
-}
+    using (tail)
+    {
+        foreach (var pkt in audioEncoder.EncodeFrame(tail))
+            muxer.WritePacket(pkt, audioEncoder.Ref.time_base);
+    }
 ```
 
 More: **[example/](./example)**.
+
+## Performance notes
+
+- **Codec threading** — FFmpeg codecs default to a single thread. Set `thread_count` *before* `Open`: `.Configure(c => c.Ref.thread_count = 0)` on the builder, or `decoder.Ref.thread_count = 0` before `Open()`. `0` means auto (one per core).
+- **Reuse frames/packets in hot loops** — `DecodePacket(pkt, recvFrame)`, `EncodeFrame(frame, recvPacket)` and `ReadPackets(pkt)` all accept a reusable receive object; passing one avoids a native alloc/free per call (`ReadFrames` already does this internally). Plain `foreach` over `DecodePacket`/`EncodeFrame` uses the zero-allocation struct enumerator; going through LINQ boxes it.
+- **Dispose deterministically** — a single 4K NV12 frame holds ~12 MB of native memory the GC cannot see. Rely on `using`/`Dispose`, not finalizers, or native memory grows far ahead of any GC pressure.
+- **Skip unwanted streams at the demuxer** — for streams you never consume, set `demuxer[i].Ref.discard = AVDiscard.AVDISCARD_ALL`: `av_read_frame` then drops their packets internally (mpegts skips parsing them entirely) instead of surfacing them just to be ignored. On inputs with many audio/subtitle tracks this cuts demux work several-fold.
+- **Open latency** — `MediaDemuxer.Open(..., findStreamInfo: false)` skips the probing pass (which can pre-read megabytes) for known-format / low-latency inputs; call `FindStreamInfo` later or fill decoder parameters yourself.
+- **Single-stream muxing** — `WritePacketDirect` writes via `av_write_frame`, bypassing the interleaving queue; use it when the output has one stream or you interleave yourself (dts must increase monotonically per stream). For many-stream live muxing, bound interleave memory with `muxer.Ref.max_interleave_delta`.
+- **Scaling** — `Swscale` is single-threaded by default; set `SwscaleOptions.Threads` (FFmpeg ≥ 5.1), or run heavy scale/overlay chains in a `MediaFilterGraph` with `ThreadCount = 0` (auto).
+- **Hardware pipelines** — keep frames on the GPU: pass `swFrame: null` to `DecodePacket` for zero-copy surfaces, and share one `HWDeviceContext`/`HWFramesContext` across decoder → filters → encoder (see the HW sections above). Download (`TransferToSoftware`) only when CPU access is genuinely needed.
 
 ## Breaking changes in 8.1.0
 
@@ -163,15 +187,17 @@ Highlights:
 - `MediaIOContext` callbacks catch managed exceptions and surface them as `IOException` on the next managed call (no more crashes from network blips).
 - `MediaDemuxer.ReadPackets` no longer yields a ghost packet at EOF; pair with `ReadPacketsCloned()` for safe enqueuing.
 - `MediaCodecParserContext.ParserPackets` — fixed NRE and dangling-pointer-on-byte[] bug.
-- `MediaEncoder.EncodeFrame` no longer calls `av_frame_make_writable` in `finally` (you can call `MediaEncoder.MakeWritable(frame)` yourself before reuse).
-- New builder: `MediaEncoder.Video()` / `MediaEncoder.Audio()` replaces the 14 legacy CreateXxxEncoder overloads.
-- New hardware encoder path: `MediaEncoder.CreateHWVideoEncoder(...)` + `MediaCodecContext.AttachHWDevice/AttachHWFramesContext`.
+- `MediaEncoder.EncodeFrame` no longer calls `av_frame_make_writable` in `finally` (call `frame.MakeWritable()` yourself before reuse).
+- `DecodePacket`/`EncodeFrame` return allocation-free struct cursors (`Frames`/`Packets`) and send their input eagerly at call time — plain `foreach` code is unaffected; see the migration guide.
+- New builder: `MediaEncoder.Video()` / `MediaEncoder.Audio()` — the 14 legacy `CreateVideoEncoder`/`CreateAudioEncoder` overloads are removed. The `MediaEncoder.CreateEncoder(codecpar)` one-liner remains.
+- New `MediaCodecContext.Open(opts)` instance method. The `Action<MediaCodecContext>`-based lambda factories (`MediaDecoder.Create`, `MediaEncoder.Create`, the `Action` parameters on `CreateDecoder`/`CreateEncoder`) are removed — configure with straight-line code between the ctor and `Open()`.
+- New hardware encoder path: `MediaEncoder.Video().UseHardware(...)` + `MediaCodecContext.AttachHWDevice/AttachHWFramesContext`.
 - New `MediaFrame.IsHardwareFrame` / `TransferToSoftware` / `AllocateOnHWFrames`.
-- New `MediaSink`, `AudioResampler`, `Swscale.Options`, `Swresample.Flush(...)`.
-- `IConverter.Convert` now returns `int` (frames written), not `IEnumerable<MediaFrame>`. The old enumerable behaviour is available via `Swscale.ConvertEnumerable` marked `[Obsolete]`.
-- Typo fixes: `MediaCodec.GetSampelFmts` → `GetSampleFormats`, `MediaFilter.GetGetFilters` → `GetFilters` (old names kept as `[Obsolete]` forwarders).
+- New `AudioResampler`, `Swscale.Options`, `Swresample.Flush(...)`.
+- `IConverter.Convert` now returns `int` (frames written), not `IEnumerable<MediaFrame>`. The old enumerable shape (`ConvertEnumerable`) has been removed.
+- Typo fixes: `MediaCodec.GetSampelFmts` → `GetSampleFormats`, `MediaFilter.GetGetFilters` → `GetFilters` (old names removed).
 - `MediaDictionary` indexer returns `null` on miss instead of throwing.
-- PascalCase shortcuts on `MediaFrame` / `MediaPacket` / `MediaStream` (`Width`, `Height`, `Pts`, `StreamIndex`, `Format`, ...). The `.Ref.snake_case` escape hatch is still available.
+- PascalCase field-mirror shortcuts (`Width`, `Pts`, `StreamIndex`, ...) are removed — raw field access goes through the `.Ref.snake_case` escape hatch (`p.Ref.stream_index`, `frame.Ref.width`, ...). Take locals with `ref var x = ref frame.Ref;` — a plain `var` copies the struct.
 
 ## Troubleshooting
 
@@ -187,7 +213,7 @@ ffmpeg.RootPath = @"C:\path\to\ffmpeg\bin";
 
 **HW decode falls back to software silently** — pass `fallbackToSw: false` (the default) to `InitHWDeviceContext` to make this fail instead. Use `fallbackToSw: true` to opt into the graceful fallback.
 
-**HW encode `EINVAL` on first frame** — feed frames whose `format` matches the encoder's `hwPixelFormat`, allocated with `MediaFrame.AllocateOnHWFrames(encoder.GetHWFramesRef())` instead of `AllocateBuffer()`.
+**HW encode `EINVAL` on first frame** — feed frames whose `format` matches the encoder's `hwPixelFormat`, allocated with `frame.AllocateOnHWFrames(encoder.GetHWFrames())` instead of `AllocateBuffer()`.
 
 **Stream gets unexpectedly closed** — `MediaDemuxer.Open(Stream)` / `MediaMuxer.Create(Stream)` default to `leaveOpen: true` since 8.1.0, but if you upgraded from 7.x your old call sites may still be wiring the wrapper's lifecycle to your stream. Inspect the third (boolean) argument.
 
@@ -197,7 +223,7 @@ ffmpeg.RootPath = @"C:\path\to\ffmpeg\bin";
 - More examples and tests.
 - Filter graph parser (`avfilter_graph_parse2`).
 - Subtitle support.
-- Async/IAsyncEnumerable surface for encode/mux (read side is done).
+- Async/IAsyncEnumerable surface (demux/encode/mux).
 
 ## Related
 - [FFmpeg.AutoGen](https://github.com/Ruslan-B/FFmpeg.AutoGen) — the underlying P/Invoke bindings.

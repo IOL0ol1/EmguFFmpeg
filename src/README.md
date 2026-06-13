@@ -29,7 +29,7 @@ var heith = 600;
 var output = "path-to-your-output-file.mp4";
 using (var muxer = MediaMuxer.Create(output))
 {
-    using (var encoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.Ref.thread_count = 10))
+    using (var encoder = MediaEncoder.Video().OutputFormat(muxer.Format).Size(width, heith).Fps(fps).Configure(_ => _.Ref.thread_count = 0 /* auto */).Build())
     {
         var stream = muxer.AddStream(encoder);
         muxer.WriteHeader();
@@ -60,7 +60,7 @@ using (var demuxer = MediaDemuxer.Open(input))
 using (var convert = new Swscale())
 using (var bgrFrame = new MediaFrame())
 {
-    var decoders = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.Ref.thread_count = 10)).ToList();
+    var decoders = demuxer.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef)).ToList();
     foreach (var packet in demuxer.ReadPackets())
     {
         var decoder = decoders[packet.Ref.stream_index];

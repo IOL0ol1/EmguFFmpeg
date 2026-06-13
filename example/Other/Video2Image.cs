@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -9,9 +9,7 @@ namespace FFmpeg.Sharp.Example.Other
     internal class Video2Image : ExampleBase
     {
         public Video2Image() : this($"video-input.mp4", $"{nameof(Video2Image)}-output")
-        {
-
-        }
+        { Index = 32; Enable = false; }
 
         public Video2Image(params string[] args) : base(args)
         {
@@ -22,11 +20,19 @@ namespace FFmpeg.Sharp.Example.Other
             var input = args[0];
             var output = Directory.CreateDirectory(args[1]).FullName;
             var s = Stopwatch.StartNew();
-            using (var mediaReader = MediaDemuxer.Open(File.OpenRead(input)))
+            using (var mediaReader = MediaDemuxer.Open(input))
             using (var convert = new Swscale())
             using (var f = new MediaFrame())
             {
-                var decoders = mediaReader.Select(_ => MediaDecoder.CreateDecoder(_.CodecparRef, _ => _.Ref.thread_count = 10)).ToList();
+                var decoders = mediaReader.Select(s =>
+                {
+                    var codec = MediaCodec.FindDecoder(s.CodecparRef.codec_id);
+                    if (codec == null) return null;
+                    var dec = new MediaDecoder(codec);
+                    dec.SetCodecParameters(ref s.CodecparRef);
+                    dec.Ref.thread_count = 0;
+                    return dec.Open();
+                }).ToList();
                 foreach (var inPacket in mediaReader.ReadPackets())
                 {
                     var decoder = decoders[inPacket.Ref.stream_index];

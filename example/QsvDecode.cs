@@ -40,11 +40,11 @@ namespace FFmpeg.Sharp.Example
 
             // InitHWDeviceContext creates the QSV device (an "auto" session) and wires the
             // get_format callback that always picks AV_PIX_FMT_QSV.
-            using var decoder = MediaDecoder.CreateDecoder(demuxer[videoStreamIdx].CodecparRef, qsvDecoder, ctx =>
-            {
-                if (ctx.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_QSV, "auto") == 0)
-                    throw new Exception("The QSV pixel format not offered by the decoder's HW configs");
-            });
+            using var decoder = new MediaDecoder(qsvDecoder);
+            decoder.SetCodecParameters(ref demuxer[videoStreamIdx].CodecparRef);
+            if (decoder.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_QSV, "auto") == 0)
+                throw new Exception("The QSV pixel format not offered by the decoder's HW configs");
+            decoder.Open();
 
             // ── Output ────────────────────────────────────────────────────────
             using var output = MediaIOContext.Open(outFile, ffmpeg.AVIO_FLAG_WRITE);

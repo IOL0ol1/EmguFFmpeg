@@ -1,19 +1,17 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using FFmpeg.AutoGen;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Legacy
 {
     public class EncodeAudio : ExampleBase
     {
         public EncodeAudio() : this($"EncodeAudio-output.mp2")
-        { }
+        { Index = 44; Enable = false; }
 
         public EncodeAudio(params string[] args) : base(args)
-        {
-            Index = 10;
-        }
+        { }
 
         public unsafe override void Execute()
         {
@@ -29,7 +27,13 @@ namespace FFmpeg.Sharp.Example
                 var sampleFmt = AVSampleFormat.AV_SAMPLE_FMT_S16;
                 if (!codec.GetSampleFormats().Any(_1 => _1 == AVSampleFormat.AV_SAMPLE_FMT_S16))
                     Console.WriteLine($"Encoder does not support sample format {AVSampleFormat.AV_SAMPLE_FMT_S16.GetName()}");
-                using (var encoder = MediaEncoder.CreateAudioEncoder(codec, sampleRate, chLayout, sampleFmt, bitrate))
+                using (var encoder = MediaEncoder.Audio()
+                    .Codec(codec)
+                    .SampleRate(sampleRate)
+                    .ChannelLayout(chLayout)
+                    .SampleFormat(sampleFmt)
+                    .Bitrate(bitrate)
+                    .Build())
                 using (var frame = MediaFrame.CreateAudioFrame(encoder.Ref.ch_layout, encoder.Ref.frame_size, encoder.Ref.sample_fmt))
                 {
                     double t, tincr;
@@ -42,6 +46,8 @@ namespace FFmpeg.Sharp.Example
                         tincr = 2 * Math.PI * 440.0 / c->sample_rate;
                         for (i = 0; i < 200; i++)
                         {
+                            /* the encoder may keep a reference to the frame, make sure it is writable before refilling */
+                            frame.MakeWritable();
                             ushort* samples = (ushort*)(void*)pframe->data[0];
                             for (var j = 0; j < c->frame_size; j++)
                             {

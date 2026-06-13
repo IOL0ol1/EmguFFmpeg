@@ -56,22 +56,7 @@ namespace FFmpeg.Sharp
         /// Iterate over all registered muxers.
         /// </summary>
         public static IEnumerable<MediaOutputFormat> GetFormats()
-        {
-            IntPtr oformat;
-            IntPtrRef opaque = new IntPtrRef();
-            while ((oformat = av_muxer_iterate_safe(opaque)) != IntPtr.Zero)
-            {
-                yield return new MediaOutputFormat(oformat);
-            }
-        }
-
-        protected static IntPtr av_muxer_iterate_safe(IntPtrRef ptr)
-        {
-            fixed (void** pp = &ptr.IntPtr)
-            {
-                return (IntPtr)ffmpeg.av_muxer_iterate(pp);
-            }
-        }
+            => NativeIterate.Cursor(o => (IntPtr)ffmpeg.av_muxer_iterate(o), p => new MediaOutputFormat(p));
 
         public string Name => ((IntPtr)pOutputFormat->name).PtrToStringUTF8();
         /// <summary>

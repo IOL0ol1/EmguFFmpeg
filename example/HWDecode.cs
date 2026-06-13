@@ -42,15 +42,13 @@ namespace FFmpeg.Sharp.Example
             //   - walks the codec's HW configs for the requested device type
             //   - creates the AVBufferRef hw_device_ctx
             //   - wires the get_format callback to return the correct HW pixel format
-            using var decoder = MediaDecoder.CreateDecoder(
-                demuxer[videoStreamIdx].CodecparRef,
-                ctx =>
-                {
-                    int method = ctx.InitHWDeviceContext(hwType);
-                    if (method == 0)
-                        throw new Exception($"Codec {videoCodec.Name} does not support HW device '{hwTypeName}'");
-                    Console.WriteLine($"HW acceleration: {hwTypeName} (method flags: 0x{method:x})");
-                });
+            using var decoder = new MediaDecoder(videoCodec);
+            decoder.SetCodecParameters(ref demuxer[videoStreamIdx].CodecparRef);
+            int method = decoder.InitHWDeviceContext(hwType);
+            if (method == 0)
+                throw new Exception($"Codec {videoCodec.Name} does not support HW device '{hwTypeName}'");
+            Console.WriteLine($"HW acceleration: {hwTypeName} (method flags: 0x{method:x})");
+            decoder.Open();
 
             Console.WriteLine($"Writing raw video to '{outFile}'");
             using var outStream = File.OpenWrite(outFile);

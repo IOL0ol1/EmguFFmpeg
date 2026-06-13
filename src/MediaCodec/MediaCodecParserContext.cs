@@ -34,24 +34,8 @@ namespace FFmpeg.Sharp
             : this((int)codecId)
         { }
 
-        protected static AVCodecParser? av_parser_iterate_safe(IntPtrRef opaque)
-        {
-            fixed (void** pp = &opaque.IntPtr)
-            {
-                var ret = ffmpeg.av_parser_iterate(pp);
-                return ret == null ? (AVCodecParser?)null : *ret;
-            }
-        }
-
         public static IEnumerable<AVCodecParser> GetParsers()
-        {
-            AVCodecParser? output;
-            IntPtrRef opaque = new IntPtrRef();
-            while ((output = av_parser_iterate_safe(opaque)) != null)
-            {
-                yield return output.Value;
-            }
-        }
+            => NativeIterate.Cursor(o => (IntPtr)ffmpeg.av_parser_iterate(o), p => *(AVCodecParser*)p);
 
         /// <summary>
         /// Parse complete packets from a managed <see cref="Stream"/>.

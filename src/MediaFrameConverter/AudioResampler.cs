@@ -26,6 +26,10 @@ namespace FFmpeg.Sharp
         private readonly AVSampleFormat _outFmt;
         private readonly int _outRate;
         private long _pts; // running pts in output time base (1/sample_rate)
+        // Reusable conversion target between Swresample and the FIFO; grown geometrically on demand
+        // so the steady state allocates nothing per input frame.
+        private MediaFrame _staged;
+        private int _stagedCapacity;
 
         public AudioResampler(
             AVChannelLayout outChLayout, AVSampleFormat outSampleFmt, int outSampleRate, int outFrameSize,
@@ -98,11 +102,23 @@ namespace FFmpeg.Sharp
         {
             int outSamples = _swr.GetOutSamples(src.Ref.nb_samples);
             if (outSamples <= 0) return;
-            using (var staged = MediaFrame.CreateAudioFrame(_outLayout, outSamples, _outFmt, _outRate))
+            EnsureStaged(outSamples);
+            if (_swr.Convert(src, _staged) > 0 && _staged.Ref.nb_samples > 0)
+                _fifo.Add(_staged);
+        }
+
+        // swr_convert_frame uses dst nb_samples as the capacity and rewrites it with the count produced,
+        // so the buffer only needs reallocating when the requirement outgrows it.
+        private void EnsureStaged(int samples)
+        {
+            if (_staged == null || samples > _stagedCapacity)
             {
-                if (_swr.Convert(src, staged) > 0 && staged.Ref.nb_samples > 0)
-                    _fifo.Add(staged);
+                _staged?.Dispose();
+                int capacity = Math.Max(samples, _stagedCapacity * 2);
+                _staged = MediaFrame.CreateAudioFrame(_outLayout, capacity, _outFmt, _outRate);
+                _stagedCapacity = capacity;
             }
+            _staged.Ref.nb_samples = samples;
         }
 
         private MediaFrame PopFrame(int samples)
@@ -121,6 +137,7 @@ namespace FFmpeg.Sharp
             if (disposedValue) return;
             _swr?.Dispose();
             _fifo?.Dispose();
+            _staged?.Dispose();
             disposedValue = true;
         }
 

@@ -48,11 +48,11 @@ namespace FFmpeg.Sharp.Example
 
             // InitHWDeviceContext creates the VAAPI device and wires the get_format
             // callback that always picks AV_PIX_FMT_VAAPI.
-            using var dec = MediaDecoder.CreateDecoder(videoSt.CodecparRef, decoder, ctx =>
-            {
-                if (ctx.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_VAAPI) == 0)
-                    throw new Exception("Unable to decode this file using VA-API.");
-            });
+            using var dec = new MediaDecoder(decoder);
+            dec.SetCodecParameters(ref videoSt.CodecparRef);
+            if (dec.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_VAAPI) == 0)
+                throw new Exception("Unable to decode this file using VA-API.");
+            dec.Open();
 
             // ── Encoder (opened lazily after the first decoded frame) ─────────
             var encCodec = MediaCodec.FindEncoder(encoderName)
@@ -119,14 +119,14 @@ namespace FFmpeg.Sharp.Example
                 // Lazily open encoder on first frame (we need hw_frames_ctx from decoder).
                 if (!initialized)
                 {
-                    encoder = MediaEncoder.Create(encCodec, c =>
-                    {
-                        c.AttachHWFramesContext(dec.GetHWFramesRef());
-                        c.Ref.time_base = dec.Ref.framerate.ToInvert();
-                        c.Ref.pix_fmt   = AVPixelFormat.AV_PIX_FMT_VAAPI;
-                        c.Ref.width     = dec.Ref.width;
-                        c.Ref.height    = dec.Ref.height;
-                    });
+                    encoder = new MediaEncoder(encCodec);
+                    using var decFrames = dec.GetHWFrames(); // refcounted — encoder takes its own reference
+                    encoder.AttachHWFramesContext(decFrames);
+                    encoder.Ref.time_base = dec.Ref.framerate.ToInvert();
+                    encoder.Ref.pix_fmt   = AVPixelFormat.AV_PIX_FMT_VAAPI;
+                    encoder.Ref.width     = dec.Ref.width;
+                    encoder.Ref.height    = dec.Ref.height;
+                    encoder.Open();
 
                     muxer.AddStream(encoder);
                     muxer.WriteHeader();
@@ -162,7 +162,7 @@ namespace FFmpeg.Sharp.Example
 
                 encPkt.Ref.stream_index = 0;
                 // Rescale from the encoder timebase to the output stream timebase and write.
-                ret = muxer.WritePacket(encPkt, encoder);
+                ret = muxer.WritePacket(encPkt, encoder.Ref.time_base);
                 if (ret < 0)
                 {
                     Console.Error.WriteLine($"Error during writing data to output file. Error code: {FFmpegException.GetErrorString(ret)}");

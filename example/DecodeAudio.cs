@@ -21,7 +21,7 @@ namespace FFmpeg.Sharp.Example
             if (codec == null) throw new Exception("MP2 decoder not found");
 
             using var parser  = new MediaCodecParserContext(AVCodecID.AV_CODEC_ID_MP2);
-            using var decoder = MediaDecoder.Create(codec);
+            using var decoder = new MediaDecoder(codec).Open();
             using var frame   = new MediaFrame();
 
             using var outStream = File.OpenWrite(outFile);

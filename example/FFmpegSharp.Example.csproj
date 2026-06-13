@@ -6,12 +6,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
- 
-  <ItemGroup>
-    <Compile Remove="Other\**" />
-  </ItemGroup>
 
-  <ItemGroup>  
+  <ItemGroup>
     <PackageReference Include="FFmpeg.GPL" Version="20260602.1.0" />  
     <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260602" />
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260602" />

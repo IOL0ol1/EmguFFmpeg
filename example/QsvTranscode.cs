@@ -90,13 +90,13 @@ namespace FFmpeg.Sharp.Example
 
             // InitHWDeviceContext creates the QSV device and wires the get_format
             // callback that always picks AV_PIX_FMT_QSV.
-            using var decoder = MediaDecoder.CreateDecoder(videoSt.CodecparRef, qsvDecoder, ctx =>
-            {
-                ctx.Ref.framerate = demuxer.GuessFrameRate(videoSt);
-                if (ctx.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_QSV) == 0)
-                    throw new Exception("The QSV pixel format not offered in get_format()");
-                ctx.Ref.pkt_timebase = videoSt.Ref.time_base;
-            });
+            using var decoder = new MediaDecoder(qsvDecoder);
+            decoder.SetCodecParameters(ref videoSt.CodecparRef);
+            decoder.Ref.framerate = demuxer.GuessFrameRate(videoSt);
+            if (decoder.InitHWDeviceContext(AVHWDeviceType.AV_HWDEVICE_TYPE_QSV) == 0)
+                throw new Exception("The QSV pixel format not offered in get_format()");
+            decoder.Ref.pkt_timebase = videoSt.Ref.time_base;
+            decoder.Open();
 
             // ── Encoder (opened lazily after the first decoded frame) ─────────
             var encCodec = MediaCodec.FindEncoder(encoderName)
@@ -167,20 +167,20 @@ namespace FFmpeg.Sharp.Example
                     // Check for "r" (framerate) option.
                     var fpsOpt = opts["r"];
 
-                    _encoder = MediaEncoder.Create(encCodec, c =>
-                    {
-                        c.AttachHWFramesContext(decoder.GetHWFramesRef());
-                        c.Ref.time_base = decoder.Ref.framerate.ToInvert();
-                        c.Ref.pix_fmt   = AVPixelFormat.AV_PIX_FMT_QSV;
-                        c.Ref.width     = decoder.Ref.width;
-                        c.Ref.height    = decoder.Ref.height;
+                    _encoder = new MediaEncoder(encCodec);
+                    using var decFrames = decoder.GetHWFrames(); // refcounted — encoder takes its own reference
+                    _encoder.AttachHWFramesContext(decFrames);
+                    _encoder.Ref.time_base = decoder.Ref.framerate.ToInvert();
+                    _encoder.Ref.pix_fmt   = AVPixelFormat.AV_PIX_FMT_QSV;
+                    _encoder.Ref.width     = decoder.Ref.width;
+                    _encoder.Ref.height    = decoder.Ref.height;
 
-                        if (fpsOpt != null)
-                        {
-                            c.Ref.framerate = double.Parse(fpsOpt).ToRational(int.MaxValue);
-                            c.Ref.time_base = c.Ref.framerate.ToInvert();
-                        }
-                    }, opts);
+                    if (fpsOpt != null)
+                    {
+                        _encoder.Ref.framerate = double.Parse(fpsOpt).ToRational(int.MaxValue);
+                        _encoder.Ref.time_base = _encoder.Ref.framerate.ToInvert();
+                    }
+                    _encoder.Open(opts);
 
                     muxer.AddStream(_encoder);
                     muxer.WriteHeader();
@@ -220,7 +220,7 @@ namespace FFmpeg.Sharp.Example
 
                 encPkt.Ref.stream_index = 0;
                 // Rescale from the encoder timebase to the output stream timebase and write.
-                ret = muxer.WritePacket(encPkt, _encoder);
+                ret = muxer.WritePacket(encPkt, _encoder.Ref.time_base);
                 if (ret < 0)
                 {
                     Console.Error.WriteLine($"Error during writing data to output file. Error code: {FFmpegException.GetErrorString(ret)}");

@@ -302,33 +302,24 @@ namespace FFmpeg.Sharp
 
         /// <summary>
         /// Propagate a HW device context to all filters in this graph (e.g. for scale_cuda, hwupload, hwdownload).
-        /// Must be called BEFORE <see cref="Initialize"/>. The buffer is internally av_buffer_ref'd by each filter.
+        /// Must be called BEFORE <see cref="Initialize"/>. Each filter takes its own reference.
         /// </summary>
-        public void SetHWDevice(AVBufferRef* deviceRef)
+        public void SetHWDevice(HWDeviceContext device)
         {
-            if (deviceRef == null) throw new ArgumentNullException(nameof(deviceRef));
+            if (device == null) throw new ArgumentNullException(nameof(device));
             for (uint i = 0; i < pFilterGraph->nb_filters; i++)
             {
                 var fc = pFilterGraph->filters[i];
                 if (fc->hw_device_ctx != null) ffmpeg.av_buffer_unref(&fc->hw_device_ctx);
-                fc->hw_device_ctx = ffmpeg.av_buffer_ref(deviceRef);
+                fc->hw_device_ctx = ffmpeg.av_buffer_ref(device);
             }
         }
 
         /// <summary>
-        /// Get the hw_frames_ctx attached to a buffersink filter (i.e. the output of a HW filter chain). Returns null when the sink is SW.
-        /// Useful when feeding a HW encoder created via <see cref="MediaEncoder.CreateHWVideoEncoder(MediaCodec, int, int, AVRational, AVPixelFormat, AVPixelFormat, AVHWDeviceType, string, AVBufferRef*, AVBufferRef*, int, Action{MediaCodecContext}, MediaDictionary)"/>.
-        /// </summary>
-        public static AVBufferRef* GetSinkHWFramesCtx(MediaFilterContext sink)
-        {
-            if (sink == null) throw new ArgumentNullException(nameof(sink));
-            return ffmpeg.av_buffersink_get_hw_frames_ctx(sink);
-        }
-
-        /// <summary>
         /// Add a buffer src filter pre-configured for HW frames via <see cref="AVBufferSrcParameters"/>.
+        /// Surface size and pixel format are derived from <paramref name="hwFramesCtx"/>.
         /// </summary>
-        public MediaFilterContext AddHWVideoSrcFilter(MediaFilter filter, AVBufferRef* hwFramesCtx, int width, int height, AVPixelFormat hwPixelFormat, AVRational timebase, AVRational framerate = default, string contextName = null)
+        public MediaFilterContext AddHWVideoSrcFilter(MediaFilter filter, HWFramesContext hwFramesCtx, AVRational timebase, AVRational framerate = default, string contextName = null)
         {
             if (hwFramesCtx == null) throw new ArgumentNullException(nameof(hwFramesCtx));
             var ctx = AddFilter(filter, _ =>
@@ -336,9 +327,9 @@ namespace FFmpeg.Sharp
                 var p = ffmpeg.av_buffersrc_parameters_alloc();
                 try
                 {
-                    p->width = width;
-                    p->height = height;
-                    p->format = (int)hwPixelFormat;
+                    p->width = hwFramesCtx.Width;
+                    p->height = hwFramesCtx.Height;
+                    p->format = (int)hwFramesCtx.Format;
                     p->time_base = timebase;
                     p->frame_rate = framerate;
                     p->hw_frames_ctx = ffmpeg.av_buffer_ref(hwFramesCtx);

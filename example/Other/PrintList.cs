@@ -7,7 +7,7 @@ namespace FFmpeg.Sharp.Example.Other
     {
         public PrintList() : base()
         {
-            Index = -9;
+            Index = 30;
             Enable = false;
         }
 

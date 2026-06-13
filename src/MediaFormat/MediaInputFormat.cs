@@ -24,20 +24,7 @@ namespace FFmpeg.Sharp
         /// Iterate over all registered demuxers.
         /// </summary>
         public static IEnumerable<MediaInputFormat> GetFormats()
-        {
-            IntPtr iformat;
-            IntPtrRef opaque = new IntPtrRef();
-            while ((iformat = av_demuxer_iterate_safe(opaque)) != IntPtr.Zero)
-            {
-                yield return new MediaInputFormat(iformat);
-            }
-        }
-
-        protected static IntPtr av_demuxer_iterate_safe(IntPtrRef opaque)
-        {
-            fixed (void** pp = &opaque.IntPtr)
-                return (IntPtr)ffmpeg.av_demuxer_iterate(pp);
-        }
+            => NativeIterate.Cursor(o => (IntPtr)ffmpeg.av_demuxer_iterate(o), p => new MediaInputFormat(p));
 
         /// <summary>
         /// A comma separated list of short names for the format. New names may be appended

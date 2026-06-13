@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using FFmpeg.AutoGen;
 
 namespace FFmpeg.Sharp
@@ -17,8 +16,18 @@ namespace FFmpeg.Sharp
         public SwsFilter* DstFilter;
         /// <summary>Optional algorithm-specific parameters; null = defaults.</summary>
         public double* Param;
-        /// <summary>True to copy frame metadata (pts, time_base, side_data) on every <c>Convert</c>. Default true.</summary>
+        /// <summary>
+        /// True to copy frame metadata (pts, time_base, side_data) on every <c>Convert</c>. Default true.
+        /// Set to false for pure pixel conversion to save one native call per frame.
+        /// </summary>
         public bool CopyProps;
+        /// <summary>
+        /// Worker thread count for the conversion. 0 or 1 (default) = single-threaded classic context.
+        /// Values &gt; 1 build the context via the AVOption path and request that many slice threads —
+        /// requires FFmpeg ≥ 5.1 (older builds silently stay single-threaded). Pass
+        /// <c>Environment.ProcessorCount</c> for "auto".
+        /// </summary>
+        public int Threads;
 
         public static SwscaleOptions Default => new SwscaleOptions
         {
@@ -31,6 +40,11 @@ namespace FFmpeg.Sharp
     /// <see cref="SwsContext"/> wrapper. Holds a cached SwsContext keyed on (srcW, srcH, srcFmt, dstW, dstH, dstFmt);
     /// on every <see cref="Convert(MediaFrame, MediaFrame)"/>, if any of those changed since the last call, the
     /// context is transparently rebuilt — no silent corruption from stale dimensions.
+    /// <para>
+    /// Conversion is single-threaded by default. For heavy work (4K+, expensive scalers) either set
+    /// <see cref="SwscaleOptions.Threads"/> (FFmpeg ≥ 5.1), or run the scale inside a
+    /// <see cref="MediaFilterGraph"/> with <see cref="MediaFilterGraph.ThreadCount"/>.
+    /// </para>
     /// </summary>
     public unsafe class Swscale : IConverter, IDisposable
     {
@@ -41,11 +55,18 @@ namespace FFmpeg.Sharp
         private AVPixelFormat _cachedSrcFmt = AVPixelFormat.AV_PIX_FMT_NONE;
         private AVPixelFormat _cachedDstFmt = AVPixelFormat.AV_PIX_FMT_NONE;
 
-        public Swscale(SwsContext* pSwsContext, bool isDisposeByOwner = true)
+        /// <summary>
+        /// Wrap an existing <see cref="SwsContext"/> pointer.
+        /// </summary>
+        /// <param name="pSwsContext">Native context (must be non-null).</param>
+        /// <param name="leaveOpen">
+        /// When <see langword="true"/>, the wrapper does NOT free the context on dispose; the caller retains ownership.
+        /// </param>
+        public Swscale(SwsContext* pSwsContext, bool leaveOpen)
         {
             if (pSwsContext == null) throw new ArgumentNullException(nameof(pSwsContext));
             pContext = pSwsContext;
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
 
         /// <summary>Default ctor — context is lazily allocated on the first <see cref="Convert(MediaFrame, MediaFrame)"/> call from frame metadata.</summary>
@@ -80,15 +101,53 @@ namespace FFmpeg.Sharp
             int dstWidth, int dstHeight, AVPixelFormat dstFormat)
         {
             ffmpeg.sws_freeContext(pContext);
-            pContext = ffmpeg.sws_getContext(
-                srcWidth, srcHeight, srcFormat,
-                dstWidth, dstHeight, dstFormat,
-                _opts.Flags, _opts.SrcFilter, _opts.DstFilter, _opts.Param);
+            pContext = null;
+            pContext = _opts.Threads > 1
+                ? CreateThreadedContext(srcWidth, srcHeight, srcFormat, dstWidth, dstHeight, dstFormat)
+                : ffmpeg.sws_getContext(
+                    srcWidth, srcHeight, srcFormat,
+                    dstWidth, dstHeight, dstFormat,
+                    _opts.Flags, _opts.SrcFilter, _opts.DstFilter, _opts.Param);
             if (pContext == null)
                 throw new FFmpegException(
                     $"sws_getContext returned null for {srcWidth}x{srcHeight} {srcFormat} -> {dstWidth}x{dstHeight} {dstFormat} (flags={_opts.Flags}).");
             _cachedSrcW = srcWidth; _cachedSrcH = srcHeight; _cachedSrcFmt = srcFormat;
             _cachedDstW = dstWidth; _cachedDstH = dstHeight; _cachedDstFmt = dstFormat;
+        }
+
+        // sws_getContext has no threading parameter — a multi-threaded context can only be built through
+        // sws_alloc_context + AVOptions + sws_init_context. Threading applies to sws_scale_frame (which
+        // Convert uses), not the slice API.
+        private SwsContext* CreateThreadedContext(int srcWidth, int srcHeight, AVPixelFormat srcFormat,
+            int dstWidth, int dstHeight, AVPixelFormat dstFormat)
+        {
+            var ctx = ffmpeg.sws_alloc_context();
+            if (ctx == null) throw new FFmpegException("sws_alloc_context returned null");
+            try
+            {
+                MediaOptions.SetInt(ctx, "srcw", srcWidth, 0).ThrowIfError();
+                MediaOptions.SetInt(ctx, "srch", srcHeight, 0).ThrowIfError();
+                MediaOptions.SetInt(ctx, "src_format", (int)srcFormat, 0).ThrowIfError();
+                MediaOptions.SetInt(ctx, "dstw", dstWidth, 0).ThrowIfError();
+                MediaOptions.SetInt(ctx, "dsth", dstHeight, 0).ThrowIfError();
+                MediaOptions.SetInt(ctx, "dst_format", (int)dstFormat, 0).ThrowIfError();
+                MediaOptions.SetInt(ctx, "sws_flags", _opts.Flags, 0).ThrowIfError();
+                if (_opts.Param != null)
+                {
+                    ffmpeg.av_opt_set_double(ctx, "param0", _opts.Param[0], 0).ThrowIfError();
+                    ffmpeg.av_opt_set_double(ctx, "param1", _opts.Param[1], 0).ThrowIfError();
+                }
+                // Best effort: the "threads" option only exists on FFmpeg >= 5.1; on older builds the
+                // context simply stays single-threaded.
+                MediaOptions.SetInt(ctx, "threads", _opts.Threads, 0);
+                ffmpeg.sws_init_context(ctx, _opts.SrcFilter, _opts.DstFilter).ThrowIfError();
+                return ctx;
+            }
+            catch
+            {
+                ffmpeg.sws_freeContext(ctx);
+                throw;
+            }
         }
 
         /// <summary>
@@ -115,16 +174,6 @@ namespace FFmpeg.Sharp
                 ffmpeg.av_frame_copy_props(d, s).ThrowIfError();
             ffmpeg.sws_scale_frame(pContext, dst, src).ThrowIfError();
             return 1;
-        }
-
-        /// <summary>
-        /// Backwards-compatible enumerable-yielding shim. Prefer <see cref="Convert(MediaFrame, MediaFrame)"/>.
-        /// </summary>
-        [Obsolete("Use Convert(src, dst) returning int instead — the enumerable signature allocated per call.")]
-        public IEnumerable<MediaFrame> ConvertEnumerable(MediaFrame src, MediaFrame dst)
-        {
-            Convert(src, dst);
-            yield return dst;
         }
 
         public static implicit operator SwsContext*(Swscale value)

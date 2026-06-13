@@ -35,7 +35,7 @@ namespace FFmpeg.Sharp
             pFormatContext->oformat = oformat;
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0)
                 pFormatContext->pb = ioContext;
-            return new MediaMuxer(pFormatContext) { _ioContext = ioContext };
+            return new MediaMuxer(pFormatContext, leaveOpen: false) { _ioContext = ioContext };
         }
 
         /// <summary>
@@ -56,17 +56,27 @@ namespace FFmpeg.Sharp
         {
             AVFormatContext* pFormatContext = null;
             ffmpeg.avformat_alloc_output_context2(&pFormatContext, oformat, formatName, fileName).ThrowIfError();
-            var o = new MediaMuxer(pFormatContext);
+            var o = new MediaMuxer(pFormatContext, leaveOpen: false);
             if ((pFormatContext->oformat->flags & ffmpeg.AVFMT_NOFILE) == 0 && fileName != null)
             {
-                o._ioContext = MediaIOContext.Open(fileName, ffmpeg.AVIO_FLAG_WRITE | ffmpeg.AVIO_FLAG_DIRECT, options);
+                // No AVIO_FLAG_DIRECT here: muxers issue many small writes (boxes, packet headers) and
+                // DIRECT bypasses the avio write buffer, turning each of them into a syscall.
+                o._ioContext = MediaIOContext.Open(fileName, ffmpeg.AVIO_FLAG_WRITE, options);
                 pFormatContext->pb = o._ioContext;
             }
             return o;
         }
 
-        public MediaMuxer(AVFormatContext* pAVCodecContext, bool isDisposeByOwner = true)
-            : base(pAVCodecContext, isDisposeByOwner)
+        /// <summary>
+        /// Wrap an existing <see cref="AVFormatContext"/> pointer.
+        /// </summary>
+        /// <param name="pAVFormatContext">Native format context (must be configured for output).</param>
+        /// <param name="leaveOpen">
+        /// When <see langword="true"/>, this wrapper does NOT free the context on dispose; the caller retains ownership.
+        /// When <see langword="false"/>, the wrapper takes ownership and will free it.
+        /// </param>
+        public MediaMuxer(AVFormatContext* pAVFormatContext, bool leaveOpen)
+            : base(pAVFormatContext, leaveOpen)
         { }
 
         public MediaMuxer()
@@ -142,18 +152,44 @@ namespace FFmpeg.Sharp
         /// </summary>
         public int WritePacket(MediaPacket packet, AVRational? codecTimeBase = null)
         {
-            if (codecTimeBase != null)
-                ffmpeg.av_packet_rescale_ts(packet, codecTimeBase.Value, pFormatContext->streams[packet.Ref.stream_index]->time_base);
-            int ret = ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
-            packet.Unref();
-            return ret;
+            RescaleToStreamTimeBase(packet, codecTimeBase);
+            // av_interleaved_write_frame takes ownership of the reference and leaves the packet blank
+            // even on error, so no Unref is needed here.
+            return ffmpeg.av_interleaved_write_frame(pFormatContext, packet);
         }
 
         /// <summary>
-        /// Rescale using <paramref name="encoder"/>.Ref.time_base — the common case.
+        /// Write a packet directly via <see cref="ffmpeg.av_write_frame(AVFormatContext*, AVPacket*)"/>,
+        /// bypassing the interleaving queue — faster than <see cref="WritePacket(MediaPacket, AVRational?)"/>
+        /// for single-stream outputs, or when the caller interleaves packets itself.
+        /// <para>
+        /// The caller must guarantee correct interleaving: packets must have monotonically increasing dts
+        /// per stream, and multi-stream outputs must be fed in interleaved order.
+        /// </para>
+        /// <para>
+        /// Unlike <see cref="WritePacket(MediaPacket, AVRational?)"/>, ownership of <paramref name="packet"/>
+        /// stays with the caller (the packet is left intact). Pass <see langword="null"/> to flush the muxer's
+        /// internal buffers (returns 1 when nothing remains buffered).
+        /// </para>
         /// </summary>
-        public int WritePacket(MediaPacket packet, MediaEncoder encoder)
-            => WritePacket(packet, encoder?.Ref.time_base);
+        public int WritePacketDirect(MediaPacket packet, AVRational? codecTimeBase = null)
+        {
+            if (packet != null)
+                RescaleToStreamTimeBase(packet, codecTimeBase);
+            return ffmpeg.av_write_frame(pFormatContext, packet);
+        }
+
+        // Skip the native call when source and destination time bases are identical — AddStream copies the
+        // encoder time_base onto the stream, and many muxers keep it through WriteHeader, making the
+        // per-packet rescale an identity operation.
+        private void RescaleToStreamTimeBase(MediaPacket packet, AVRational? codecTimeBase)
+        {
+            if (codecTimeBase == null) return;
+            var src = codecTimeBase.Value;
+            var dst = pFormatContext->streams[packet.Ref.stream_index]->time_base;
+            if (src.num != dst.num || src.den != dst.den)
+                ffmpeg.av_packet_rescale_ts(packet, src, dst);
+        }
 
         /// <summary>
         /// Flush all encoders that declare AV_CODEC_CAP_DELAY (and others — non-delayed encoders are a no-op).
@@ -161,12 +197,15 @@ namespace FFmpeg.Sharp
         public void FlushCodecs(IEnumerable<MediaEncoder> mediaCodecs)
         {
             if (mediaCodecs == null) return;
-            foreach (var mediaCodec in mediaCodecs)
+            using (var recvPacket = new MediaPacket())
             {
-                if (mediaCodec == null) continue;
-                foreach (var packet in mediaCodec.EncodeFrame(null))
+                foreach (var mediaCodec in mediaCodecs)
                 {
-                    WritePacket(packet, mediaCodec.Ref.time_base);
+                    if (mediaCodec == null) continue;
+                    foreach (var packet in mediaCodec.EncodeFrame(null, recvPacket))
+                    {
+                        WritePacket(packet, mediaCodec.Ref.time_base);
+                    }
                 }
             }
         }

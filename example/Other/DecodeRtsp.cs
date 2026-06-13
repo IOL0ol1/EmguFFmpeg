@@ -1,20 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using FFmpeg.AutoGen;
 using OpenCvSharp;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Other
 {
     internal class DecodeRtsp : ExampleBase
     {
         public DecodeRtsp() : base("your-rtsp-url") // eg. "rtsp://192.168.0.105:8554/mystream"
         {
-            Index = -9999;
+            Index = 33;
+            Enable = false;
         }
 
         public unsafe override void Execute()
@@ -37,8 +34,11 @@ namespace FFmpeg.Sharp.Example
             {
                 MediaCodec codec = null;
                 var videoStreamIndex = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref codec); // find best video stream with codec.
-                using (var videoDecoder = MediaDecoder.CreateDecoder(demuxer[videoStreamIndex].CodecparRef, _ => { _.Ref.thread_count = 10; }/* multi thread */ ))
+                using (var videoDecoder = new MediaDecoder(codec))
                 {
+                    videoDecoder.SetCodecParameters(ref demuxer[videoStreamIndex].CodecparRef);
+                    videoDecoder.Ref.thread_count = 0; // multi thread
+                    videoDecoder.Open();
                     // pre-allocate dst frame once; Swscale.Convert auto-Resets on first call from frame metadata.
                     convertDst.Ref.width = videoDecoder.Ref.width;
                     convertDst.Ref.height = videoDecoder.Ref.height;

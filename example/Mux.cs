@@ -25,19 +25,20 @@ namespace FFmpeg.Sharp.Example
             // ── Video encoder ─────────────────────────────────────────────────
             var videoCodecId = AVCodecID.AV_CODEC_ID_MPEG4;
             var videoCodec   = MediaCodec.FindEncoder(videoCodecId);
-            using var videoEncoder = MediaEncoder.CreateVideoEncoder(
-                videoCodec,
-                VideoWidth, VideoHeight,
-                new AVRational { num = 1, den = FrameRate },
-                AVPixelFormat.AV_PIX_FMT_YUV420P,
-                400000,
-                ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER,
-                ctx =>
+            using var videoEncoder = MediaEncoder.Video()
+                .Codec(videoCodec)
+                .Size(VideoWidth, VideoHeight)
+                .Fps(FrameRate)
+                .PixelFormat(AVPixelFormat.AV_PIX_FMT_YUV420P)
+                .Bitrate(400000)
+                .Flags(ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+                .Configure(ctx =>
                 {
                     ctx.Ref.gop_size = 12;
                     if (videoCodecId == AVCodecID.AV_CODEC_ID_MPEG1VIDEO)
                         ctx.Ref.mb_decision = 2;
-                });
+                })
+                .Build();
 
             // ── Audio encoder ─────────────────────────────────────────────────
             var audioCodecId = AVCodecID.AV_CODEC_ID_MP2;
@@ -52,8 +53,14 @@ namespace FFmpeg.Sharp.Example
 
             var audioSampleFmt = audioCodec.GetSampleFormats()[0];
             var audioChLayout  = 2.ToDefaultChLayout();
-            using var audioEncoder = MediaEncoder.CreateAudioEncoder(
-                audioCodec, audioSampleRate, audioChLayout, audioSampleFmt, 64000);
+            using var audioEncoder = MediaEncoder.Audio()
+                .Codec(audioCodec)
+                .SampleRate(audioSampleRate)
+                .ChannelLayout(audioChLayout)
+                .SampleFormat(audioSampleFmt)
+                .Bitrate(64000)
+                .Flags(ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER)
+                .Build();
 
             int audioFrameSize = audioEncoder.Ref.frame_size > 0 ? audioEncoder.Ref.frame_size : 10000;
 
@@ -97,7 +104,7 @@ namespace FFmpeg.Sharp.Example
                         foreach (var p in videoEncoder.EncodeFrame(videoFrame, tmpPacket))
                         {
                             p.Ref.stream_index = 0;
-                            muxer.WritePacket(p, videoEncoder);
+                            muxer.WritePacket(p, videoEncoder.Ref.time_base);
                         }
                     }
                 }
@@ -121,7 +128,7 @@ namespace FFmpeg.Sharp.Example
                         foreach (var p in audioEncoder.EncodeFrame(audioFrame, tmpPacket))
                         {
                             p.Ref.stream_index = 1;
-                            muxer.WritePacket(p, audioEncoder);
+                            muxer.WritePacket(p, audioEncoder.Ref.time_base);
                         }
                     }
                 }

@@ -1,18 +1,16 @@
-﻿using System;
+using System;
 using System.IO;
 using FFmpeg.AutoGen;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Legacy
 {
     internal class DecodeVideo : ExampleBase
     {
-        public DecodeVideo() : this($"EncodeVideo-output.h264", $"{nameof(DecodeVideo)}-output.mp4")
-        { }
+        public DecodeVideo() : this($"EncodeVideo-output.h264", $"{nameof(DecodeVideo)}-output.raw")
+        { Index = 42; Enable = false; }
 
         public DecodeVideo(params string[] args) : base(args)
-        {
-            Index = 12; 
-        }
+        { }
 
         public override void Execute()
         {
@@ -23,16 +21,16 @@ namespace FFmpeg.Sharp.Example
             using (var f = File.OpenRead(filename))
             using (var of = File.Create(outfilename))
             using (var parser = new MediaCodecParserContext(codec.Ref.id))
-            using (var c = MediaDecoder.Create(codec, _ =>
-             {
-                 /* For some codecs, such as msmpeg4 and mpeg4, width and height
-                    MUST be initialized there because this information is not
-                    available in the bitstream. */
-                 _.Ref.height = 288;
-                 _.Ref.width = 352;
-             }))
+            using (var c = new MediaDecoder(codec))
             using (var frame = new MediaFrame())
             {
+                /* For some codecs, such as msmpeg4 and mpeg4, width and height
+                   MUST be initialized there because this information is not
+                   available in the bitstream. */
+                c.Ref.height = 288;
+                c.Ref.width = 352;
+                c.Open();
+
                 foreach (var oPacket in parser.ParsePackets(c, f))
                 {
                     foreach (var oFrame in c.DecodePacket(oPacket, frame))

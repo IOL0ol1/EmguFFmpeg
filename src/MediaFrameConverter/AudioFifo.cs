@@ -14,15 +14,22 @@ namespace FFmpeg.Sharp
         private readonly int _channels;
         private bool disposedValue;
 
-        public AudioFifo(AVAudioFifo* pAVAudioFifo, bool isDisposeByOwner = true)
+        /// <summary>
+        /// Wrap an existing <see cref="AVAudioFifo"/> pointer.
+        /// </summary>
+        /// <param name="pAVAudioFifo">Native fifo (must be non-null).</param>
+        /// <param name="leaveOpen">
+        /// When <see langword="true"/>, the wrapper does NOT free the fifo on dispose; the caller retains ownership.
+        /// </param>
+        public AudioFifo(AVAudioFifo* pAVAudioFifo, bool leaveOpen)
         {
             if (pAVAudioFifo == null) throw new ArgumentNullException(nameof(pAVAudioFifo));
             pAudioFifo = pAVAudioFifo;
-            disposedValue = !isDisposeByOwner;
+            disposedValue = leaveOpen;
         }
 
         public AudioFifo(AVSampleFormat format, int channels, int nbSamples = 1)
-            : this(ffmpeg.av_audio_fifo_alloc(format, channels, nbSamples <= 0 ? 1 : nbSamples), true)
+            : this(ffmpeg.av_audio_fifo_alloc(format, channels, nbSamples <= 0 ? 1 : nbSamples), false)
         {
             _format = format;
             _channels = channels;

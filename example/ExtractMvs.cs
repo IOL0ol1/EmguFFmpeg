@@ -45,7 +45,6 @@ namespace FFmpeg.Sharp.Example
             using var exportMvsOpts = new MediaDictionary { ["flags2"] = "+export_mvs" };
             using var decoder = MediaDecoder.CreateDecoder(
                 demuxer[videoStreamIdx].CodecparRef,
-                null,
                 exportMvsOpts);
 
             Console.WriteLine("framenum,source,blockw,blockh,srcx,srcy,dstx,dsty,flags,motion_x,motion_y,motion_scale");

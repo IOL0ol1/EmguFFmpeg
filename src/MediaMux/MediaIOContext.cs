@@ -53,12 +53,12 @@ namespace FFmpeg.Sharp
         /// Wrap a managed <see cref="Stream"/> as an FFmpeg I/O context.
         /// </summary>
         /// <param name="stream">Underlying stream. MUST remain open while this <see cref="MediaIOContext"/> is in use.</param>
-        /// <param name="bufferSize">Internal FFmpeg buffer size, in bytes.</param>
+        /// <param name="bufferSize">Internal FFmpeg buffer size, in bytes. Default matches libavformat's own IO buffer (32 KiB).</param>
         /// <param name="leaveOpen">
         /// When <see langword="true"/> (the default and recommended), this context will NOT dispose <paramref name="stream"/>
         /// on its own dispose. Set to <see langword="false"/> only if you want the context to take ownership.
         /// </param>
-        public MediaIOContext(Stream stream, int bufferSize = 4096, bool leaveOpen = true)
+        public MediaIOContext(Stream stream, int bufferSize = 32768, bool leaveOpen = true)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
             if (bufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));

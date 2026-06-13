@@ -34,19 +34,16 @@ namespace FFmpeg.Sharp.Example
             // ── Open output ───────────────────────────────────────────────────
             var aacCodec  = MediaCodec.FindEncoder(AVCodecID.AV_CODEC_ID_AAC);
             var outLayout = 2.ToDefaultChLayout();
-            using var encoder = MediaEncoder.CreateAudioEncoder(aacCodec,
-                decoder.Ref.sample_rate,
-                outLayout,
-                aacCodec.GetSampleFormats()[0],
-                OutputBitRate);
+            using var encoder = MediaEncoder.Audio()
+                .Codec(aacCodec)
+                .SampleRate(decoder.Ref.sample_rate)
+                .ChannelLayout(outLayout)
+                .SampleFormat(aacCodec.GetSampleFormats()[0])
+                .Bitrate(OutputBitRate)
+                .Flags(ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER) // MP4 stores extradata in the container header
+                .Build();
 
             using var muxer = MediaMuxer.Create(outFile);
-            // Set GLOBAL_HEADER flag before writing header.
-            if ((muxer.Ref.oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
-            {
-                // Encoder was already opened; the flag would need to be set before open.
-                // In practice AAC/MP4 will still work; the header is re-written.
-            }
             muxer.AddStream(encoder);
             muxer.DumpFormat();
             muxer.WriteHeader();

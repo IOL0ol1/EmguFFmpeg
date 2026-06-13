@@ -3,14 +3,12 @@ using System.IO;
 using FFmpeg.AutoGen;
 using OpenCvSharp;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Legacy
 {
     internal unsafe class HWDecode : ExampleBase
     {
         public HWDecode() : base("d3d11va", "video-input.mp4", "HWDecode-output.bin")
-        {
-
-        }
+        { Index = 46; Enable = false; }
 
         public override void Execute()
         {
@@ -18,7 +16,7 @@ namespace FFmpeg.Sharp.Example
             var inputFile = args[1];
             var outputFile = args[2];
 
-            using (var demuxer = MediaDemuxer.Open(File.OpenRead(inputFile)))
+            using (var demuxer = MediaDemuxer.Open(inputFile))
             using (var output_file = File.OpenWrite(outputFile))
             using (var packet = new MediaPacket())
             using (var frame = new MediaFrame())
@@ -28,12 +26,13 @@ namespace FFmpeg.Sharp.Example
             {
                 MediaCodec decoder = null;
                 var video_stream = demuxer.FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, ref decoder);
-                using (var vDecoder = MediaDecoder.CreateDecoder(demuxer[video_stream].CodecparRef, _ =>
+                using (var vDecoder = new MediaDecoder(decoder))
                 {
-                    _.Ref.thread_count = 10;
-                    _.InitHWDeviceContext(deviceType);
-                }))
-                {
+                    vDecoder.SetCodecParameters(ref demuxer[video_stream].CodecparRef);
+                    vDecoder.Ref.thread_count = 0;
+                    vDecoder.InitHWDeviceContext(deviceType);
+                    vDecoder.Open();
+
                     // pre-allocate dst frame; Swscale.Convert auto-Resets on first call from frame metadata.
                     convertDst.Ref.width = vDecoder.Ref.width;
                     convertDst.Ref.height = vDecoder.Ref.height;

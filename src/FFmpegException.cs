@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.Serialization;
 using FFmpeg.AutoGen;
 
 namespace FFmpeg.Sharp
@@ -12,8 +11,13 @@ namespace FFmpeg.Sharp
     {
         /// <summary>Some unknown error.</summary>
         Unknown = 0,
-        /// <summary>Resource temporarily unavailable — send/receive must drain first.</summary>
-        EAGAIN = -11, // POSIX/Linux mapping; on Windows AVERROR(EAGAIN) is -11 as well via libavutil
+        /// <summary>
+        /// Resource temporarily unavailable — send/receive must drain first.
+        /// WARNING: the numeric value is platform-dependent (-11 on Windows/Linux, -35 on macOS) —
+        /// do NOT compare <see cref="FFmpegException.ErrorCode"/> against this constant directly;
+        /// use <see cref="FFmpegException.TypedCode"/>, which maps via <c>ffmpeg.AVERROR(EAGAIN)</c>.
+        /// </summary>
+        EAGAIN = -11,
         /// <summary>End of file or end of stream.</summary>
         EOF = -541478725, // AVERROR_EOF = FFERRTAG('E','O','F',' ')
         /// <summary>Invalid data found when processing input.</summary>
@@ -29,7 +33,6 @@ namespace FFmpeg.Sharp
     /// <summary>
     /// FFmpeg exception.
     /// </summary>
-    [Serializable]
     public unsafe class FFmpegException : Exception
     {
         public int ErrorCode { get; } = 0;
@@ -74,13 +77,6 @@ namespace FFmpeg.Sharp
             if (errorCode == ffmpeg.AVERROR_EXTERNAL) return FFmpegErrorCode.External;
             return FFmpegErrorCode.Unknown;
         }
-
-#if NET8_0_OR_GREATER
-        [Obsolete("Formatter-based serialization is obsolete in .NET 8+, but we keep the constructor to satisfy the [Serializable] contract.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-#endif
-        protected FFmpegException(SerializationInfo serializationInfo, StreamingContext streamingContext)
-            : base(serializationInfo, streamingContext)
-        { }
 
         private const string FFmpegError = "FFmpeg error";
     }

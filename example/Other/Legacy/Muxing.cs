@@ -1,18 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Intrinsics.X86;
-using System.Security.Cryptography;
-using System.Text;
 using FFmpeg.AutoGen;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Legacy
 {
     internal class Muxing : ExampleBase
     {
         public Muxing() : this($"Muxing-output.mp4")
-        {
-        }
+        { Index = 48; Enable = false; }
 
         public Muxing(params string[] args) : base(args)
         { }
@@ -127,7 +123,15 @@ namespace FFmpeg.Sharp.Example
                     var bitrate = 64000;
                     var samplerate = codec.GetSupportedSamplerates().Any() ? codec.GetSupportedSamplerates().First() : 44100;
                     var chlayout = codec.GetChLayouts().Any() ? codec.GetChLayouts().First() : 2.ToDefaultChLayout();
-                    var aencoder = MediaEncoder.CreateAudioEncoder(fmt, samplerate, chlayout, samplefmt, bitrate, _ => _.Ref.thread_count = 10);
+                    var aencoder = MediaEncoder.Audio()
+                        .Codec(codec)
+                        .OutputFormat(fmt) // conditional AV_CODEC_FLAG_GLOBAL_HEADER from the container
+                        .SampleRate(samplerate)
+                        .ChannelLayout(chlayout)
+                        .SampleFormat(samplefmt)
+                        .Bitrate(bitrate)
+                        .Configure(_ => _.Ref.thread_count = 0)
+                        .Build();
                     /* copy the stream parameters to the muxer */
                     oc.AddStream(aencoder).Ref.id = (int)oc.Ref.nb_streams - 1;
                     p.tincr = 2 * Math.PI * 110.0 / aencoder.Ref.sample_rate;
@@ -140,15 +144,23 @@ namespace FFmpeg.Sharp.Example
                     var height = 288;
                     var fps = 25d;
                     var pixfmt = AVPixelFormat.AV_PIX_FMT_YUV420P;
-                    var vencoder = MediaEncoder.CreateVideoEncoder(fmt, width, height, fps, pixfmt, vbitrate, _ =>
-                    {
-                        _.Ref.thread_count = 10;
-                        _.Ref.gop_size = 12;
-                        if (_.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG2VIDEO)
-                            _.Ref.max_b_frames = 2;
-                        if (_.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO)
-                            _.Ref.mb_decision = 2;
-                    });
+                    var vencoder = MediaEncoder.Video()
+                        .Codec(codec)
+                        .OutputFormat(fmt) // conditional AV_CODEC_FLAG_GLOBAL_HEADER from the container
+                        .Size(width, height)
+                        .Fps(fps)
+                        .PixelFormat(pixfmt)
+                        .Bitrate(vbitrate)
+                        .Configure(_ =>
+                        {
+                            _.Ref.thread_count = 0;
+                            _.Ref.gop_size = 12;
+                            if (_.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG2VIDEO)
+                                _.Ref.max_b_frames = 2;
+                            if (_.Ref.codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO)
+                                _.Ref.mb_decision = 2;
+                        })
+                        .Build();
                     oc.AddStream(vencoder).Ref.id = (int)oc.Ref.nb_streams - 1;
                     return vencoder;
                 default:
@@ -161,6 +173,9 @@ namespace FFmpeg.Sharp.Example
         {
             if (ffmpeg.av_compare_ts(vp.nextPts, encoder.Ref.time_base, STREAM_DURATION, 1d.ToRational()) > 0)
                 return null;
+            // frames are reused across iterations and the encoder may still hold a reference (8.1.0:
+            // EncodeFrame no longer calls av_frame_make_writable for you)
+            src.MakeWritable();
             FillYuvImage(src, (int)vp.nextPts, encoder.Ref.width, encoder.Ref.height);
             MediaFrame o;
             if ((int)encoder.Ref.pix_fmt == src.Ref.format)
@@ -169,6 +184,7 @@ namespace FFmpeg.Sharp.Example
             }
             else
             {
+                dst.MakeWritable();
                 sws.Convert(src, dst);
                 o = dst;
             }
@@ -182,6 +198,7 @@ namespace FFmpeg.Sharp.Example
             if (ffmpeg.av_compare_ts(ap.nextPts, encoder.Ref.time_base, STREAM_DURATION, 1.ToRational()) > 0)
                 return null;
 
+            frame.MakeWritable();
             int v;
             Int16* q = (Int16*)frame.Ref.data[0];
             for (var j = 0; j < frame.Ref.nb_samples; j++)
@@ -202,22 +219,17 @@ namespace FFmpeg.Sharp.Example
         private static bool WriteAudioFrame(MediaMuxer oc, Swresample swr, MediaEncoder encoder, MediaFrame src, MediaFrame dst, Parames ap)
         {
             var f = GetAudioFrame(encoder, src, ap);
-            var ret = false;
-            MediaFrame[] a;
-            if (f != null && (int)encoder.Ref.sample_fmt == f.Ref.format)
+            // End of stream: flush the encoder instead of converting a null frame.
+            if (f == null)
+                return WriteFrame(oc, encoder, null, 0);
+            if ((int)encoder.Ref.sample_fmt != f.Ref.format)
             {
-                a = new[] { f };
-            }
-            else
-            {
+                dst.MakeWritable();
                 swr.Convert(f, dst);
-                a = new[] { dst };
+                dst.Ref.pts = f.Ref.pts;
+                f = dst;
             }
-            foreach (var item in a)
-            {
-                ret = WriteFrame(oc, encoder, item, 0);
-            }
-            return ret;
+            return WriteFrame(oc, encoder, f, 0);
         }
 
         private static bool WriteVideoFrame(MediaMuxer oc, Swscale sws, MediaEncoder encoder, MediaFrame src, MediaFrame dst, Parames vp)

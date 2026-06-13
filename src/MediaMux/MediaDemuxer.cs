@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -27,14 +27,15 @@ namespace FFmpeg.Sharp
         /// <param name="leaveOpen">
         /// When <see langword="true"/> (default), the underlying <paramref name="stream"/> is NOT disposed when this demuxer is disposed.
         /// </param>
-        public static MediaDemuxer Open(Stream stream, MediaInputFormat iformat = null, MediaDictionary options = null, bool leaveOpen = true)
+        /// <param name="findStreamInfo">See <see cref="Open(string, MediaInputFormat, MediaDictionary, Action{MediaFormatContext}, bool)"/>.</param>
+        public static MediaDemuxer Open(Stream stream, MediaInputFormat iformat = null, MediaDictionary options = null, bool leaveOpen = true, bool findStreamInfo = true)
         {
             var ioContext = (stream as MediaIOContext) ?? new MediaIOContext(stream, 32768, leaveOpen);
             var output = Open(null, iformat, options, fc =>
             {
                 AVFormatContext* f = fc;
                 f->pb = ioContext;
-            });
+            }, findStreamInfo);
             output._ioContext = ioContext;
             return output;
         }
@@ -42,7 +43,17 @@ namespace FFmpeg.Sharp
         /// <summary>
         /// Open a demuxer from a path or URL.
         /// </summary>
-        public static MediaDemuxer Open(string url, MediaInputFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContext> beforeOpen = null)
+        /// <param name="url">Path or URL.</param>
+        /// <param name="iformat">Optional input format hint.</param>
+        /// <param name="options">Optional dictionary of demuxer options.</param>
+        /// <param name="beforeOpen">Configuration hook invoked before <c>avformat_open_input</c>.</param>
+        /// <param name="findStreamInfo">
+        /// When <see langword="true"/> (default), probe the input via <see cref="FindStreamInfo"/> —
+        /// this can pre-read megabytes of data. Pass <see langword="false"/> for known-format/low-latency
+        /// inputs to skip probing; stream codec parameters may then be incomplete until you call
+        /// <see cref="FindStreamInfo"/> yourself or fill the decoder parameters by hand.
+        /// </param>
+        public static MediaDemuxer Open(string url, MediaInputFormat iformat = null, MediaDictionary options = null, Action<MediaFormatContext> beforeOpen = null, bool findStreamInfo = true)
         {
             var output = new MediaDemuxer();
             beforeOpen?.Invoke(output);
@@ -59,12 +70,21 @@ namespace FFmpeg.Sharp
                     ret = ffmpeg.avformat_open_input(ps, url, iformat, pOptions);
             }
             ret.ThrowIfError();
-            output.FindStreamInfo(options);
+            if (findStreamInfo)
+                output.FindStreamInfo(options);
             return output;
         }
 
-        public MediaDemuxer(AVFormatContext* pAVCodecContext, bool isDisposeByOwner = true)
-            : base(pAVCodecContext, isDisposeByOwner)
+        /// <summary>
+        /// Wrap an existing <see cref="AVFormatContext"/> pointer.
+        /// </summary>
+        /// <param name="pAVFormatContext">Native format context (must be opened for input).</param>
+        /// <param name="leaveOpen">
+        /// When <see langword="true"/>, this wrapper does NOT close/free the context on dispose; the caller retains ownership.
+        /// When <see langword="false"/>, the wrapper takes ownership.
+        /// </param>
+        public MediaDemuxer(AVFormatContext* pAVFormatContext, bool leaveOpen)
+            : base(pAVFormatContext, leaveOpen)
         { }
 
         public MediaDemuxer()
@@ -162,7 +182,7 @@ namespace FFmpeg.Sharp
             {
                 while (true)
                 {
-                    int ret = ReadPacketSafe(packet);
+                    int ret = ReadPacket(packet);
                     if (ret == ffmpeg.AVERROR_EOF)
                         yield break;
                     if (ret < 0)
@@ -184,59 +204,36 @@ namespace FFmpeg.Sharp
             {
                 while (true)
                 {
-                    int ret = ReadPacketSafe(scratch);
+                    int ret = ReadPacket(scratch);
                     if (ret == ffmpeg.AVERROR_EOF)
                         yield break;
                     if (ret < 0)
                         ret.ThrowIfError();
-                    var owned = scratch.Clone();
-                    scratch.Unref();
-                    yield return owned;
+                    yield return MoveToOwned(scratch);
                 }
             }
         }
 
-        /// <summary>
-        /// One-shot helper: route demuxed packets through the supplied decoders and yield decoded frames.
-        /// Decoders are keyed by stream index. Streams without a decoder mapping are skipped.
-        /// The decoders are flushed automatically on EOF.
-        /// </summary>
-        /// <param name="decoders">Map of stream_index → decoder.</param>
-        /// <param name="filterMediaType">If non-null, only stream indices whose codecpar matches this media type are decoded.</param>
-        public IEnumerable<(int streamIndex, MediaFrame frame)> ReadFrames(IDictionary<int, MediaDecoder> decoders, AVMediaType? filterMediaType = null)
+        // Ownership transfer via av_packet_move_ref instead of Clone+Unref: no side-data deep copy
+        // (av_packet_ref would duplicate it just for the source's unref to free the original), no buffer
+        // refcount churn, and no failure path. scratch is left blank, ready for the next av_read_frame.
+        // (Also keeps the pointer code out of the iterator body.)
+        private static MediaPacket MoveToOwned(MediaPacket scratch)
         {
-            if (decoders == null) throw new ArgumentNullException(nameof(decoders));
-            using (var pkt = new MediaPacket())
-            {
-                while (true)
-                {
-                    int ret = ReadPacketSafe(pkt);
-                    if (ret == ffmpeg.AVERROR_EOF) break;
-                    if (ret < 0) ret.ThrowIfError();
-                    try
-                    {
-                        int idx = pkt.Ref.stream_index;
-                        if (!decoders.TryGetValue(idx, out var dec) || dec == null) continue;
-                        if (filterMediaType.HasValue && this[idx].CodecparRef.codec_type != filterMediaType.Value) continue;
-                        foreach (var frame in dec.DecodePacket(pkt))
-                            yield return (idx, frame);
-                    }
-                    finally { pkt.Unref(); }
-                }
-                // Flush each decoder.
-                foreach (var kv in decoders)
-                {
-                    if (kv.Value == null) continue;
-                    foreach (var frame in kv.Value.DecodePacket(null))
-                        yield return (kv.Key, frame);
-                }
-            }
+            var owned = new MediaPacket();
+            ffmpeg.av_packet_move_ref(owned, scratch);
+            return owned;
         }
 
-        protected int ReadPacketSafe(MediaPacket packet)
+        public int ReadPacket(MediaPacket packet)
         {
             return ffmpeg.av_read_frame(pFormatContext, packet);
         }
+
+        // Per-packet hot path: read codec_type without allocating a MediaStream wrapper
+        // (also keeps the pointer code out of the iterator body).
+        private AVMediaType GetStreamCodecType(int streamIndex)
+            => pFormatContext->streams[streamIndex]->codecpar->codec_type;
 
         #endregion ReadPackets
 

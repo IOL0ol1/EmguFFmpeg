@@ -1,17 +1,16 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using FFmpeg.AutoGen;
 using OpenCvSharp;
 
-namespace FFmpeg.Sharp.Example
+namespace FFmpeg.Sharp.Example.Other
 {
     internal class CreateMPEG4 : ExampleBase
     {
 
         public CreateMPEG4() : this($"{nameof(CreateMPEG4)}-output.mp4")
-        {
-        }
+        { Index = 31; Enable = false; }
 
         public CreateMPEG4(params string[] args) : base(args)
         { }
@@ -23,11 +22,11 @@ namespace FFmpeg.Sharp.Example
             var width = 800;
             var heith = 600;
             var s = Stopwatch.StartNew();
-            using (var muxer = MediaMuxer.Create(File.OpenWrite(outputFile), MediaOutputFormat.GuessFormat(null, outputFile, null)))
+            using (var muxer = MediaMuxer.Create(outputFile))
             using (var convert = new Swscale())
             using (var convertDst = new MediaFrame())
             {
-                using (var vEncoder = MediaEncoder.CreateVideoEncoder(muxer.Format, width, heith, fps, otherSettings: _ => _.Ref.thread_count = 10))
+                using (var vEncoder = MediaEncoder.Video().OutputFormat(muxer.Format).Size(width, heith).Fps(fps).Configure(_ => _.Ref.thread_count = 0).Build())
                 {
                     // pre-allocate dst frame in encoder's pixel format; Swscale.Convert auto-Resets on first call.
                     convertDst.Ref.width = width;
